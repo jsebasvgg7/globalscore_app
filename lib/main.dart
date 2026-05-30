@@ -7,8 +7,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
-    url: 'TU_SUPABASE_URL',
-    anonKey: 'TU_SUPABASE_ANON_KEY',
+    url: 'https://auquyjigjceqzwpjbbff.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1cXV5amlnamNlcXp3cGpiYmZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0MzAwNzksImV4cCI6MjA4MDAwNjA3OX0.aiFHuOp6CgyjN3VL8OQZp7U2bGLxZu9-OFlCGwkqq3w',
   );
 
   runApp(const ProviderScope(child: GlobalScoreApp()));
