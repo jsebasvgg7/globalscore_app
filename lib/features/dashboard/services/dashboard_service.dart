@@ -1,41 +1,30 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DashboardService {
   static final _db = Supabase.instance.client;
 
-  // ── Usuario actual (por auth_id) ─────────────────────────
   static Future<Map<String, dynamic>?> getCurrentUser() async {
     final authId = _db.auth.currentUser?.id;
     if (authId == null) return null;
-
-    final res = await _db
-        .from('users')
-        .select()
-        .eq('auth_id', authId)
-        .single();
-    return res;
+    final res = await _db.from('users').select().eq('auth_id', authId).single();
+    return Map<String, dynamic>.from(res);
   }
 
-  // ── Partidos con predicciones del usuario ────────────────
   static Future<List<Map<String, dynamic>>> getMatchesWithPredictions(String userId) async {
     final res = await _db
         .from('matches')
-        .select('*, predictions!left(*)') 
-        .order('date', ascending: true)
-        .order('time', ascending: true);
+        .select('*, predictions!left(*)')
+        .order('date', ascending: false)
+        .order('time', ascending: false);
 
-    // Filtrar predicciones del usuario en cada partido
     return (res as List).map((m) {
-      final preds = (m['predictions'] as List?) ?? [];
-      final myPred = preds.firstWhere(
-        (p) => p['user_id'] == userId,
-        orElse: () => null,
-      );
-      return {...m, 'my_prediction': myPred};
+      final map = Map<String, dynamic>.from(m as Map);
+      final preds = (map['predictions'] as List?) ?? [];
+      final myPred = preds.cast<Map>().where((p) => p['user_id'] == userId).firstOrNull;
+      return <String, dynamic>{...map, 'my_prediction': myPred};
     }).toList();
   }
 
-  // ── Ligas con predicciones del usuario ───────────────────
   static Future<List<Map<String, dynamic>>> getLeaguesWithPredictions(String userId) async {
     final res = await _db
         .from('leagues')
@@ -43,16 +32,13 @@ class DashboardService {
         .order('created_at', ascending: false);
 
     return (res as List).map((l) {
-      final preds = (l['league_predictions'] as List?) ?? [];
-      final myPred = preds.firstWhere(
-        (p) => p['user_id'] == userId,
-        orElse: () => null,
-      );
-      return {...l, 'my_prediction': myPred};
+      final map = Map<String, dynamic>.from(l as Map);
+      final preds = (map['league_predictions'] as List?) ?? [];
+      final myPred = preds.cast<Map>().where((p) => p['user_id'] == userId).firstOrNull;
+      return <String, dynamic>{...map, 'my_prediction': myPred};
     }).toList();
   }
 
-  // ── Premios con predicciones del usuario ─────────────────
   static Future<List<Map<String, dynamic>>> getAwardsWithPredictions(String userId) async {
     final res = await _db
         .from('awards')
@@ -60,16 +46,13 @@ class DashboardService {
         .order('created_at', ascending: false);
 
     return (res as List).map((a) {
-      final preds = (a['award_predictions'] as List?) ?? [];
-      final myPred = preds.firstWhere(
-        (p) => p['user_id'] == userId,
-        orElse: () => null,
-      );
-      return {...a, 'my_prediction': myPred};
+      final map = Map<String, dynamic>.from(a as Map);
+      final preds = (map['award_predictions'] as List?) ?? [];
+      final myPred = preds.cast<Map>().where((p) => p['user_id'] == userId).firstOrNull;
+      return <String, dynamic>{...map, 'my_prediction': myPred};
     }).toList();
   }
 
-  // ── Top usuarios para podio ───────────────────────────────
   static Future<List<Map<String, dynamic>>> getTopUsers() async {
     final res = await _db
         .from('users')
@@ -79,7 +62,6 @@ class DashboardService {
     return List<Map<String, dynamic>>.from(res);
   }
 
-  // ── Guardar predicción de partido ─────────────────────────
   static Future<void> upsertMatchPrediction({
     required String matchId,
     required String userId,
@@ -96,7 +78,6 @@ class DashboardService {
     }, onConflict: 'match_id,user_id');
   }
 
-  // ── Guardar predicción de liga ────────────────────────────
   static Future<void> upsertLeaguePrediction({
     required String leagueId,
     required String userId,
@@ -115,7 +96,6 @@ class DashboardService {
     }, onConflict: 'league_id,user_id');
   }
 
-  // ── Guardar predicción de premio ──────────────────────────
   static Future<void> upsertAwardPrediction({
     required String awardId,
     required String userId,
