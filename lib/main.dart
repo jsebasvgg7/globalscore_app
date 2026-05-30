@@ -1,59 +1,35 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/router/app_router.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'TU_SUPABASE_URL',
+    anonKey: 'TU_SUPABASE_ANON_KEY',
+  );
+
+  runApp(const ProviderScope(child: GlobalScoreApp()));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class GlobalScoreApp extends ConsumerWidget {
+  const GlobalScoreApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+
+    return MaterialApp.router(
       title: 'GlobalScore',
-      home: const HomeScreen(),
-    );
-  }
-}
-
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  int puntos = 0; // como useState(0) en React
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '⚽ GlobalScore',
-              style: TextStyle(color: Colors.white, fontSize: 32),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Puntos: $puntos',
-              style: TextStyle(color: Colors.amber, fontSize: 24),
-            ),
-            SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  puntos += 5; // como setPuntos(puntos + 5)
-                });
-              },
-              child: Text('Predije bien (+5 pts)'),
-            ),
-          ],
+      routerConfig: router,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF00E5FF),
+          brightness: Brightness.dark,
         ),
+        useMaterial3: true,
       ),
     );
   }
