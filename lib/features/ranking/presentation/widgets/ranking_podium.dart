@@ -1,0 +1,227 @@
+import 'package:flutter/material.dart';
+import '../../data/ranking_service.dart';
+import 'rank_avatar.dart';
+
+const _kGold = Color(0xFFC9A227);
+const _kSilver = Color(0xFF8A8A8A);
+const _kBronze = Color(0xFFA0652A);
+
+class RankingPodium extends StatelessWidget {
+  final List<RankingUser> top3;
+  final String rankingType;
+  final void Function(String userId)? onSelectUser;
+
+  const RankingPodium({
+    super.key,
+    required this.top3,
+    required this.rankingType,
+    this.onSelectUser,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (top3.isEmpty) return const SizedBox.shrink();
+
+    // Order: silver(1) | gold(0) | bronze(2)
+    final items = [
+      if (top3.length > 1) _PodiumItem(user: top3[1], rank: 1),
+      _PodiumItem(user: top3[0], rank: 0),
+      if (top3.length > 2) _PodiumItem(user: top3[2], rank: 2),
+    ];
+
+    final colors = [_kGold, _kSilver, _kBronze];
+    final labels = ['ORO', 'PLATA', 'BRONCE'];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Column(
+        children: [
+          // ── Crown + title ──
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                  width: 40,
+                  height: 0.5,
+                  color: Colors.black.withOpacity(0.12)),
+              const SizedBox(width: 8),
+              const Icon(Icons.emoji_events_rounded,
+                  size: 14, color: _kGold),
+              const SizedBox(width: 6),
+              const Text(
+                'PODIO',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.8,
+                  color: Color(0xFF888880),
+                  fontFamily: 'DMMono',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                  width: 40,
+                  height: 0.5,
+                  color: Colors.black.withOpacity(0.12)),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── Podium stage ──
+          SizedBox(
+            height: 200,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: items.map((item) {
+                final color = colors[item.rank];
+                final label = labels[item.rank];
+                final isGold = item.rank == 0;
+                final pts = item.user.rankPoints(rankingType);
+                final acc = item.user.accuracy(rankingType);
+
+                // Heights: gold=200, silver=160, bronze=140
+                final stepH = isGold
+                    ? 90.0
+                    : item.rank == 1
+                        ? 60.0
+                        : 44.0;
+                final avatarSize = isGold ? 68.0 : 52.0;
+
+                return GestureDetector(
+                  onTap: () => onSelectUser?.call(item.user.id),
+                  child: SizedBox(
+                    width: 110,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        // Medal label
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.4,
+                            color: color,
+                            fontFamily: 'DMMono',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Avatar + rank badge
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            RankAvatar(
+                              url: item.user.avatarUrl,
+                              name: item.user.name,
+                              size: avatarSize,
+                              borderColor: color,
+                              borderWidth: isGold ? 2.5 : 1.5,
+                            ),
+                            Positioned(
+                              bottom: -6,
+                              right: -2,
+                              child: Container(
+                                width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  shape: BoxShape.circle,
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  '${item.rank + 1}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Name
+                        Text(
+                          item.user.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1A1A2E),
+                            fontFamily: 'DMMono',
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+
+                        // Points
+                        Text(
+                          '${_fmt(pts)} pts',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: color,
+                            fontFamily: 'DMMono',
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+
+                        // Accuracy
+                        Text(
+                          '$acc%',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1D9E75),
+                            fontFamily: 'DMMono',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Step block
+                        Container(
+                          height: stepH,
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.12),
+                            border: Border(
+                              top: BorderSide(color: color, width: 2),
+                              left: BorderSide(
+                                  color: color.withOpacity(0.3), width: 1),
+                              right: BorderSide(
+                                  color: color.withOpacity(0.3), width: 1),
+                            ),
+                          ),
+                          alignment: Alignment.topCenter,
+                          padding: const EdgeInsets.only(top: 8),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PodiumItem {
+  final RankingUser user;
+  final int rank;
+  const _PodiumItem({required this.user, required this.rank});
+}
+
+String _fmt(int n) {
+  if (n >= 1000) {
+    final k = n ~/ 1000;
+    final r = n % 1000;
+    return '$k.${r.toString().padLeft(3, '0')}';
+  }
+  return '$n';
+}
