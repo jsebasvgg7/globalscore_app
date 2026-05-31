@@ -222,18 +222,11 @@ class _HofCarouselState extends State<HofCarousel>
                         VerticalDivider(
                             width: 0.5,
                             color: Colors.black.withOpacity(0.07)),
-                        _statCell(
-                          value: _fmt(champ.championshipPoints),
-                          label: 'Max pts',
-                        ),
+                        _statCell(value: '—', label: 'Max pts'),
                         VerticalDivider(
                             width: 0.5,
                             color: Colors.black.withOpacity(0.07)),
-                        _statCell(
-                          value: champ.championshipMonthYear ?? '—',
-                          label: 'Título',
-                          small: true,
-                        ),
+                        _statCell(value: '—', label: 'Título', small: true),
                       ],
                     ),
                   ),
@@ -385,7 +378,7 @@ class _HofCarouselState extends State<HofCarousel>
                             ),
                           ),
                           Text(
-                            _fmt(u.championshipPoints),
+                            '${u.monthlyChampionships} 👑',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w800,

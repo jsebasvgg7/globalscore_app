@@ -10,6 +10,8 @@ class RankingUser {
   final int monthlyPoints;
   final int monthlyCorrect;
   final int monthlyPredictions;
+  final int level;
+  final int currentStreak;
 
   const RankingUser({
     required this.id,
@@ -21,11 +23,13 @@ class RankingUser {
     required this.monthlyPoints,
     required this.monthlyCorrect,
     required this.monthlyPredictions,
+    required this.level,
+    required this.currentStreak,
   });
 
   factory RankingUser.fromMap(Map<String, dynamic> m) => RankingUser(
         id: m['id'] as String,
-        name: (m['name'] ?? m['username'] ?? 'Usuario') as String,
+        name: (m['name'] ?? 'Usuario') as String,
         avatarUrl: m['avatar_url'] as String?,
         points: (m['points'] ?? 0) as int,
         correct: (m['correct'] ?? 0) as int,
@@ -33,6 +37,8 @@ class RankingUser {
         monthlyPoints: (m['monthly_points'] ?? 0) as int,
         monthlyCorrect: (m['monthly_correct'] ?? 0) as int,
         monthlyPredictions: (m['monthly_predictions'] ?? 0) as int,
+        level: (m['level'] ?? 1) as int,
+        currentStreak: (m['current_streak'] ?? 0) as int,
       );
 
   int rankPoints(String type) =>
@@ -54,25 +60,19 @@ class HofChampion {
   final String name;
   final String? avatarUrl;
   final int monthlyChampionships;
-  final int championshipPoints;
-  final String? championshipMonthYear;
 
   const HofChampion({
     required this.id,
     required this.name,
     this.avatarUrl,
     required this.monthlyChampionships,
-    required this.championshipPoints,
-    this.championshipMonthYear,
   });
 
   factory HofChampion.fromMap(Map<String, dynamic> m) => HofChampion(
         id: m['id'] as String,
-        name: (m['name'] ?? m['username'] ?? 'Usuario') as String,
+        name: (m['name'] ?? 'Usuario') as String,
         avatarUrl: m['avatar_url'] as String?,
         monthlyChampionships: (m['monthly_championships'] ?? 0) as int,
-        championshipPoints: (m['championship_points'] ?? 0) as int,
-        championshipMonthYear: m['championship_month_year'] as String?,
       );
 }
 
@@ -81,18 +81,19 @@ class RankingService {
 
   Future<List<RankingUser>> fetchUsers() async {
     final res = await _sb
-        .from('profiles')
+        .from('users')
         .select(
-            'id, name, username, avatar_url, points, correct, predictions, monthly_points, monthly_correct, monthly_predictions')
+            'id, name, avatar_url, points, correct, predictions, '
+            'monthly_points, monthly_correct, monthly_predictions, '
+            'level, current_streak')
         .order('points', ascending: false);
     return (res as List).map((m) => RankingUser.fromMap(m)).toList();
   }
 
   Future<List<HofChampion>> fetchChampions() async {
     final res = await _sb
-        .from('profiles')
-        .select(
-            'id, name, username, avatar_url, monthly_championships, championship_points, championship_month_year')
+        .from('users')
+        .select('id, name, avatar_url, monthly_championships')
         .gt('monthly_championships', 0)
         .order('monthly_championships', ascending: false);
     return (res as List).map((m) => HofChampion.fromMap(m)).toList();
