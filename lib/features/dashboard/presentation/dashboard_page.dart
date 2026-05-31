@@ -980,16 +980,17 @@ class _MoreCard extends StatelessWidget {
 class _EmptyMatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
-    width: 138,
+    width: 160,
+    height: 55,        // ← fija el alto
     decoration: BoxDecoration(
       color: _card,
       border: const Border(top: BorderSide(color: _accent, width: 2.5), left: BorderSide(color: _borderH, width: 1.5), right: BorderSide(color: _borderH, width: 1.5), bottom: BorderSide(color: _borderH, width: 1.5)),
       boxShadow: const [_shadow],
     ),
     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Text('00', style: _mono(color: _borderH, size: 28, weight: FontWeight.w700, letterSpacing: -1)),
-      Container(width: 22, height: 1.5, color: _accent, margin: const EdgeInsets.symmetric(vertical: 5)),
-      Text('SIN\nPARTIDOS\nPEND.', textAlign: TextAlign.center, style: _mono(color: _muted, size: 6, weight: FontWeight.w700, letterSpacing: 1.4)),
+      Text('00', style: _mono(color: _borderH, size: 48, weight: FontWeight.w700, letterSpacing: -1)),
+      Container(width: 20, height: 1.5, color: _accent, margin: const EdgeInsets.symmetric(vertical: 5)),
+      Text('SIN\nPARTIDOS\nPEND.', textAlign: TextAlign.center, style: _mono(color: _muted, size: 10, weight: FontWeight.w700, letterSpacing: 1.4)),
     ]),
   );
 }
