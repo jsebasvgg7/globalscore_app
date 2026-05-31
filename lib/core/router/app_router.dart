@@ -1,4 +1,5 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter/material.dart';  // ← AGREGA este import (para Scaffold/Text)
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -24,24 +25,26 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggedIn = session != null;
       final isAuthRoute = state.matchedLocation == '/login' ||
           state.matchedLocation == '/register';
-
       if (!isLoggedIn && !isAuthRoute) return '/login';
       if (isLoggedIn && isAuthRoute) return '/dashboard';
       return null;
     },
     routes: [
-      GoRoute(path: '/login', builder: (c, s) => const LoginPage()),
+      GoRoute(path: '/login',    builder: (c, s) => const LoginPage()),
       GoRoute(path: '/register', builder: (c, s) => const RegisterPage()),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             ScaffoldWithNavBar(navigationShell: navigationShell),
         branches: [
+          // 0 — Dashboard (trofeo central)
           StatefulShellBranch(routes: [
             GoRoute(path: '/dashboard', builder: (c, s) => const DashboardPage()),
           ]),
+          // 1 — Ranking
           StatefulShellBranch(routes: [
             GoRoute(path: '/ranking', builder: (c, s) => const RankingPage()),
           ]),
+          // 2 — Albums / Historia
           StatefulShellBranch(routes: [
             GoRoute(
               path: '/albums',
@@ -55,6 +58,16 @@ final routerProvider = Provider<GoRouter>((ref) {
               ],
             ),
           ]),
+          // 3 — Stats  ← NUEVO
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: '/stats',
+              builder: (c, s) => const Scaffold(
+                body: Center(child: Text('Stats — próximamente')),
+              ),
+            ),
+          ]),
+          // 4 — Perfil
           StatefulShellBranch(routes: [
             GoRoute(
               path: '/profile',

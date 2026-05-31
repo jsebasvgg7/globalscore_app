@@ -2,9 +2,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/router/app_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  GoogleFonts.config.allowRuntimeFetching = true;
 
   await Supabase.initialize(
     url: 'https://auquyjigjceqzwpjbbff.supabase.co',
@@ -26,9 +29,10 @@ class GlobalScoreApp extends ConsumerWidget {
       routerConfig: router,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00E5FF),
-          brightness: Brightness.dark,
+          seedColor: const Color(0xFF5B4FD8),
+          brightness: Brightness.light,
         ),
+        textTheme: GoogleFonts.dmMonoTextTheme(),
         useMaterial3: true,
       ),
     );

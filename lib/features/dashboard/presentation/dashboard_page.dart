@@ -188,11 +188,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
                   children: [
                     // ── 0: Progress bar ──────────────────────
                     _enter(0, _ProgressBar(
-                      saved: savedCount,
-                      total: totalCount,
-                      animation: _barAnim,
-                      target: barPct,
-                    )),
+                    saved: savedCount,
+                    total: totalCount,
+                    target: barPct,
+                  )),
 
                     // ── 1: Next match banner ─────────────────
                     _enter(1, GestureDetector(
@@ -232,9 +231,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
                           padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
                           children: [
                             if (_activeTab == 'matches') ...[
-                              if (previewMatches.isEmpty)
-                                _EmptyMatchCard()
-                              else ...[
+                              if (previewMatches.isEmpty) ...[
+                                _EmptyMatchCard(),                                    // ← tarjeta vacía
+                                const SizedBox(width: 10),
+                                _MoreCard(onTap: () => showMatchSubPage(context, ref)), // ← VER TODO siempre
+                              ] else ...[
                                 ...previewMatches.asMap().entries.map((e) => Padding(
                                   padding: const EdgeInsets.only(right: 10),
                                   child: _AnimatedCard(
@@ -431,13 +432,17 @@ class _ErrorPanel extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────
 //  PROGRESS BAR — fill animado
 // ─────────────────────────────────────────────────────────────
-class _ProgressBar extends StatelessWidget {
+class _ProgressBar extends StatefulWidget {
   final int saved;
   final int total;
-  final Animation<double> animation;
   final double target;
-  const _ProgressBar({required this.saved, required this.total, required this.animation, required this.target});
+  const _ProgressBar({required this.saved, required this.total, required this.target});
 
+  @override
+  State<_ProgressBar> createState() => _ProgressBarState();
+}
+
+class _ProgressBarState extends State<_ProgressBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -457,37 +462,44 @@ class _ProgressBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 border: Border.all(color: _accent, width: 1.5),
-                color: _accent.withValues(alpha: 0.08),
+                color: _card,
                 boxShadow: const [_shadowSm],
               ),
-              child: Text('[$saved/$total]', style: _mono(color: _accent, size: 11, weight: FontWeight.w700)),
+              child: Text('[${widget.saved}/${widget.total}]',
+                  style: _mono(color: _accent, size: 11, weight: FontWeight.w700)),
             ),
           ]),
           Container(
             width: 30, height: 30,
-            decoration: BoxDecoration(color: _surface, border: Border.all(color: _borderH, width: 1.5), boxShadow: const [_shadowSm]),
+            decoration: BoxDecoration(
+                color: _surface,
+                border: Border.all(color: _borderH, width: 1.5),
+                boxShadow: const [_shadowSm]),
             child: const Icon(Icons.book_outlined, color: _accent, size: 16),
           ),
         ]),
         const SizedBox(height: 10),
-        // Barra animada
-        AnimatedBuilder(
-          animation: animation,
-          builder: (_, __) => Container(
-            height: 4,
-            decoration: BoxDecoration(color: _bg, border: Border.all(color: _borderH, width: 1)),
-            child: FractionallySizedBox(
+        // Track siempre visible
+        Stack(children: [
+          // Fondo completo
+          Container(height: 6, color: _border),
+          // Fill animado
+          TweenAnimationBuilder<double>(
+            key: ValueKey(widget.target),
+            tween: Tween(begin: 0, end: widget.target.clamp(0.0, 1.0)),
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.easeOutCubic,
+            builder: (_, v, __) => FractionallySizedBox(
               alignment: Alignment.centerLeft,
-              widthFactor: (animation.value * target).clamp(0.0, 1.0),
-              child: Container(color: _accent),
+              widthFactor: v,
+              child: Container(height: 6, color: _accent),
             ),
           ),
-        ),
+        ]),
       ]),
     );
   }
 }
-
 // ─────────────────────────────────────────────────────────────
 //  NEXT MATCH BANNER
 // ─────────────────────────────────────────────────────────────
@@ -1146,7 +1158,7 @@ class _PodiumPanelState extends State<_PodiumPanel> with SingleTickerProviderSta
 }
 
 // ─────────────────────────────────────────────────────────────
-//  STATS PANEL — números con AnimatedSwitcher
+//  STATS PANEL — grid 2×2 como el original React
 // ─────────────────────────────────────────────────────────────
 class _StatsPanel extends StatelessWidget {
   final Map<String, dynamic>? user;
@@ -1161,71 +1173,114 @@ class _StatsPanel extends StatelessWidget {
     final accuracy    = predictions > 0 ? ((correct / predictions) * 100).round() : 0;
 
     return Container(
-      decoration: BoxDecoration(color: _card, border: Border.all(color: _borderH, width: 1.5), boxShadow: const [_shadowLg]),
+      decoration: BoxDecoration(
+        color: _card,
+        border: Border.all(color: _borderH, width: 1.5),
+        boxShadow: const [_shadowLg],
+      ),
       child: Column(children: [
-        _StatRow(value: '$points', unit: 'pts', label: 'Puntos', accent: true),
+        IntrinsicHeight(
+          child: Row(children: [
+            Expanded(child: _StatCell(value: '$points', unit: 'pts', label: 'PUNTOS', accent: true)),
+            Container(width: 1, color: _border),
+            Expanded(child: _StatCell(value: '$correct', label: 'ACIERTOS')),
+          ]),
+        ),
         Container(height: 1, color: _border),
-        _StatRow(value: '$correct', label: 'Aciertos'),
-        Container(height: 1, color: _border),
-        _StatRowBar(value: '$accuracy', unit: '%', label: 'Precisión', pct: accuracy / 100),
-        Container(height: 1, color: _border),
-        _StatRow(value: '$predictions', label: 'Predicciones'),
+        IntrinsicHeight(
+          child: Row(children: [
+            Expanded(child: _StatCellBar(value: '$accuracy', unit: '%', label: 'PRECISIÓN', pct: accuracy / 100)),
+            Container(width: 1, color: _border),
+            Expanded(child: _StatCell(value: '$predictions', label: 'PREDICCIONES')),
+          ]),
+        ),
       ]),
     );
   }
 }
 
-class _StatRow extends StatelessWidget {
-  final String value, label; final String? unit; final bool accent;
-  const _StatRow({required this.value, required this.label, this.unit, this.accent = false});
+class _StatCell extends StatelessWidget {
+  final String value, label;
+  final String? unit;
+  final bool accent;
+  const _StatCell({required this.value, required this.label, this.unit, this.accent = false});
+
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(14, 13, 14, 11),
-    child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-      Text(label, style: _mono(color: _muted, size: 7, weight: FontWeight.w700, letterSpacing: 1.6)),
-      Row(children: [
-        AnimatedSwitcher(
-          duration: _tSlow,
-          transitionBuilder: (child, anim) => FadeTransition(opacity: anim, child: SlideTransition(
-            position: Tween(begin: const Offset(0, 0.3), end: Offset.zero).animate(anim), child: child)),
-          child: Text(value, key: ValueKey(value), style: _mono(color: accent ? _accent : _text, size: 26, weight: FontWeight.w700, letterSpacing: -1.5)),
+    padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            AnimatedSwitcher(
+              duration: _tSlow,
+              transitionBuilder: (child, anim) => FadeTransition(
+                opacity: anim,
+                child: SlideTransition(
+                  position: Tween(begin: const Offset(0, 0.3), end: Offset.zero).animate(anim),
+                  child: child,
+                ),
+              ),
+              child: Text(value, key: ValueKey(value),
+                style: _mono(color: accent ? _accent : _text, size: 32, weight: FontWeight.w700, letterSpacing: -1.5)),
+            ),
+            if (unit != null) Text(unit!, style: _mono(color: _muted, size: 9)),
+          ],
         ),
-        if (unit != null) Text(unit!, style: _mono(color: _muted, size: 8)),
-      ]),
-    ]),
+        const SizedBox(height: 4),
+        Text(label, style: _mono(color: _muted, size: 7, weight: FontWeight.w700, letterSpacing: 1.6)),
+      ],
+    ),
   );
 }
 
-class _StatRowBar extends StatelessWidget {
-  final String value, label; final String? unit; final double pct;
-  const _StatRowBar({required this.value, required this.label, this.unit, required this.pct});
+class _StatCellBar extends StatelessWidget {
+  final String value, label;
+  final String? unit;
+  final double pct;
+  const _StatCellBar({required this.value, required this.label, this.unit, required this.pct});
+
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(14, 13, 14, 11),
-    child: Column(children: [
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Text(label, style: _mono(color: _muted, size: 7, weight: FontWeight.w700, letterSpacing: 1.6)),
-        Row(children: [
-          AnimatedSwitcher(
-            duration: _tSlow,
-            transitionBuilder: (child, anim) => FadeTransition(opacity: anim, child: child),
-            child: Text(value, key: ValueKey(value), style: _mono(color: _green, size: 26, weight: FontWeight.w700, letterSpacing: -1.5)),
-          ),
-          if (unit != null) Text(unit!, style: _mono(color: _muted, size: 8)),
-        ]),
-      ]),
-      const SizedBox(height: 6),
-      TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0, end: pct.clamp(0.0, 1.0)),
-        duration: const Duration(milliseconds: 900),
-        curve: Curves.easeOutCubic,
-        builder: (_, v, __) => Container(
-          height: 3,
-          decoration: BoxDecoration(color: _bg, border: Border.all(color: _borderH, width: 1)),
-          child: FractionallySizedBox(alignment: Alignment.centerLeft, widthFactor: v, child: Container(color: _accent)),
+    padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            AnimatedSwitcher(
+              duration: _tSlow,
+              transitionBuilder: (child, anim) => FadeTransition(opacity: anim, child: child),
+              child: Text(value, key: ValueKey(value),
+                style: _mono(color: _green, size: 32, weight: FontWeight.w700, letterSpacing: -1.5)),
+            ),
+            if (unit != null) Text(unit!, style: _mono(color: _muted, size: 9)),
+          ],
         ),
-      ),
-    ]),
+        const SizedBox(height: 4),
+        Text(label, style: _mono(color: _muted, size: 7, weight: FontWeight.w700, letterSpacing: 1.6)),
+        const SizedBox(height: 6),
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: pct.clamp(0.0, 1.0)),
+          duration: const Duration(milliseconds: 900),
+          curve: Curves.easeOutCubic,
+          builder: (_, v, __) => Container(
+            height: 3,
+            decoration: BoxDecoration(color: _bg, border: Border.all(color: _borderH, width: 1)),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: v,
+              child: Container(color: _accent),
+            ),
+          ),
+        ),
+      ],
+    ),
   );
 }
 
