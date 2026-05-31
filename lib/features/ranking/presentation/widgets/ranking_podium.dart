@@ -29,12 +29,16 @@ class RankingPodium extends StatelessWidget {
       if (top3.length > 2) _PodiumItem(user: top3[2], rank: 2),
     ];
 
-    final colors = [_kGold, _kSilver, _kBronze];
-    final labels = ['ORO', 'PLATA', 'BRONCE'];
+    const colors = [_kGold, _kSilver, _kBronze];
+    const labels = ['ORO', 'PLATA', 'BRONCE'];
+    // Alturas del bloque base (escalón): oro=80, plata=52, bronce=36
+    const stepHeights = [80.0, 52.0, 36.0];
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
+      color: _kBg,
+      padding: const EdgeInsets.only(top: 20, bottom: 0),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           // ── Crown + title ──
           Row(
@@ -45,8 +49,7 @@ class RankingPodium extends StatelessWidget {
                   height: 0.5,
                   color: Colors.black.withOpacity(0.12)),
               const SizedBox(width: 8),
-              const Icon(Icons.emoji_events_rounded,
-                  size: 14, color: _kGold),
+              const Icon(Icons.emoji_events_rounded, size: 14, color: _kGold),
               const SizedBox(width: 6),
               const Text(
                 'PODIO',
@@ -65,11 +68,10 @@ class RankingPodium extends StatelessWidget {
                   color: Colors.black.withOpacity(0.12)),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
-          // ── Podium stage ──
-          SizedBox(
-            height: 200,
+          // ── Podio stage — Row alineado al bottom ──
+          IntrinsicHeight(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -77,22 +79,17 @@ class RankingPodium extends StatelessWidget {
                 final color = colors[item.rank];
                 final label = labels[item.rank];
                 final isGold = item.rank == 0;
+                final stepH = stepHeights[item.rank];
                 final pts = item.user.rankPoints(rankingType);
                 final acc = item.user.accuracy(rankingType);
-
-                // Heights: gold=200, silver=160, bronze=140
-                final stepH = isGold
-                    ? 90.0
-                    : item.rank == 1
-                        ? 60.0
-                        : 44.0;
-                final avatarSize = isGold ? 68.0 : 52.0;
+                final avatarSize = isGold ? 66.0 : 50.0;
 
                 return GestureDetector(
                   onTap: () => onSelectUser?.call(item.user.id),
                   child: SizedBox(
-                    width: 110,
+                    width: 112,
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         // Medal label
@@ -142,13 +139,14 @@ class RankingPodium extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 12),
 
                         // Name
                         Text(
                           item.user.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -162,7 +160,7 @@ class RankingPodium extends StatelessWidget {
                         Text(
                           '${_fmt(pts)} pts',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: isGold ? 14 : 12,
                             fontWeight: FontWeight.w800,
                             color: color,
                             fontFamily: 'DMMono',
@@ -182,21 +180,19 @@ class RankingPodium extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
 
-                        // Step block
+                        // ── Step block — altura fija, NO desborda ──
                         Container(
                           height: stepH,
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.12),
+                            color: color.withOpacity(0.10),
                             border: Border(
                               top: BorderSide(color: color, width: 2),
                               left: BorderSide(
-                                  color: color.withOpacity(0.3), width: 1),
+                                  color: color.withOpacity(0.25), width: 1),
                               right: BorderSide(
-                                  color: color.withOpacity(0.3), width: 1),
+                                  color: color.withOpacity(0.25), width: 1),
                             ),
                           ),
-                          alignment: Alignment.topCenter,
-                          padding: const EdgeInsets.only(top: 8),
                         ),
                       ],
                     ),
@@ -210,6 +206,9 @@ class RankingPodium extends StatelessWidget {
     );
   }
 }
+
+// ignore: constant_identifier_names
+const _kBg = Color(0xFFF0EDE8);
 
 class _PodiumItem {
   final RankingUser user;

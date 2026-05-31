@@ -21,85 +21,42 @@ class RankingPage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: _kBg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── Header ──────────────────────────────────────────
-            _Header(),
-
-            // ── Tabs ────────────────────────────────────────────
-            _TabBar(
-              activeTab: tab,
-              onTab: (t) => ref.read(rankingTabProvider.notifier).setTab(t),
-            ),
-
-            // ── Content ─────────────────────────────────────────
-            Expanded(
-              child: usersAsync.when(
-                loading: () => const Center(
-                  child: CircularProgressIndicator(color: _kAccent),
-                ),
-                error: (e, _) => Center(
-                  child: Text(
-                    'Error cargando ranking\n$e',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                        color: Color(0xFF888880), fontFamily: 'DMMono'),
-                  ),
-                ),
-                data: (users) {
-                  final sorted = [...users]
-                    ..sort((a, b) =>
-                        b.rankPoints(tab).compareTo(a.rankPoints(tab)));
-
-                  return championsAsync.when(
-                    loading: () => const SizedBox.shrink(),
-                    error: (_, __) => const SizedBox.shrink(),
-                    data: (champions) => _RankingContent(
-                      tab: tab,
-                      users: users,
-                      sorted: sorted,
-                      champions: champions,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HEADER
-// ─────────────────────────────────────────────────────────────────────────────
-class _Header extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      decoration: BoxDecoration(
-        color: _kBg,
-        border: Border(
-          bottom: BorderSide(color: Colors.black.withOpacity(0.08), width: 0.5),
-        ),
-      ),
-      child: Row(
+      body: Column(
         children: [
-          const Text(
-            'Ranking',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF1A1A2E),
-              fontFamily: 'DMMono',
-              letterSpacing: -0.5,
+          _TabBar(
+            activeTab: tab,
+            onTab: (t) => ref.read(rankingTabProvider.notifier).setTab(t),
+          ),
+          Expanded(
+            child: usersAsync.when(
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: _kAccent),
+              ),
+              error: (e, _) => Center(
+                child: Text(
+                  'Error cargando ranking\n$e',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      color: Color(0xFF888880), fontFamily: 'DMMono'),
+                ),
+              ),
+              data: (users) {
+                final sorted = [...users]
+                  ..sort((a, b) =>
+                      b.rankPoints(tab).compareTo(a.rankPoints(tab)));
+                return championsAsync.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                  data: (champions) => _RankingContent(
+                    tab: tab,
+                    users: users,
+                    sorted: sorted,
+                    champions: champions,
+                  ),
+                );
+              },
             ),
           ),
-          const Spacer(),
-          const Icon(Icons.emoji_events_rounded, color: Color(0xFFC9A227), size: 22),
         ],
       ),
     );
@@ -107,7 +64,7 @@ class _Header extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TABS
+// TABS — estilo fiel al diseño original
 // ─────────────────────────────────────────────────────────────────────────────
 class _TabBar extends StatelessWidget {
   final String activeTab;
@@ -116,31 +73,33 @@ class _TabBar extends StatelessWidget {
   const _TabBar({required this.activeTab, required this.onTab});
 
   static const _tabs = [
-    ('global', Icons.public_rounded, 'GLOBAL'),
-    ('monthly', Icons.calendar_month_rounded, 'MENSUAL'),
-    ('halloffame', Icons.workspace_premium_rounded, 'S. FAMA'),
+    ('global',     Icons.public_rounded,             'GLOBAL'),
+    ('monthly',    Icons.calendar_month_rounded,     'MENSUAL'),
+    ('halloffame', Icons.workspace_premium_rounded,  'S. FAMA'),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 48,
-      decoration: BoxDecoration(
+      height: 54,
+      decoration: const BoxDecoration(
         color: _kBg,
         border: Border(
-          bottom: BorderSide(color: Colors.black.withOpacity(0.08), width: 0.5),
+          bottom: BorderSide(color: Color(0x14000000), width: 1),
         ),
       ),
       child: Row(
         children: _tabs.map((t) {
           final (key, icon, label) = t;
           final isActive = activeTab == key;
+
           return Expanded(
             child: GestureDetector(
               onTap: () => onTab(key),
               behavior: HitTestBehavior.opaque,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
@@ -150,11 +109,12 @@ class _TabBar extends StatelessWidget {
                   ),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
                       icon,
-                      size: 13,
+                      size: 12,
                       color: isActive
                           ? _kAccent
                           : const Color(0xFF888880),
@@ -165,7 +125,7 @@ class _TabBar extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
+                        letterSpacing: 0.6,
                         color: isActive
                             ? _kAccent
                             : const Color(0xFF888880),
@@ -204,7 +164,6 @@ class _RankingContent extends ConsumerWidget {
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
       slivers: [
-        // ── Stats row ──
         SliverToBoxAdapter(
           child: RankingStatsRow(
             rankingType: tab,
@@ -212,8 +171,6 @@ class _RankingContent extends ConsumerWidget {
             champions: champions,
           ),
         ),
-
-        // ── Hall of Fame ──
         if (tab == 'halloffame') ...[
           SliverToBoxAdapter(
             child: Padding(
@@ -227,8 +184,6 @@ class _RankingContent extends ConsumerWidget {
             ),
           ),
         ],
-
-        // ── Podio ──
         if (tab != 'halloffame' && sorted.isNotEmpty) ...[
           SliverToBoxAdapter(
             child: RankingPodium(
@@ -237,8 +192,6 @@ class _RankingContent extends ConsumerWidget {
             ),
           ),
         ],
-
-        // ── Tabla header ──
         if (tab != 'halloffame') ...[
           SliverToBoxAdapter(
             child: Container(
@@ -280,8 +233,6 @@ class _RankingContent extends ConsumerWidget {
               ),
             ),
           ),
-
-          // ── Rows ──
           SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, index) {
@@ -289,15 +240,13 @@ class _RankingContent extends ConsumerWidget {
                 return RankingTableRow(
                   user: user,
                   pos: index + 1,
-                  isMe: false, // TODO: compare with current user id
+                  isMe: false,
                   rankingType: tab,
                 );
               },
               childCount: sorted.length,
             ),
           ),
-
-          // Bottom padding
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
         ],
       ],
@@ -306,10 +255,10 @@ class _RankingContent extends ConsumerWidget {
 
   String _currentMonthLabel() {
     const months = [
-      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+      'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN',
+      'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'
     ];
     final now = DateTime.now();
-    return '${months[now.month - 1].toUpperCase()} ${now.year}';
+    return '${months[now.month - 1]} ${now.year}';
   }
 }
