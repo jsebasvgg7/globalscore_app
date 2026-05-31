@@ -11,6 +11,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+GLOBALSCORE_FLUTTER_MIGRATION_PROMPT.md
 
 # IntelliJ related
 *.iml

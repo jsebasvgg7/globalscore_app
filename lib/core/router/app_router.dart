@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';  // ← AGREGA este import (para Scaffold/Text)
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -7,6 +7,7 @@ import '../../features/auth/presentation/login_page.dart';
 import '../../features/auth/presentation/register_page.dart';
 import '../../features/dashboard/presentation/dashboard_page.dart';
 import '../../features/ranking/presentation/ranking_page.dart';
+import '../../features/stats/presentation/stats_page.dart';
 import '../../features/albums/presentation/albums_page.dart';
 import '../../features/albums/presentation/album_detail_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
@@ -59,14 +60,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ]),
           // 3 — Stats  ← NUEVO
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/stats',
-              builder: (c, s) => const Scaffold(
-                body: Center(child: Text('Stats — próximamente')),
-              ),
-            ),
-          ]),
+         StatefulShellBranch(routes: [
+          GoRoute(
+            path: '/stats',
+            builder: (c, s) => const StatsPage(),
+          ),
+        ]),
           // 4 — Perfil
           StatefulShellBranch(routes: [
             GoRoute(
