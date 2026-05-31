@@ -3,6 +3,45 @@
 class DashboardService {
   static final _db = Supabase.instance.client;
 
+  // ── Logos desde league-logos bucket (nombres reales en Supabase) ──
+  static const _leagueLogoMap = {
+    'Champions League':        'https://auquyjigjceqzwpjbbff.supabase.co/storage/v1/object/public/league-logos/champions.png',
+    'Champions League Final':  'https://auquyjigjceqzwpjbbff.supabase.co/storage/v1/object/public/league-logos/champions.png',
+    'UEFA Champions League':   'https://auquyjigjceqzwpjbbff.supabase.co/storage/v1/object/public/league-logos/champions.png',
+    'Europa League':           'https://auquyjigjceqzwpjbbff.supabase.co/storage/v1/object/public/league-logos/europa.png',
+    'Conference League':       'https://auquyjigjceqzwpjbbff.supabase.co/storage/v1/object/public/league-logos/conference.png',
+    'La Liga':                 'https://auquyjigjceqzwpjbbff.supabase.co/storage/v1/object/public/league-logos/espana.png',
+    'Copa del Rey':            'https://auquyjigjceqzwpjbbff.supabase.co/storage/v1/object/public/league-logos/espana.png',
+    'Premier League':          'https://auquyjigjceqzwpjbbff.supabase.co/storage/v1/object/public/league-logos/inglaterra.png',
+    'FA Cup':                  'https://auquyjigjceqzwpjbbff.supabase.co/storage/v1/object/public/league-logos/inglaterra.png',
+    'Carabao Cup':             'https://auquyjigjceqzwpjbbff.supabase.co/storage/v1/object/public/league-logos/inglaterra.png',
+    'EFL Cup':                 'https://auquyjigjceqzwpjbbff.supabase.co/storage/v1/object/public/league-logos/inglaterra.png',
+    'Serie A':                 'https://auquyjigjceqzwpjbbff.supabase.co/storage/v1/object/public/league-logos/italia.png',
+    'Coppa Italia':            'https://auquyjigjceqzwpjbbff.supabase.co/storage/v1/object/public/league-logos/italia.png',
+    'Bundesliga':              'https://auquyjigjceqzwpjbbff.supabase.co/storage/v1/object/public/league-logos/alemania.png',
+    'DFB Pokal':               'https://auquyjigjceqzwpjbbff.supabase.co/storage/v1/object/public/league-logos/alemania.png',
+    'Ligue 1':                 'https://auquyjigjceqzwpjbbff.supabase.co/storage/v1/object/public/league-logos/francia.png',
+    'Coupe de France':         'https://auquyjigjceqzwpjbbff.supabase.co/storage/v1/object/public/league-logos/francia.png',
+    'FIFA':                    'https://auquyjigjceqzwpjbbff.supabase.co/storage/v1/object/public/league-logos/FIFA.png',
+  };
+
+  static String? _resolveLeagueLogo(String? leagueName, String? storedUrl) {
+    if (leagueName == null) return storedUrl;
+    // 1. Buscar por nombre exacto
+    final mapped = _leagueLogoMap[leagueName];
+    if (mapped != null) return mapped;
+    // 2. Buscar por nombre parcial (ej: "Champions League Final" → "Champions League")
+    for (final entry in _leagueLogoMap.entries) {
+      if (leagueName.contains(entry.key) || entry.key.contains(leagueName)) {
+        return entry.value;
+      }
+    }
+    // 3. Si la URL almacenada NO es de fotmob, usarla (Supabase Storage funciona)
+    if (storedUrl != null && !storedUrl.contains('fotmob.com')) return storedUrl;
+    // 4. fotmob da 403 — null para emoji fallback
+    return null;
+  }
+
   static Future<Map<String, dynamic>?> getCurrentUser() async {
     final authId = _db.auth.currentUser?.id;
     if (authId == null) return null;
@@ -21,7 +60,18 @@ class DashboardService {
       final map = Map<String, dynamic>.from(m as Map);
       final preds = (map['predictions'] as List?) ?? [];
       final myPred = preds.cast<Map>().where((p) => p['user_id'] == userId).firstOrNull;
-      return <String, dynamic>{...map, 'my_prediction': myPred};
+
+      // Resolver logo de liga: fotmob da 403, usar mapa o Supabase Storage
+      final resolvedLogo = _resolveLeagueLogo(
+        map['league'] as String?,
+        map['league_logo_url'] as String?,
+      );
+
+      return <String, dynamic>{
+        ...map,
+        'my_prediction': myPred,
+        'league_logo_url': resolvedLogo,
+      };
     }).toList();
   }
 
