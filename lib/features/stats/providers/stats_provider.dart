@@ -13,8 +13,19 @@ class StatsTimeRangeNotifier extends Notifier<String> {
 final statsTimeRangeProvider =
     NotifierProvider<StatsTimeRangeNotifier, String>(StatsTimeRangeNotifier.new);
 
-final statsProvider = FutureProvider.autoDispose<StatsModel>((ref) async {
+final statsProvider = FutureProvider<StatsModel>((ref) async {
   final timeRange = ref.watch(statsTimeRangeProvider);
-  final userId = Supabase.instance.client.auth.currentUser!.id;
+
+  // auth.currentUser.id = auth_id, NO es el users.id que usan las FK
+  final authId = Supabase.instance.client.auth.currentUser!.id;
+
+  final userData = await Supabase.instance.client
+      .from('users')
+      .select('id')
+      .eq('auth_id', authId)
+      .single();
+
+  final userId = userData['id'] as String;
+
   return StatsService().fetchStats(userId, timeRange);
 });
