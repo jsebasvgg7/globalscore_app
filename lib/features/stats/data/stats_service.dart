@@ -13,83 +13,76 @@ class StatsService {
       from = DateTime(now.year, now.month, 1);
     }
 
-    // ── predictions con join a matches (league es string, no FK)
     var query = _db
         .from('predictions')
-        .select('home_score, away_score, created_at, matches(id, league, result_home, result_away, status, date)')
-        .eq('user_id', userId);
+        .select('points_earned, result_type, created_at, match_id')
+        .eq('user_id', userId)
+        .not('result_type', 'is', null); // solo finalizadas
     if (from != null) query = query.gte('created_at', from.toIso8601String());
 
-    // ── league_predictions
+    var pendingQuery = _db
+        .from('predictions')
+        .select('id')
+        .eq('user_id', userId)
+        .filter('result_type', 'is', 'null');
+    if (from != null) pendingQuery = pendingQuery.gte('created_at', from.toIso8601String());
+
     var leagueQuery = _db
         .from('league_predictions')
         .select('points_earned')
         .eq('user_id', userId);
     if (from != null) leagueQuery = leagueQuery.gte('created_at', from.toIso8601String());
 
-    // ── award_predictions
     var awardQuery = _db
         .from('award_predictions')
         .select('points_earned')
         .eq('user_id', userId);
     if (from != null) awardQuery = awardQuery.gte('created_at', from.toIso8601String());
 
-    final results = await Future.wait([query, leagueQuery, awardQuery]);
+    final results = await Future.wait<dynamic>([
+      query,
+      pendingQuery,
+      leagueQuery,
+      awardQuery,
+    ]);
     final rows = results[0] as List;
-    final leagueRows = results[1] as List;
-    final awardRows = results[2] as List;
+    final pendingRows = results[1] as List;
+    final leagueRows = results[2] as List;
+    final awardRows = results[3] as List;
 
-    return _compute(rows, leagueRows, awardRows);
+    return _compute(rows, pendingRows.length, leagueRows, awardRows);
   }
 
-  StatsModel _compute(List rows, List leagueRows, List awardRows) {
-    // Solo predicciones de partidos finalizados
-    final finished = rows.where((r) {
-      final status = r['matches']?['status'] as String?;
-      return status == 'finished' || status == 'finalized';
-    }).toList();
-
+  StatsModel _compute(List rows, int pending, List leagueRows, List awardRows) {
+    
     int exact = 0, correct = 0, wrong = 0, ptsMatches = 0;
     int currentStreak = 0, bestStreak = 0, tempStreak = 0;
-    final Map<String, Map<String, int>> leagueMap = {};
     final Map<int, Map<String, int>> dayMap = {};
 
-    // Ordenar por fecha desc para calcular racha igual que React
-    final sorted = [...finished];
+    // Ordenar por fecha desc para racha
+    final sorted = [...rows];
     sorted.sort((a, b) {
-      final da = DateTime.tryParse(a['matches']?['date'] ?? '') ?? DateTime(2000);
-      final db = DateTime.tryParse(b['matches']?['date'] ?? '') ?? DateTime(2000);
+      final da = DateTime.tryParse(a['created_at'] ?? '') ?? DateTime(2000);
+      final db = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime(2000);
       return db.compareTo(da);
     });
 
     for (int i = 0; i < sorted.length; i++) {
       final r = sorted[i];
-      final m = r['matches'] as Map?;
-      if (m == null) continue;
+      final type = r['result_type'] as String? ?? '';
+      final pts = (r['points_earned'] as num?)?.toInt() ?? 0;
 
-      final predHome = (r['home_score'] as num?)?.toInt() ?? -1;
-      final predAway = (r['away_score'] as num?)?.toInt() ?? -1;
-      final resHome = (m['result_home'] as num?)?.toInt() ?? -2;
-      final resAway = (m['result_away'] as num?)?.toInt() ?? -2;
-
-      final predDir = (predHome - predAway).sign;
-      final resDir = (resHome - resAway).sign;
-
-      final isExact = predHome == resHome && predAway == resAway;
-      final isCorrect = !isExact && predDir == resDir;
-
-      if (isExact) {
+      if (type == 'exact') {
         exact++;
-        ptsMatches += 5;
-      } else if (isCorrect) {
+      } else if (type == 'correct') {
         correct++;
-        ptsMatches += 3;
       } else {
         wrong++;
       }
+      ptsMatches += pts;
 
       // Racha
-      final ok = isExact || isCorrect;
+      final ok = type == 'exact' || type == 'correct';
       if (ok) {
         tempStreak++;
         if (i == 0) currentStreak = tempStreak;
@@ -99,16 +92,8 @@ class StatsService {
         tempStreak = 0;
       }
 
-      // Por liga (league es string directo)
-      final leagueName = (m['league'] as String?) ?? 'Sin liga';
-      leagueMap.putIfAbsent(leagueName, () => {'pts': 0, 'total': 0, 'correct': 0, 'exact': 0});
-      leagueMap[leagueName]!['pts'] = leagueMap[leagueName]!['pts']! + (isExact ? 5 : isCorrect ? 3 : 0);
-      leagueMap[leagueName]!['total'] = leagueMap[leagueName]!['total']! + 1;
-      if (isExact || isCorrect) leagueMap[leagueName]!['correct'] = leagueMap[leagueName]!['correct']! + 1;
-      if (isExact) leagueMap[leagueName]!['exact'] = leagueMap[leagueName]!['exact']! + 1;
-
       // Por día
-      final date = DateTime.tryParse(m['date'] ?? '');
+      final date = DateTime.tryParse(r['created_at'] ?? '');
       if (date != null) {
         final dow = date.weekday; // 1=Lun...7=Dom
         dayMap.putIfAbsent(dow, () => {'correct': 0, 'total': 0});
@@ -117,12 +102,10 @@ class StatsService {
       }
     }
 
-    final totalFinished = finished.length;
-    final pending = rows.length - totalFinished;
+    final totalFinished = rows.length;
     final accuracy = totalFinished > 0 ? (((exact + correct) / totalFinished) * 100).round() : 0;
     final exactAccuracy = totalFinished > 0 ? ((exact / totalFinished) * 100).round() : 0;
 
-    // Puntos de ligas y premios
     int ptsLeagues = 0;
     for (final r in leagueRows) {
       ptsLeagues += ((r['points_earned'] as num?)?.toInt() ?? 0);
@@ -132,25 +115,9 @@ class StatsService {
       ptsAwards += ((r['points_earned'] as num?)?.toInt() ?? 0);
     }
 
-    // League stats ordenadas por puntos, top 5
-    final leagueStats = leagueMap.entries.map((e) {
-      final total = e.value['total']!;
-      final acc = total > 0 ? ((e.value['correct']! / total) * 100).round() : 0;
-      return LeagueStat(
-        name: e.key,
-        points: e.value['pts']!,
-        accuracy: acc,
-        exact: e.value['exact']!,
-      );
-    }).toList()
-      ..sort((a, b) => b.points.compareTo(a.points));
-
-    // Day stats: React usa [Dom,Lun,...Sáb] con getDay() (0=Dom)
-    // Luego hace slice(1) + [0] → [Lun,Mar,Mié,Jue,Vie,Sáb,Dom]
-    // Flutter weekday: 1=Lun...7=Dom → mismo orden final
     const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
     final dayStats = List.generate(7, (i) {
-      final dow = i + 1; // 1=Lun...7=Dom
+      final dow = i + 1;
       final d = dayMap[dow] ?? {'correct': 0, 'total': 0};
       return DayStat(name: dayNames[i], correct: d['correct']!, total: d['total']!);
     });
@@ -171,7 +138,7 @@ class StatsService {
       awardPredictions: awardRows.length,
       currentStreak: currentStreak,
       bestStreak: bestStreak,
-      leagueStats: leagueStats.take(5).toList(),
+      leagueStats: [], // sin join a matches no tenemos liga por ahora
       dayStats: dayStats,
     );
   }
