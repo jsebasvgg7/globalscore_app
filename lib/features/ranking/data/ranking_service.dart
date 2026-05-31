@@ -60,20 +60,17 @@ class HofChampion {
   final String name;
   final String? avatarUrl;
   final int monthlyChampionships;
+  final int bestPoints;         // max pts de monthly_championship_history
+  final String? lastMonthYear;  // último mes ganado
 
   const HofChampion({
     required this.id,
     required this.name,
     this.avatarUrl,
     required this.monthlyChampionships,
+    required this.bestPoints,
+    this.lastMonthYear,
   });
-
-  factory HofChampion.fromMap(Map<String, dynamic> m) => HofChampion(
-        id: m['id'] as String,
-        name: (m['name'] ?? 'Usuario') as String,
-        avatarUrl: m['avatar_url'] as String?,
-        monthlyChampionships: (m['monthly_championships'] ?? 0) as int,
-      );
 }
 
 class RankingService {
@@ -91,11 +88,56 @@ class RankingService {
   }
 
   Future<List<HofChampion>> fetchChampions() async {
-    final res = await _sb
+    // 1. Traer usuarios con al menos 1 campeonato
+    final usersRes = await _sb
         .from('users')
         .select('id, name, avatar_url, monthly_championships')
         .gt('monthly_championships', 0)
         .order('monthly_championships', ascending: false);
-    return (res as List).map((m) => HofChampion.fromMap(m)).toList();
+
+    final users = usersRes as List;
+    if (users.isEmpty) return [];
+
+    final ids = users.map((u) => u['id'] as String).toList();
+
+    // 2. Traer historial de campeonatos de esos usuarios
+    final histRes = await _sb
+        .from('monthly_championship_history')
+        .select('user_id, month_year, points')
+        .inFilter('user_id', ids);
+
+    final history = histRes as List;
+
+    // 3. Por cada usuario calcular: max points y último mes
+    final Map<String, int> bestPts = {};
+    final Map<String, String> lastMonth = {};
+
+    for (final row in history) {
+      final uid = row['user_id'] as String;
+      final pts = (row['points'] ?? 0) as int;
+      final my = row['month_year'] as String? ?? '';
+
+      // max points
+      if (!bestPts.containsKey(uid) || pts > bestPts[uid]!) {
+        bestPts[uid] = pts;
+      }
+
+      // último mes (string YYYY-MM, el mayor lexicográficamente)
+      if (!lastMonth.containsKey(uid) || my.compareTo(lastMonth[uid]!) > 0) {
+        lastMonth[uid] = my;
+      }
+    }
+
+    return users.map((u) {
+      final uid = u['id'] as String;
+      return HofChampion(
+        id: uid,
+        name: (u['name'] ?? 'Usuario') as String,
+        avatarUrl: u['avatar_url'] as String?,
+        monthlyChampionships: (u['monthly_championships'] ?? 0) as int,
+        bestPoints: bestPts[uid] ?? 0,
+        lastMonthYear: lastMonth[uid],
+      );
+    }).toList();
   }
 }

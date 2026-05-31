@@ -1,8 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../data/ranking_service.dart';
 import 'rank_avatar.dart';
 
-const _kGold = Color(0xFFC9A227);
+// ── Tipografía ────────────────────────────────────────────────────────────
+TextStyle _mono({
+  Color color = const Color(0xFF1A1A2E),
+  double size = 12,
+  FontWeight weight = FontWeight.normal,
+  double letterSpacing = 0,
+}) =>
+    GoogleFonts.dmMono(
+        color: color,
+        fontSize: size,
+        fontWeight: weight,
+        letterSpacing: letterSpacing);
+
+const _kGold   = Color(0xFFC9A227);
 const _kSilver = Color(0xFF8A8A8A);
 const _kBronze = Color(0xFFA0652A);
 const _kAccent = Color(0xFF5B4FD8);
@@ -33,29 +47,26 @@ class RankingTableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pts = user.rankPoints(rankingType);
+    final pts     = user.rankPoints(rankingType);
     final correct = user.rankCorrect(rankingType);
-    final acc = user.accuracy(rankingType);
-    final isTop3 = pos <= 3;
+    final acc     = user.accuracy(rankingType);
+    final isTop3  = pos <= 3;
 
     return GestureDetector(
       onTap: () => onTap?.call(user.id),
       child: Container(
         decoration: BoxDecoration(
-          color: isMe
-              ? _kAccent.withOpacity(0.06)
-              : Colors.transparent,
+          color: isMe ? _kAccent.withOpacity(0.06) : Colors.transparent,
           border: Border(
             bottom: BorderSide(
-              color: Colors.black.withOpacity(0.06),
-              width: 0.5,
-            ),
+                color: Colors.black.withOpacity(0.06), width: 0.5),
             left: isTop3
                 ? BorderSide(color: _badgeColor, width: 3)
                 : BorderSide.none,
           ),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
         child: Row(
           children: [
             // ── Rank number ──
@@ -69,31 +80,28 @@ class RankingTableRow extends StatelessWidget {
                       alignment: Alignment.center,
                       child: Text(
                         '$pos',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'DMMono',
-                        ),
+                        style: _mono(
+                            color: Colors.white,
+                            size: 11,
+                            weight: FontWeight.w900),
                       ),
                     )
                   : Text(
                       '$pos',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black.withOpacity(0.25),
-                        fontFamily: 'DMMono',
-                      ),
+                      style: _mono(
+                          size: 14,
+                          weight: FontWeight.w800,
+                          color: Colors.black.withOpacity(0.25)),
                     ),
             ),
             const SizedBox(width: 10),
 
             // ── Avatar ──
-            RankAvatar(url: user.avatarUrl, name: user.name, size: 38),
+            RankAvatar(
+                url: user.avatarUrl, name: user.name, size: 38),
             const SizedBox(width: 10),
 
-            // ── Name + aciertos ──
+            // ── Nombre + aciertos ──
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,12 +113,9 @@ class RankingTableRow extends StatelessWidget {
                           user.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF1A1A2E),
-                            fontFamily: 'DMMono',
-                          ),
+                          style: _mono(
+                              size: 13,
+                              weight: FontWeight.w700),
                         ),
                       ),
                       if (isMe) ...[
@@ -119,15 +124,13 @@ class RankingTableRow extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 5, vertical: 1),
                           color: _kAccent,
-                          child: const Text(
+                          child: Text(
                             'TÚ',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 8,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.8,
-                              fontFamily: 'DMMono',
-                            ),
+                            style: _mono(
+                                color: Colors.white,
+                                size: 8,
+                                weight: FontWeight.w800,
+                                letterSpacing: 0.8),
                           ),
                         ),
                       ],
@@ -136,29 +139,17 @@ class RankingTableRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     '$correct aciertos',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFF888880),
-                      fontFamily: 'DMMono',
-                    ),
+                    style: _mono(
+                        size: 10,
+                        color: const Color(0xFF888880)),
                   ),
                 ],
               ),
             ),
 
-            // ── Predictions badge ──
-            const SizedBox(width: 6),
-            Text(
-              '□ 0/5',
-              style: TextStyle(
-                fontSize: 9,
-                color: Colors.black.withOpacity(0.3),
-                fontFamily: 'DMMono',
-              ),
-            ),
             const SizedBox(width: 10),
 
-            // ── Points + accuracy ──
+            // ── Puntos + precisión ──
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -167,33 +158,29 @@ class RankingTableRow extends StatelessWidget {
                     children: [
                       TextSpan(
                         text: _fmt(pts),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: isTop3 ? _badgeColor : const Color(0xFF1A1A2E),
-                          fontFamily: 'DMMono',
-                        ),
+                        style: _mono(
+                            size: 16,
+                            weight: FontWeight.w800,
+                            color: isTop3
+                                ? _badgeColor
+                                : const Color(0xFF1A1A2E)),
                       ),
-                      const TextSpan(
+                      TextSpan(
                         text: 'pts',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF888880),
-                          fontFamily: 'DMMono',
-                        ),
+                        style: _mono(
+                            size: 9,
+                            weight: FontWeight.w600,
+                            color: const Color(0xFF888880)),
                       ),
                     ],
                   ),
                 ),
                 Text(
                   '$acc%',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1D9E75),
-                    fontFamily: 'DMMono',
-                  ),
+                  style: _mono(
+                      size: 11,
+                      weight: FontWeight.w700,
+                      color: const Color(0xFF1D9E75)),
                 ),
               ],
             ),

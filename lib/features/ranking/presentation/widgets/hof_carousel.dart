@@ -1,27 +1,48 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../data/ranking_service.dart';
 import 'rank_avatar.dart';
 
-const _kGold = Color(0xFFC9A227);
+// ── Helpers de tipografía ──────────────────────────────────────────────────
+TextStyle _mono({
+  Color color = const Color(0xFF1A1A2E),
+  double size = 12,
+  FontWeight weight = FontWeight.normal,
+  double letterSpacing = 0,
+}) =>
+    GoogleFonts.dmMono(
+        color: color,
+        fontSize: size,
+        fontWeight: weight,
+        letterSpacing: letterSpacing);
+
+// ── Colores ────────────────────────────────────────────────────────────────
+const _kGold   = Color(0xFFC9A227);
 const _kSilver = Color(0xFF8A8A8A);
 const _kBronze = Color(0xFFA0652A);
+const _kBg     = Color(0xFFF0EDE8);
 
-const _meta = [
-  {'label': 'ORO', 'color': _kGold},
-  {'label': 'PLATA', 'color': _kSilver},
-  {'label': 'BRONCE', 'color': _kBronze},
+const _medals = [
+  _Medal('ORO',    _kGold),
+  _Medal('PLATA',  _kSilver),
+  _Medal('BRONCE', _kBronze),
 ];
 
+class _Medal {
+  final String label;
+  final Color color;
+  const _Medal(this.label, this.color);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  HOF CAROUSEL
+// ══════════════════════════════════════════════════════════════════════════════
 class HofCarousel extends StatefulWidget {
   final List<HofChampion> champions;
   final void Function(String userId)? onSelect;
 
-  const HofCarousel({
-    super.key,
-    required this.champions,
-    this.onSelect,
-  });
+  const HofCarousel({super.key, required this.champions, this.onSelect});
 
   @override
   State<HofCarousel> createState() => _HofCarouselState();
@@ -39,9 +60,7 @@ class _HofCarouselState extends State<HofCarousel>
   void initState() {
     super.initState();
     _fadeCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 220),
-    );
+        vsync: this, duration: const Duration(milliseconds: 220));
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     _fadeCtrl.forward();
     _startTimer();
@@ -79,183 +98,150 @@ class _HofCarouselState extends State<HofCarousel>
   @override
   Widget build(BuildContext context) {
     final champions = widget.champions;
-    if (champions.isEmpty) {
-      return _buildEmpty();
-    }
+    if (champions.isEmpty) return _buildEmpty();
 
-    final champ = champions[_active];
-    final metaIdx = _active.clamp(0, 2);
-    final color = _meta[metaIdx]['color'] as Color;
-    final label = _meta[metaIdx]['label'] as String;
-    final total = champions.length;
+    final champ    = champions[_active];
+    final medalIdx = _active.clamp(0, 2);
+    final medal    = _medals[medalIdx];
+    final total    = champions.length;
 
     return Column(
       children: [
-        // ── Main card ──
+        // ── Tarjeta principal ──────────────────────────────────
         FadeTransition(
           opacity: _fadeAnim,
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                top: BorderSide(color: color, width: 3),
-              ),
+             color: const Color(0xFFF5F2EC),
+              border: Border(top: BorderSide(color: medal.color, width: 3)),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4)),
               ],
             ),
             child: Column(
               children: [
-                // Card top row
+                // ── Fila superior: medalla + badge ──
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 18, vertical: 14),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.4,
-                          color: color,
-                          fontFamily: 'DMMono',
-                        ),
-                      ),
+                      Text(medal.label,
+                          style: _mono(
+                              color: medal.color,
+                              size: 11,
+                              weight: FontWeight.w700,
+                              letterSpacing: 1.4)),
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
-                        color: color,
-                        child: Text(
-                          '#${_active + 1}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            fontFamily: 'DMMono',
-                          ),
-                        ),
+                        color: medal.color,
+                        child: Text('#${_active + 1}',
+                            style: _mono(
+                                color: Colors.white,
+                                size: 10,
+                                weight: FontWeight.w800)),
                       ),
                     ],
                   ),
                 ),
 
-                // Avatar
+                // ── Avatar circular con anillo de color ──
                 GestureDetector(
                   onTap: () => widget.onSelect?.call(champ.id),
                   child: Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          color.withOpacity(0.5),
-                          color,
-                        ],
-                      ),
+                      border:
+                          Border.all(color: medal.color, width: 3),
                     ),
-                    padding: const EdgeInsets.all(3),
                     child: RankAvatar(
-                        url: champ.avatarUrl, name: champ.name, size: 88),
+                        url: champ.avatarUrl,
+                        name: champ.name,
+                        size: 88),
                   ),
                 ),
                 const SizedBox(height: 12),
 
-                // Name
-                Text(
-                  champ.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF1A1A2E),
-                    fontFamily: 'DMMono',
-                  ),
-                ),
+                // ── Nombre ──
+                Text(champ.name,
+                    style: _mono(
+                        size: 18,
+                        weight: FontWeight.w800,
+                        color: const Color(0xFF1A1A2E))),
                 const SizedBox(height: 8),
 
-                // Crowns
-                Wrap(
-                  spacing: 4,
-                  children: [
-                    for (int i = 0;
-                        i < champ.monthlyChampionships.clamp(0, 6);
-                        i++)
-                      Icon(Icons.workspace_premium_rounded,
-                          size: 16, color: color),
-                    if (champ.monthlyChampionships > 6)
-                      Text(
-                        '+${champ.monthlyChampionships - 6}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: color,
-                          fontFamily: 'DMMono',
-                        ),
-                      ),
-                  ],
-                ),
+                // ── Iconos de corona (sin emojis) ──
+                _CrownRow(
+                    count: champ.monthlyChampionships,
+                    color: medal.color),
                 const SizedBox(height: 14),
 
-                // Stats grid
+                // ── Stats grid ──
                 Container(
                   decoration: BoxDecoration(
                     border: Border(
                       top: BorderSide(
-                          color: Colors.black.withOpacity(0.07), width: 0.5),
+                          color: Colors.black.withOpacity(0.07),
+                          width: 0.5),
                     ),
                   ),
                   child: IntrinsicHeight(
                     child: Row(
                       children: [
-                        _statCell(
+                        _StatCell(
                           value: '${champ.monthlyChampionships}',
-                          label: 'Coronas',
-                          color: color,
+                          label: 'CORONAS',
+                          color: medal.color,
                         ),
                         VerticalDivider(
                             width: 0.5,
                             color: Colors.black.withOpacity(0.07)),
-                        _statCell(value: '—', label: 'Max pts'),
+                        _StatCell(
+                          value: champ.bestPoints > 0
+                              ? _fmt(champ.bestPoints)
+                              : '—',
+                          label: 'MAX PTS',
+                        ),
                         VerticalDivider(
                             width: 0.5,
                             color: Colors.black.withOpacity(0.07)),
-                        _statCell(value: '—', label: 'Título', small: true),
+                        _StatCell(
+                          value: champ.lastMonthYear ?? '—',
+                          label: 'TÍTULO',
+                          small: true,
+                        ),
                       ],
                     ),
                   ),
                 ),
 
-                // Counter
+                // ── Contador ──
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12, top: 8),
-                  child: Text(
-                    '${_active + 1} / $total',
-                    style: const TextStyle(
-                      fontSize: 9,
-                      color: Color(0xFFB0AAA0),
-                      fontFamily: 'DMMono',
-                      letterSpacing: 1,
-                    ),
-                  ),
+                  child: Text('${_active + 1} / $total',
+                      style: _mono(
+                          color: const Color(0xFFB0AAA0),
+                          size: 9,
+                          letterSpacing: 1)),
                 ),
               ],
             ),
           ),
         ),
 
-        // ── Dots ──
+        // ── Dots ──────────────────────────────────────────────
         const SizedBox(height: 14),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(total, (i) {
             final isActive = i == _active;
+            final dotColor = _medals[i.clamp(0, 2)].color;
             return GestureDetector(
               onTap: () => _nav(i > _active ? 1 : -1, target: i),
               child: AnimatedContainer(
@@ -263,177 +249,153 @@ class _HofCarouselState extends State<HofCarousel>
                 margin: const EdgeInsets.symmetric(horizontal: 3),
                 width: isActive ? 18 : 6,
                 height: 6,
-                color: isActive ? color : Colors.black.withOpacity(0.15),
+                color: isActive
+                    ? dotColor
+                    : Colors.black.withOpacity(0.15),
               ),
             );
           }),
         ),
         const SizedBox(height: 20),
 
-        // ── Top 3 list ──
-        if (champions.length >= 1) ...[
-          Container(
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                    color: Colors.black.withOpacity(0.07), width: 0.5),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
-                  color: const Color(0xFFE8E4DE),
-                  child: const Text(
-                    'TOP CAMPEONES',
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.4,
-                      color: Color(0xFFB0AAA0),
-                      fontFamily: 'DMMono',
-                    ),
-                  ),
-                ),
-                ...champions.take(3).toList().asMap().entries.map((e) {
-                  final i = e.key;
-                  final u = e.value;
-                  final m = _meta[i];
-                  final c = m['color'] as Color;
-                  final isActive = i == _active;
-                  return GestureDetector(
-                    onTap: () => _nav(i > _active ? 1 : -1, target: i),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      decoration: BoxDecoration(
-                        color: isActive
-                            ? c.withOpacity(0.05)
-                            : Colors.transparent,
-                        border: Border(
-                          bottom: BorderSide(
-                              color: Colors.black.withOpacity(0.06),
-                              width: 0.5),
-                          left: BorderSide(
-                            color: isActive ? c : Colors.transparent,
-                            width: 3,
-                          ),
-                        ),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 22,
-                            height: 22,
-                            color: c,
-                            alignment: Alignment.center,
-                            child: Text(
-                              '${i + 1}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w900,
-                                fontFamily: 'DMMono',
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          RankAvatar(
-                              url: u.avatarUrl, name: u.name, size: 32),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  u.name,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF1A1A2E),
-                                    fontFamily: 'DMMono',
-                                  ),
-                                ),
-                                Row(
-                                  children: [
-                                    Icon(Icons.workspace_premium_rounded,
-                                        size: 10, color: c),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      '${u.monthlyChampionships} coronas',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700,
-                                        color: c,
-                                        fontFamily: 'DMMono',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            '${u.monthlyChampionships} 👑',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: c,
-                              fontFamily: 'DMMono',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }),
-              ],
+        // ── Top campeones ─────────────────────────────────────
+        Container(
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(
+                  color: Colors.black.withOpacity(0.07), width: 0.5),
             ),
           ),
-        ],
-      ],
-    );
-  }
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 10),
+                color: const Color(0xFFE8E4DE),
+                child: Text('TOP CAMPEONES',
+                    style: _mono(
+                        color: const Color(0xFFB0AAA0),
+                        size: 9,
+                        weight: FontWeight.w700,
+                        letterSpacing: 1.4)),
+              ),
+              ...champions.take(3).toList().asMap().entries.map((e) {
+                final i      = e.key;
+                final u      = e.value;
+                final medal  = _medals[i];
+                final isActive = i == _active;
 
-  Widget _statCell({
-    required String value,
-    required String label,
-    Color? color,
-    bool small = false,
-  }) {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: small ? 13 : 20,
-                fontWeight: FontWeight.w800,
-                color: color ?? const Color(0xFF1A1A2E),
-                fontFamily: 'DMMono',
-                letterSpacing: small ? 0 : -0.5,
-              ),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              label.toUpperCase(),
-              style: const TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.2,
-                color: Color(0xFFB0AAA0),
-                fontFamily: 'DMMono',
-              ),
-            ),
-          ],
+                return GestureDetector(
+                  onTap: () =>
+                      _nav(i > _active ? 1 : -1, target: i),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? medal.color.withOpacity(0.05)
+                          : Colors.transparent,
+                      border: Border(
+                        bottom: BorderSide(
+                            color: Colors.black.withOpacity(0.06),
+                            width: 0.5),
+                        left: BorderSide(
+                          color: isActive
+                              ? medal.color
+                              : Colors.transparent,
+                          width: 3,
+                        ),
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        // Badge número
+                        Container(
+                          width: 22,
+                          height: 22,
+                          color: medal.color,
+                          alignment: Alignment.center,
+                          child: Text('${i + 1}',
+                              style: _mono(
+                                  color: Colors.white,
+                                  size: 10,
+                                  weight: FontWeight.w900)),
+                        ),
+                        const SizedBox(width: 10),
+
+                        // Avatar circular
+                        RankAvatar(
+                            url: u.avatarUrl,
+                            name: u.name,
+                            size: 36),
+                        const SizedBox(width: 10),
+
+                        // Nombre + coronas
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                            children: [
+                              Text(u.name,
+                                  style: _mono(
+                                      size: 13,
+                                      weight: FontWeight.w700,
+                                      color: const Color(
+                                          0xFF1A1A2E))),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  Icon(
+                                      Icons
+                                          .workspace_premium_rounded,
+                                      size: 11,
+                                      color: medal.color),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                      '${u.monthlyChampionships} coronas',
+                                      style: _mono(
+                                          size: 10,
+                                          weight: FontWeight.w700,
+                                          color: medal.color)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Puntos del mejor mes
+                        Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              u.bestPoints > 0
+                                  ? _fmt(u.bestPoints)
+                                  : '—',
+                              style: _mono(
+                                  size: 15,
+                                  weight: FontWeight.w800,
+                                  color: medal.color),
+                            ),
+                            Text('pts',
+                                style: _mono(
+                                    size: 8,
+                                    color: const Color(
+                                        0xFFB0AAA0))),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -443,22 +405,98 @@ class _HofCarouselState extends State<HofCarousel>
       child: Column(
         children: [
           Icon(Icons.workspace_premium_rounded,
-              size: 48, color: Colors.black.withOpacity(0.1)),
+              size: 48,
+              color: Colors.black.withOpacity(0.1)),
           const SizedBox(height: 12),
-          const Text(
-            'Aún no hay campeones registrados',
-            style: TextStyle(
-              fontSize: 13,
-              color: Color(0xFFB0AAA0),
-              fontFamily: 'DMMono',
-            ),
-          ),
+          Text('Aún no hay campeones registrados',
+              style: _mono(
+                  color: const Color(0xFFB0AAA0), size: 13)),
         ],
       ),
     );
   }
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+//  CROWN ROW — iconos, sin emojis
+// ══════════════════════════════════════════════════════════════════════════════
+class _CrownRow extends StatelessWidget {
+  final int count;
+  final Color color;
+  const _CrownRow({required this.count, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final show = count.clamp(0, 6);
+    final extra = count - 6;
+    return Wrap(
+      spacing: 4,
+      alignment: WrapAlignment.center,
+      children: [
+        for (int i = 0; i < show; i++)
+          Icon(Icons.workspace_premium_rounded,
+              size: 18, color: color),
+        if (extra > 0)
+          Text('+$extra',
+              style: _mono(
+                  size: 12,
+                  weight: FontWeight.w700,
+                  color: color)),
+      ],
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  STAT CELL
+// ══════════════════════════════════════════════════════════════════════════════
+class _StatCell extends StatelessWidget {
+  final String value;
+  final String label;
+  final Color? color;
+  final bool small;
+
+  const _StatCell({
+    required this.value,
+    required this.label,
+    this.color,
+    this.small = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Padding(
+        padding:
+            const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: _mono(
+                size: small ? 12 : 20,
+                weight: FontWeight.w800,
+                color: color ?? const Color(0xFF1A1A2E),
+                letterSpacing: small ? 0 : -0.5,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: _mono(
+                  size: 8,
+                  weight: FontWeight.w700,
+                  letterSpacing: 1.2,
+                  color: const Color(0xFFB0AAA0)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Utilidad ──────────────────────────────────────────────────────────────────
 String _fmt(int n) {
   if (n >= 1000) {
     final k = n ~/ 1000;

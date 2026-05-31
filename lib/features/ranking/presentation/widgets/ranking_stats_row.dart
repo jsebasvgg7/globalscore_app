@@ -1,5 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../data/ranking_service.dart';
+
+// ── Tipografía ────────────────────────────────────────────────────────────
+TextStyle _mono({
+  Color color = const Color(0xFF1A1A2E),
+  double size = 12,
+  FontWeight weight = FontWeight.normal,
+  double letterSpacing = 0,
+}) =>
+    GoogleFonts.dmMono(
+        color: color,
+        fontSize: size,
+        fontWeight: weight,
+        letterSpacing: letterSpacing);
 
 const _kGold = Color(0xFFC9A227);
 
@@ -24,9 +38,6 @@ class RankingStatsRow extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Stats Global / Mensual
-// ─────────────────────────────────────────────────────────────────────────────
 class _RankStats extends StatelessWidget {
   final List<RankingUser> users;
   final String rankingType;
@@ -51,29 +62,17 @@ class _RankStats extends StatelessWidget {
       child: IntrinsicHeight(
         child: Row(
           children: [
-            // Registrados
             Expanded(
-              child: _StatCell(
-                value: '${users.length}',
-                label: 'REGISTRADOS',
-              ),
+              child: _StatCell(value: '${users.length}', label: 'REGISTRADOS'),
             ),
             const VerticalDivider(width: 0.5, color: Color(0x14000000)),
-            // Participantes
             Expanded(
-              child: _StatCell(
-                value: '$participated',
-                label: 'PARTICIPANTES',
-              ),
+              child: _StatCell(value: '$participated', label: 'PARTICIPANTES'),
             ),
-            // Líder
             if (leader != null) ...[
               const VerticalDivider(width: 0.5, color: Color(0x14000000)),
               Expanded(
-                child: _LeaderCell(
-                  leader: leader,
-                  rankingType: rankingType,
-                ),
+                child: _LeaderCell(leader: leader, rankingType: rankingType),
               ),
             ],
           ],
@@ -83,9 +82,6 @@ class _RankStats extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Stats Hall of Fame
-// ─────────────────────────────────────────────────────────────────────────────
 class _HofStats extends StatelessWidget {
   final List<HofChampion> champions;
   const _HofStats({required this.champions});
@@ -107,16 +103,11 @@ class _HofStats extends StatelessWidget {
           children: [
             Expanded(
               child: _StatCell(
-                value: '${champions.length}',
-                label: 'CAMPEONES',
-              ),
+                  value: '${champions.length}', label: 'CAMPEONES'),
             ),
             const VerticalDivider(width: 0.5, color: Color(0x14000000)),
             Expanded(
-              child: _StatCell(
-                value: '$totalCrowns',
-                label: 'CORONAS',
-              ),
+              child: _StatCell(value: '$totalCrowns', label: 'CORONAS'),
             ),
             if (leader != null) ...[
               const VerticalDivider(width: 0.5, color: Color(0x14000000)),
@@ -133,12 +124,10 @@ class _HofStats extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: _kGold,
-                          fontFamily: 'DMMono',
-                        ),
+                        style: _mono(
+                            size: 14,
+                            weight: FontWeight.w700,
+                            color: _kGold),
                       ),
                       const SizedBox(height: 2),
                       Row(
@@ -149,24 +138,20 @@ class _HofStats extends StatelessWidget {
                           const SizedBox(width: 3),
                           Text(
                             '${leader.monthlyChampionships}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: _kGold,
-                              fontFamily: 'DMMono',
-                            ),
+                            style: _mono(
+                                size: 12,
+                                weight: FontWeight.w700,
+                                color: _kGold),
                           ),
                         ],
                       ),
-                      const Text(
+                      Text(
                         'DOMINADOR',
-                        style: TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2,
-                          color: Color(0xFFB0AAA0),
-                          fontFamily: 'DMMono',
-                        ),
+                        style: _mono(
+                            size: 8,
+                            weight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                            color: const Color(0xFFB0AAA0)),
                       ),
                     ],
                   ),
@@ -180,9 +165,6 @@ class _HofStats extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Celda de estadística — número grande + etiqueta centrados
-// ─────────────────────────────────────────────────────────────────────────────
 class _StatCell extends StatelessWidget {
   final String value;
   final String label;
@@ -200,27 +182,20 @@ class _StatCell extends StatelessWidget {
           Text(
             value,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF1A1A2E),
-              fontFamily: 'DMMono',
-              letterSpacing: -1.5,
-              height: 1,
-            ),
+            style: _mono(
+                size: 32,
+                weight: FontWeight.w800,
+                letterSpacing: -1.5),
           ),
           const SizedBox(height: 4),
           Text(
             label,
             textAlign: TextAlign.center,
-            // Usa FittedBox para que nunca corte el texto
-            style: const TextStyle(
-              fontSize: 8,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.0,
-              color: Color(0xFFB0AAA0),
-              fontFamily: 'DMMono',
-            ),
+            style: _mono(
+                size: 8,
+                weight: FontWeight.w700,
+                letterSpacing: 1.0,
+                color: const Color(0xFFB0AAA0)),
           ),
         ],
       ),
@@ -228,9 +203,6 @@ class _StatCell extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Celda del líder — centrada
-// ─────────────────────────────────────────────────────────────────────────────
 class _LeaderCell extends StatelessWidget {
   final RankingUser leader;
   final String rankingType;
@@ -251,34 +223,24 @@ class _LeaderCell extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: _kGold,
-              fontFamily: 'DMMono',
-            ),
+            style: _mono(
+                size: 14, weight: FontWeight.w700, color: _kGold),
           ),
           const SizedBox(height: 2),
           Text(
             '$pts pts',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: _kGold,
-              fontFamily: 'DMMono',
-            ),
+            style: _mono(
+                size: 12, weight: FontWeight.w700, color: _kGold),
           ),
-          const Text(
+          Text(
             'LÍDER',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 8,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
-              color: Color(0xFFB0AAA0),
-              fontFamily: 'DMMono',
-            ),
+            style: _mono(
+                size: 8,
+                weight: FontWeight.w700,
+                letterSpacing: 1.2,
+                color: const Color(0xFFB0AAA0)),
           ),
         ],
       ),

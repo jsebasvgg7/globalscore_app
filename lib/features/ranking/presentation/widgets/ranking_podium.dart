@@ -1,6 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../data/ranking_service.dart';
 import 'rank_avatar.dart';
+
+// ── Tipografía ────────────────────────────────────────────────────────────
+TextStyle _mono({
+  Color color = const Color(0xFF1A1A2E),
+  double size = 12,
+  FontWeight weight = FontWeight.normal,
+  double letterSpacing = 0,
+}) =>
+    GoogleFonts.dmMono(
+        color: color,
+        fontSize: size,
+        fontWeight: weight,
+        letterSpacing: letterSpacing);
 
 const _kGold = Color(0xFFC9A227);
 const _kSilver = Color(0xFF8A8A8A);
@@ -51,15 +65,9 @@ class RankingPodium extends StatelessWidget {
               const SizedBox(width: 8),
               const Icon(Icons.emoji_events_rounded, size: 14, color: _kGold),
               const SizedBox(width: 6),
-              const Text(
+              Text(
                 'PODIO',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.8,
-                  color: Color(0xFF888880),
-                  fontFamily: 'DMMono',
-                ),
+                style: _mono(size: 10, weight: FontWeight.w700, letterSpacing: 1.8, color: const Color(0xFF888880)),
               ),
               const SizedBox(width: 8),
               Container(
@@ -95,13 +103,7 @@ class RankingPodium extends StatelessWidget {
                         // Medal label
                         Text(
                           label,
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.4,
-                            color: color,
-                            fontFamily: 'DMMono',
-                          ),
+                          style: _mono(size: 9, weight: FontWeight.w700, letterSpacing: 1.4, color: color),
                         ),
                         const SizedBox(height: 8),
 
@@ -129,11 +131,7 @@ class RankingPodium extends StatelessWidget {
                                 alignment: Alignment.center,
                                 child: Text(
                                   '${item.rank + 1}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w900,
-                                  ),
+                                  style: _mono(color: Colors.white, size: 10, weight: FontWeight.w900),
                                 ),
                               ),
                             ),
@@ -147,36 +145,21 @@ class RankingPodium extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF1A1A2E),
-                            fontFamily: 'DMMono',
-                          ),
+                          style: _mono(size: 12, weight: FontWeight.w700),
                         ),
                         const SizedBox(height: 2),
 
                         // Points
                         Text(
                           '${_fmt(pts)} pts',
-                          style: TextStyle(
-                            fontSize: isGold ? 14 : 12,
-                            fontWeight: FontWeight.w800,
-                            color: color,
-                            fontFamily: 'DMMono',
-                          ),
+                         style: _mono(size: isGold ? 14 : 12, weight: FontWeight.w800, color: color),
                         ),
                         const SizedBox(height: 2),
 
                         // Accuracy
                         Text(
                           '$acc%',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1D9E75),
-                            fontFamily: 'DMMono',
-                          ),
+                         style: _mono(size: 10, weight: FontWeight.w600, color: const Color(0xFF1D9E75)),
                         ),
                         const SizedBox(height: 8),
 

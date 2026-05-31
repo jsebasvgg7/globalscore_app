@@ -1,11 +1,26 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../domain/ranking_providers.dart';
 import 'widgets/ranking_podium.dart';
 import 'widgets/ranking_table_row.dart';
 import 'widgets/ranking_stats_row.dart';
 import 'widgets/hof_carousel.dart';
 import '../data/ranking_service.dart';
+
+
+// ── Helpers de tipografía ──────────────────────────────────────────────────
+TextStyle _mono({
+  Color color = const Color(0xFF1A1A2E),
+  double size = 12,
+  FontWeight weight = FontWeight.normal,
+  double letterSpacing = 0,
+}) =>
+    GoogleFonts.dmMono(
+        color: color,
+        fontSize: size,
+        fontWeight: weight,
+        letterSpacing: letterSpacing);
 
 const _kAccent = Color(0xFF5B4FD8);
 const _kBg = Color(0xFFF0EDE8);
@@ -36,8 +51,7 @@ class RankingPage extends ConsumerWidget {
                 child: Text(
                   'Error cargando ranking\n$e',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      color: Color(0xFF888880), fontFamily: 'DMMono'),
+                  style: _mono(color: const Color(0xFF888880)),
                 ),
               ),
               data: (users) {
@@ -122,14 +136,11 @@ class _TabBar extends StatelessWidget {
                     const SizedBox(width: 5),
                     Text(
                       label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
+                      style: _mono(
+                        size: 11,
+                        weight: FontWeight.w700,
                         letterSpacing: 0.6,
-                        color: isActive
-                            ? _kAccent
-                            : const Color(0xFF888880),
-                        fontFamily: 'DMMono',
+                        color: isActive ? _kAccent : const Color(0xFF888880),
                       ),
                     ),
                   ],
@@ -209,25 +220,13 @@ class _RankingContent extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'CLASIFICACIÓN',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.4,
-                      color: Color(0xFF888880),
-                      fontFamily: 'DMMono',
-                    ),
+                    style: _mono(size: 10, weight: FontWeight.w700, letterSpacing: 1.4, color: const Color(0xFF888880)),
                   ),
                   Text(
                     tab == 'monthly' ? _currentMonthLabel() : 'GLOBAL',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1,
-                      color: Color(0xFF5B4FD8),
-                      fontFamily: 'DMMono',
-                    ),
+                    style: _mono(size: 10, weight: FontWeight.w700, letterSpacing: 1.4, color: const Color(0xFF888880)),
                   ),
                 ],
               ),
