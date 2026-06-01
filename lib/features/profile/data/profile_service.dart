@@ -47,52 +47,84 @@ class ProfileService {
         .eq('id', userId);
   }
 
-  // ─── LOGROS ───────────────────────────────────
-  Future<List<Achievement>> fetchAvailableAchievements() async {
-    final data = await _client
-        .from('available_achievements')
-        .select()
-        .order('requirement_value', ascending: true);
+// ─── LOGROS ───────────────────────────────────
+Future<List<Achievement>> fetchAvailableAchievements() async {
+  final data = await _client
+      .from('available_achievements')
+      .select()
+      .order('requirement_value', ascending: true);
 
-    return (data as List)
-        .map((e) => Achievement.fromJson(e as Map<String, dynamic>))
-        .toList();
+  return (data as List)
+      .map((e) => Achievement.fromJson(e as Map<String, dynamic>))
+      .toList();
+}
+
+Future<List<String>> fetchUserAchievementIds(String userId) async {
+  // 1. Leer achievements guardados + stats del usuario
+  final userData = await _client
+      .from('users')
+      .select('achievements, points, predictions, correct, best_streak')
+      .eq('id', userId)
+      .single();
+
+  final stored = List<String>.from(userData['achievements'] as List? ?? []);
+  final stats = {
+    'points':       (userData['points']       as int?) ?? 0,
+    'predictions':  (userData['predictions']  as int?) ?? 0,
+    'correct':      (userData['correct']      as int?) ?? 0,
+    'streak':       (userData['best_streak']  as int?) ?? 0,
+  };
+
+  // 2. Cargar todos los logros disponibles
+  final available = await fetchAvailableAchievements();
+
+  // 3. Calcular nuevos desbloqueos (igual que React)
+  final newUnlocks = <String>[];
+  for (final a in available) {
+    if (stored.contains(a.id)) continue;
+    final req = a.requirementType;
+    final val = a.requirementValue ?? 0;
+    final current = stats[req] ?? 0;
+    if (current >= val) newUnlocks.add(a.id);
   }
 
-  Future<List<String>> fetchUserAchievementIds(String userId) async {
-    final data = await _client
+  // 4. Si hay nuevos, escribir en BD (igual que React)
+  if (newUnlocks.isNotEmpty) {
+    final updated = [...stored, ...newUnlocks];
+    await _client
         .from('users')
-        .select('achievements')
-        .eq('id', userId)
-        .single();
-
-    final raw = data['achievements'];
-    if (raw == null) return [];
-    return (raw as List).map((e) => e.toString()).toList();
+        .update({'achievements': updated})
+        .eq('id', userId);
+    return updated;
   }
 
-  // ─── TÍTULOS ──────────────────────────────────
-  Future<List<UserTitle>> fetchAvailableTitles() async {
-    final data = await _client
-        .from('available_titles')
-        .select();
+  return stored;
+}
 
-    return (data as List)
-        .map((e) => UserTitle.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
+// ─── TÍTULOS ──────────────────────────────────
+Future<List<UserTitle>> fetchAvailableTitles() async {
+  final data = await _client
+      .from('available_titles')
+      .select();
 
-  Future<List<String>> fetchUserTitleIds(String userId) async {
-    final data = await _client
-        .from('users')
-        .select('titles')
-        .eq('id', userId)
-        .single();
+  return (data as List)
+      .map((e) => UserTitle.fromJson(e as Map<String, dynamic>))
+      .toList();
+}
 
-    final raw = data['titles'];
-    if (raw == null) return [];
-    return (raw as List).map((e) => e.toString()).toList();
-  }
+Future<List<String>> fetchUserTitleIds(String userId) async {
+  final unlockedAchievements = await fetchUserAchievementIds(userId);
+  final unlockedSet = unlockedAchievements.toSet();
+
+  final allTitles = await fetchAvailableTitles();
+
+  return allTitles
+      .where((t) =>
+          t.requirementAchievementId == null ||
+          unlockedSet.contains(t.requirementAchievementId))
+      .map((t) => t.id)
+      .toList();
+}
 
   // ─── BANNERS ──────────────────────────────────
   Future<List<UserBanner>> fetchUserBanners(String userId) async {

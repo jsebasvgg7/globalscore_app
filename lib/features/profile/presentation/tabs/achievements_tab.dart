@@ -366,18 +366,21 @@ class _AchievementRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
-                child: unlocked
-                    ? Text(
-                        achievement.icon ?? '🏆',
-                        style: const TextStyle(fontSize: 16),
-                      )
-                    : Icon(Icons.lock_outline,
-                        size: 16,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withOpacity(0.35)),
-              ),
+              child: unlocked
+                  ? Icon(
+                      _lucideToFlutter(achievement.icon),
+                      size: 18,
+                      color: Colors.white,
+                    )
+                  : Icon(
+                      Icons.lock_outline,
+                      size: 16,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withOpacity(0.35),
+                    ),
+            ),
             ),
             const SizedBox(width: 12),
 
@@ -463,6 +466,36 @@ class _CountBadge extends StatelessWidget {
       ),
     );
   }
+  
+}
+
+IconData _lucideToFlutter(String? name) {
+  switch (name?.toLowerCase()) {
+    case 'crosshair':       return Icons.gps_fixed;
+    case 'target':          return Icons.my_location;
+    case 'hash':            return Icons.tag;
+    case 'trending':
+    case 'trendingup':      return Icons.trending_up;
+    case 'zap':             return Icons.bolt;
+    case 'star':            return Icons.star;
+    case 'award':           return Icons.emoji_events;
+    case 'trophy':          return Icons.military_tech;
+    case 'shield':          return Icons.shield;
+    case 'flame':
+    case 'fire':            return Icons.local_fire_department;
+    case 'check':
+    case 'checkcheck':      return Icons.check_circle;
+    case 'clock':           return Icons.schedule;
+    case 'calendar':        return Icons.calendar_today;
+    case 'crown':           return Icons.workspace_premium;
+    case 'medal':           return Icons.military_tech;
+    case 'gem':             return Icons.diamond;
+    case 'rocket':          return Icons.rocket_launch;
+    case 'brain':           return Icons.psychology;
+    case 'eye':             return Icons.visibility;
+    case 'infinity':        return Icons.all_inclusive;
+    default:                return Icons.emoji_events;
+  }
 }
 
 // ─── Helper ───────────────────────────────────
@@ -472,4 +505,5 @@ Color? _parseColor(String? hex) {
   final value = int.tryParse(clean, radix: 16);
   if (value == null) return null;
   return Color(0xFF000000 | value);
+  
 }
