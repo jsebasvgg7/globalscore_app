@@ -1,181 +1,225 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../domain/profile_providers.dart';
 import '../domain/profile_models.dart';
 import '../presentation/widgets/profile_hero_banner.dart';
-import '../presentation/tabs/overview_tab.dart';
-import '../presentation/tabs/achievements_tab.dart';
-import '../presentation/tabs/championships_tab.dart';
-import '../presentation/tabs/history_tab.dart';
-import '../presentation/tabs/edit_tab.dart';
+import '../presentation/widgets/clinical_list_item.dart';
 
-/// Página de perfil propio.
-/// Tabs: Overview · Historia · Logros · Campeonatos · Editar
-class ProfilePage extends ConsumerStatefulWidget {
+class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
   @override
-  ConsumerState<ProfilePage> createState() => _ProfilePageState();
-}
-
-class _ProfilePageState extends ConsumerState<ProfilePage>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabs;
-
-  // Índice de "Editar" hardcodeado como tab 4
-  static const _tabCount = 5;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabs = TabController(length: _tabCount, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabs.dispose();
-    super.dispose();
-  }
-
-  void _onTabNavigation(String route) {
-    switch (route) {
-      case 'achievements':
-        _tabs.animateTo(2);
-      case 'championships':
-        _tabs.animateTo(3);
-      default:
-        context.push(route);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(ownProfileProvider);
 
     return profileAsync.when(
       loading: () => const Scaffold(
+        backgroundColor: Color(0xFFEEEAE4),
         body: Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
+        backgroundColor: const Color(0xFFEEEAE4),
         body: Center(child: Text('Error: $e')),
       ),
       data: (profile) {
         if (profile == null) {
           return const Scaffold(
+            backgroundColor: Color(0xFFEEEAE4),
             body: Center(child: Text('No se pudo cargar el perfil')),
           );
         }
-        return _ProfileScaffold(
-          profile: profile,
-          tabs: _tabs,
-          onNavigation: _onTabNavigation,
-        );
+        return _ProfileMain(profile: profile);
       },
     );
   }
 }
 
-class _ProfileScaffold extends StatelessWidget {
+class _ProfileMain extends ConsumerWidget {
   final UserProfile profile;
-  final TabController tabs;
-  final void Function(String) onNavigation;
-
-  const _ProfileScaffold({
-    required this.profile,
-    required this.tabs,
-    required this.onNavigation,
-  });
+  const _ProfileMain({required this.profile});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final achAsync = ref.watch(achievementsProvider(profile.id));
+    final unlockedCount = achAsync.whenOrNull(data: (s) => s.unlocked.length);
+
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          // ── App bar transparente sobre el banner ──
-          SliverAppBar(
-            expandedHeight: 0,
-            floating: false,
-            pinned: true,
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            elevation: innerBoxIsScrolled ? 1 : 0,
-            title: Text(
-              profile.name,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.settings_outlined),
-                tooltip: 'Editar perfil',
-                onPressed: () => tabs.animateTo(4),
-              ),
-            ],
-          ),
-
-          // ── Banner + identity + stats bar ─────────
-          SliverToBoxAdapter(
-            child: Column(
-              children: [
-                ProfileHeroBanner(profile: profile, isOwner: true),
-                ProfileIdentityRow(
-                  profile: profile,
-                  isOwner: true,
-                  onTap: null,
-                ),
-                ProfileStatsBar(profile: profile),
-              ],
-            ),
-          ),
-
-          // ── Tab bar sticky ────────────────────────
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _TabBarDelegate(
-              TabBar(
-                controller: tabs,
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                indicatorColor: const Color(0xFF60519B),
-                indicatorWeight: 3,
-                labelColor: const Color(0xFF60519B),
-                unselectedLabelColor: Colors.grey,
-                labelStyle: const TextStyle(
-                  fontSize: 0, // ocultamos texto, solo iconos en mobile
-                ),
-                tabs: const [
-                  Tab(icon: Icon(Icons.home_outlined, size: 22)),
-                  Tab(icon: Icon(Icons.history, size: 22)),
-                  Tab(icon: Icon(Icons.emoji_events_outlined, size: 22)),
-                  Tab(icon: Icon(Icons.military_tech_outlined, size: 22)),
-                  Tab(icon: Icon(Icons.edit_outlined, size: 22)),
-                ],
-              ),
-            ),
-          ),
-        ],
-        body: TabBarView(
-          controller: tabs,
+      backgroundColor: const Color(0xFFEEEAE4),
+      // Sin AppBar — el ScaffoldWithNavBar ya provee el header
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 0 — Overview
-            OverviewTab(
+            // ── Banner + identity + stats bar ──────
+            ProfileHeroBanner(profile: profile, isOwner: true),
+            ProfileIdentityRow(
               profile: profile,
               isOwner: true,
-              onNavigate: onNavigation,
+              onTap: () => context.push('/profile/edit'),
             ),
-            // 1 — Historia
-            HistoryTab(userId: profile.id),
-            // 2 — Logros
-            AchievementsTab(userId: profile.id),
-            // 3 — Campeonatos
-            ChampionshipsTab(userId: profile.id),
-            // 4 — Editar
-            EditTab(
-              profile: profile,
-              onSaved: () => tabs.animateTo(0),
+            ProfileStatsBar(profile: profile),
+
+            const SizedBox(height: 8),
+
+            // ─────────────────────────────────
+            // PREFERENCIAS
+            // ─────────────────────────────────
+            _SectionLabel('PREFERENCIAS'),
+            _Card(children: [
+              ClinicalListItem(
+                iconColor: const Color(0xFF5B6BF5),
+                icon: Icons.light_mode_outlined,
+                title: 'Dark Mode',
+                trailing: Switch(
+                  value: false,
+                  onChanged: null,
+                  activeColor: const Color(0xFF60519B),
+                ),
+              ),
+              ClinicalListItem(
+                iconColor: const Color(0xFFEF9D1A),
+                icon: Icons.palette_outlined,
+                title: 'Apariencia',
+                subtitle: 'Tema y estilo visual',
+                trailing: _ComingSoonBadge(),
+                showDivider: false,
+              ),
+            ]),
+
+            // ─────────────────────────────────
+            // MI ACTIVIDAD
+            // ─────────────────────────────────
+            _SectionLabel('MI ACTIVIDAD'),
+            _Card(children: [
+              ClinicalListItem(
+                iconColor: const Color(0xFF22C55E),
+                icon: Icons.bar_chart_rounded,
+                title: 'Estadísticas',
+                subtitle: 'Ver tu rendimiento',
+                onTap: () => context.push('/stats'),
+              ),
+              ClinicalListItem(
+                iconColor: const Color(0xFFF59E0B),
+                icon: Icons.emoji_events_outlined,
+                title: 'Logros',
+                subtitle: unlockedCount != null
+                    ? '$unlockedCount desbloqueados'
+                    : 'Cargando...',
+                onTap: () => context.push('/profile/achievements'),
+              ),
+              ClinicalListItem(
+                iconColor: const Color(0xFF60519B),
+                icon: Icons.military_tech_outlined,
+                title: 'Campeonatos',
+                subtitle: '${profile.monthlyChampionships} coronas',
+                onTap: () => context.push('/profile/championships'),
+              ),
+              ClinicalListItem(
+                iconColor: const Color(0xFF3B82F6),
+                icon: Icons.history,
+                title: 'Historial',
+                subtitle: 'Todas tus predicciones',
+                onTap: () => context.push('/profile/history'),
+                showDivider: false,
+              ),
+            ]),
+
+            // ─────────────────────────────────
+            // CUENTA
+            // ─────────────────────────────────
+            _SectionLabel('CUENTA'),
+            _Card(children: [
+              ClinicalListItem(
+                iconColor: const Color(0xFF6B7280),
+                icon: Icons.edit_outlined,
+                title: 'Editar Perfil',
+                onTap: () => context.push('/profile/edit'),
+              ),
+              ClinicalListItem(
+                iconColor: const Color(0xFF60519B),
+                icon: Icons.person_outline,
+                title: 'Cuenta',
+                onTap: () {},
+              ),
+              ClinicalListItem(
+                iconColor: const Color(0xFFEF9D1A),
+                icon: Icons.notifications_outlined,
+                title: 'Notificaciones',
+                onTap: () => context.push('/notifications'),
+                showDivider: false,
+              ),
+            ]),
+
+            // ─────────────────────────────────
+            // ADMIN
+            // ─────────────────────────────────
+            if (profile.role == 'admin') ...[
+              _SectionLabel('ADMINISTRACIÓN'),
+              _Card(children: [
+                ClinicalListItem(
+                  iconColor: const Color(0xFF1A1A2E),
+                  icon: Icons.shield_outlined,
+                  title: 'Panel de Admin',
+                  subtitle: 'Partidos · Ligas · Logros · Banners',
+                  onTap: () => context.push('/admin'),
+                  showDivider: false,
+                ),
+              ]),
+            ],
+
+            // ─────────────────────────────────
+            // SALIR
+            // ─────────────────────────────────
+            _SectionLabel('SALIR'),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                // Mismo tono crema-card, no blanco puro
+                color: const Color(0xFFF5F2EE),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () async {
+                  await Supabase.instance.client.auth.signOut();
+                  if (context.mounted) context.go('/login');
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.logout, color: Colors.red, size: 20),
+                      const SizedBox(width: 14),
+                      const Expanded(
+                        child: Text(
+                          'CERRAR SESIÓN',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      Icon(Icons.chevron_right,
+                          color: Colors.red.withOpacity(0.5), size: 20),
+                    ],
+                  ),
+                ),
+              ),
             ),
+
+            const SizedBox(height: 32),
           ],
         ),
       ),
@@ -183,31 +227,87 @@ class _ProfileScaffold extends StatelessWidget {
   }
 }
 
-// ─── SliverPersistentHeaderDelegate para TabBar ──
-class _TabBarDelegate extends SliverPersistentHeaderDelegate {
-  final TabBar tabBar;
-
-  const _TabBarDelegate(this.tabBar);
-
-  @override
-  double get minExtent => tabBar.preferredSize.height;
+// ─── Card con color crema (no blanco) ─────────
+// Reemplaza ClinicalCard — mismo layout, color correcto
+class _Card extends StatelessWidget {
+  final List<Widget> children;
+  const _Card({required this.children});
 
   @override
-  double get maxExtent => tabBar.preferredSize.height;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
+  Widget build(BuildContext context) {
     return Container(
-      color: Theme.of(context).colorScheme.surface,
-      child: tabBar,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F2EE), // crema suave, no blanco
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: Column(mainAxisSize: MainAxisSize.min, children: children),
     );
   }
+}
+
+// ─── Section label ────────────────────────────
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
 
   @override
-  bool shouldRebuild(covariant _TabBarDelegate old) =>
-      tabBar != old.tabBar;
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 16, 6),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 12,
+            decoration: BoxDecoration(
+              color: const Color(0xFF60519B),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Color(0x7A1A1A2E),
+              letterSpacing: 1.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Coming soon badge ────────────────────────
+class _ComingSoonBadge extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0xFF60519B).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF60519B).withOpacity(0.2)),
+      ),
+      child: const Text(
+        'Próximamente',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF60519B),
+        ),
+      ),
+    );
+  }
 }

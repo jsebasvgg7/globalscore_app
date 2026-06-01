@@ -138,7 +138,7 @@ class _TitleRow extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+      color: const Color(0xFFF5F2EE),
         borderRadius: BorderRadius.circular(12),
         border: Border(left: BorderSide(color: color, width: 3)),
         boxShadow: [
@@ -341,7 +341,7 @@ class _AchievementRow extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+        color: const Color(0xFFF5F2EE),
           borderRadius: BorderRadius.circular(10),
           border: Border(
             left: BorderSide(

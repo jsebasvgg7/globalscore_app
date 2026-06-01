@@ -1,5 +1,4 @@
-﻿import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -12,6 +11,10 @@ import '../../features/albums/presentation/albums_page.dart';
 import '../../features/albums/presentation/album_detail_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
 import '../../features/profile/presentation/public_profile_page.dart';
+import '../../features/profile/presentation/pages/achievements_page.dart';
+import '../../features/profile/presentation/pages/championships_page.dart';
+import '../../features/profile/presentation/pages/history_page.dart';
+import '../../features/profile/presentation/pages/edit_profile_page.dart';
 import '../../shared/layout/scaffold_with_nav_bar.dart';
 import 'router_notifier.dart';
 
@@ -78,6 +81,24 @@ final routerProvider = Provider<GoRouter>((ref) {
             GoRoute(
               path: '/profile',
               builder: (_, __) => const ProfilePage(),
+              routes: [
+                GoRoute(
+                  path: 'achievements',
+                  builder: (_, __) => const AchievementsPage(),
+                ),
+                GoRoute(
+                  path: 'championships',
+                  builder: (_, __) => const ChampionshipsPage(),
+                ),
+                GoRoute(
+                  path: 'history',
+                  builder: (_, __) => const PredictionHistoryPage(),
+                ),
+                GoRoute(
+                  path: 'edit',
+                  builder: (_, __) => const EditProfilePage(),
+                ),
+              ],
             ),
           ]),
         ],

@@ -451,41 +451,40 @@ class _FormField extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;
   final int maxLines;
-
+ 
   const _FormField({
     required this.controller,
     required this.hintText,
     this.maxLines = 1,
   });
-
+ 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      style: Theme.of(context).textTheme.bodyMedium,
+      style: const TextStyle(
+        color: Color(0xFF1A1A2E),
+        fontSize: 14,
+      ),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.35),
+        hintStyle: const TextStyle(
+          color: Color(0x601A1A2E),
         ),
         filled: true,
-        fillColor: Theme.of(context).colorScheme.surface,
+        fillColor: const Color(0xFFEEEAE4), // fondo crema, no blanco
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 12,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant,
-          ),
+          borderSide: const BorderSide(color: Color(0xFFD5D0CA)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant,
-          ),
+          borderSide: const BorderSide(color: Color(0xFFD5D0CA)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

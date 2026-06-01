@@ -1,53 +1,43 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../domain/profile_models.dart';
 
-/// Banner hero superior del perfil.
-/// Replica exactamente el diseño de la web: imagen de banner full-width,
-/// avatar superpuesto abajo a la izquierda con badge de nivel.
+bool _hasUrl(String? url) => url != null && url.trim().isNotEmpty;
+
 class ProfileHeroBanner extends StatelessWidget {
   final UserProfile profile;
   final bool isOwner;
-  final VoidCallback? onEditTap;
 
   const ProfileHeroBanner({
     super.key,
     required this.profile,
     required this.isOwner,
-    this.onEditTap,
   });
 
-  static const double _bannerHeight = 180.0;
-  static const double _avatarRadius = 38.0;
+  // 25% menos que 180 → 135
+  static const double _bannerHeight = 135.0;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
-      clipBehavior: Clip.none,
       children: [
-        // ── Banner ──────────────────────────────
-        _BannerImage(
-          url: profile.equippedBannerUrl,
-          height: _bannerHeight,
-        ),
-
-        // ── Label "PERFIL · GLOBALSCORE" ────────
+        _BannerImage(url: profile.equippedBannerUrl, height: _bannerHeight),
         Positioned(
-          bottom: 12,
-          left: 16,
+          bottom: 10,
+          left: 14,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: const Color(0xFF60519B).withOpacity(0.85),
               borderRadius: BorderRadius.circular(4),
             ),
-            child: Text(
+            child: const Text(
               'PERFIL · GLOBALSCORE',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Colors.white,
-                    letterSpacing: 1.5,
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                letterSpacing: 1.5,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),
@@ -59,47 +49,50 @@ class ProfileHeroBanner extends StatelessWidget {
 class _BannerImage extends StatelessWidget {
   final String? url;
   final double height;
-
   const _BannerImage({required this.url, required this.height});
 
   @override
   Widget build(BuildContext context) {
-    if (url != null && url!.isNotEmpty) {
-      return CachedNetworkImage(
-        imageUrl: url!,
+    if (_hasUrl(url)) {
+      return Image.network(
+        url!,
         height: height,
         width: double.infinity,
         fit: BoxFit.cover,
-        placeholder: (_, __) => _placeholder(height),
-        errorWidget: (_, __, ___) => _fallback(height),
+        loadingBuilder: (_, child, progress) =>
+            progress == null ? child : _Fallback(height: height),
+        errorBuilder: (_, __, ___) => _Fallback(height: height),
       );
     }
-    return _fallback(height);
+    return _Fallback(height: height);
   }
-
-  Widget _placeholder(double h) => Container(
-        height: h,
-        color: const Color(0xFFE0DCF5),
-      );
-
-  Widget _fallback(double h) => Container(
-        height: h,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF60519B), Color(0xFF8B7FC7)],
-          ),
-        ),
-      );
 }
 
-/// Fila de identidad debajo del banner: avatar + nombre + nivel.
-/// Usada en ProfilePage y PublicProfilePage.
+class _Fallback extends StatelessWidget {
+  final double height;
+  const _Fallback({required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF60519B), Color(0xFF8B7FC7)],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Fila de identidad ────────────────────────
 class ProfileIdentityRow extends StatelessWidget {
   final UserProfile profile;
   final bool isOwner;
-  final VoidCallback? onTap; // navegar al perfil o editar
+  final VoidCallback? onTap;
 
   const ProfileIdentityRow({
     super.key,
@@ -110,36 +103,33 @@ class ProfileIdentityRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
     return InkWell(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            // Avatar
-            _Avatar(url: profile.avatarUrl, radius: 30),
+            _NetworkAvatar(url: profile.avatarUrl, radius: 30),
             const SizedBox(width: 12),
-
-            // Nombre + nivel
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     profile.name,
-                    style: textTheme.titleMedium?.copyWith(
+                    style: const TextStyle(
+                      fontSize: 16,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.3,
+                      color: Color(0xFF1A1A2E),
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     'GLOBAL · NIV.${profile.level}',
-                    style: textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.5),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0x801A1A2E),
                       letterSpacing: 1.0,
                       fontWeight: FontWeight.w600,
                     ),
@@ -147,12 +137,7 @@ class ProfileIdentityRow extends StatelessWidget {
                 ],
               ),
             ),
-
-            // Chevron
-            Icon(
-              Icons.chevron_right,
-              color: colorScheme.onSurface.withOpacity(0.3),
-            ),
+            const Icon(Icons.chevron_right, color: Color(0x401A1A2E), size: 22),
           ],
         ),
       ),
@@ -160,7 +145,37 @@ class ProfileIdentityRow extends StatelessWidget {
   }
 }
 
-/// Avatar circular con badge de nivel superpuesto (igual que en React).
+// ─── Avatar circular robusto ──────────────────
+class _NetworkAvatar extends StatelessWidget {
+  final String? url;
+  final double radius;
+  const _NetworkAvatar({required this.url, required this.radius});
+
+  @override
+  Widget build(BuildContext context) {
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: const Color(0xFFE0DCF5),
+      child: _hasUrl(url)
+          ? ClipOval(
+              child: Image.network(
+                url!,
+                width: radius * 2,
+                height: radius * 2,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Icon(
+                  Icons.person,
+                  size: radius * 0.9,
+                  color: const Color(0xFF60519B),
+                ),
+              ),
+            )
+          : Icon(Icons.person, size: radius * 0.9, color: const Color(0xFF60519B)),
+    );
+  }
+}
+
+/// Avatar con badge de nivel (usado en EditTab)
 class ProfileAvatar extends StatelessWidget {
   final String? url;
   final double radius;
@@ -178,7 +193,7 @@ class ProfileAvatar extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        _Avatar(url: url, radius: radius),
+        _NetworkAvatar(url: url, radius: radius),
         Positioned(
           bottom: -8,
           left: 0,
@@ -200,8 +215,7 @@ class ProfileAvatar extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.military_tech,
-                      color: Colors.white, size: 12),
+                  const Icon(Icons.military_tech, color: Colors.white, size: 12),
                   const SizedBox(width: 3),
                   Text(
                     'Lvl $level',
@@ -221,46 +235,23 @@ class ProfileAvatar extends StatelessWidget {
   }
 }
 
-class _Avatar extends StatelessWidget {
-  final String? url;
-  final double radius;
-
-  const _Avatar({required this.url, required this.radius});
-
-  @override
-  Widget build(BuildContext context) {
-    return CircleAvatar(
-      radius: radius,
-      backgroundColor: const Color(0xFFE0DCF5),
-      backgroundImage: (url != null && url!.isNotEmpty)
-          ? CachedNetworkImageProvider(url!)
-          : null,
-      child: (url == null || url!.isEmpty)
-          ? Icon(Icons.person, size: radius, color: const Color(0xFF60519B))
-          : null,
-    );
-  }
-}
-
-/// Barra de stats oscura: Puntos / Aciertos / Precisión
+/// Barra de stats oscura
 class ProfileStatsBar extends StatelessWidget {
   final UserProfile profile;
-
   const ProfileStatsBar({super.key, required this.profile});
 
   @override
   Widget build(BuildContext context) {
     final accuracy = profile.accuracy.round();
-
     return Container(
       color: const Color(0xFF1E2032),
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         children: [
           _StatCell(value: '${profile.points}', label: 'PUNTOS'),
-          _Divider(),
+          _VDivider(),
           _StatCell(value: '${profile.correct}', label: 'ACIERTOS'),
-          _Divider(),
+          _VDivider(),
           _StatCell(value: '$accuracy%', label: 'PRECISIÓN'),
         ],
       ),
@@ -271,7 +262,6 @@ class ProfileStatsBar extends StatelessWidget {
 class _StatCell extends StatelessWidget {
   final String value;
   final String label;
-
   const _StatCell({required this.value, required this.label});
 
   @override
@@ -305,13 +295,9 @@ class _StatCell extends StatelessWidget {
   }
 }
 
-class _Divider extends StatelessWidget {
+class _VDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 40,
-      color: Colors.white.withOpacity(0.12),
-    );
+    return Container(width: 1, height: 40, color: Colors.white.withOpacity(0.12));
   }
 }
