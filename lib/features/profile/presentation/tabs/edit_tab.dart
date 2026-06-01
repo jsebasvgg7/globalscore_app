@@ -11,8 +11,8 @@ import '../widgets/profile_hero_banner.dart';
 // ─── Cloudinary config ────────────────────────
 // Reemplaza con tus valores reales
 const _cloudinaryUploadUrl =
-    'https://api.cloudinary.com/v1_1/TU_CLOUD_NAME/image/upload';
-const _cloudinaryUploadPreset = 'TU_UPLOAD_PRESET';
+    'https://api.cloudinary.com/v1_1/djahz5tq3/image/upload';
+const _cloudinaryUploadPreset = 'globalscoredb';
 
 class EditTab extends ConsumerStatefulWidget {
   final UserProfile profile;
