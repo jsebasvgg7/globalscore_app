@@ -193,25 +193,6 @@ class _GsTopBarState extends State<_GsTopBar> {
           ),
 
           const Spacer(),
-
-          // ── Reloj ──
-          if (_clock.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                border: Border.all(color: _GsColors.border, width: 1.0),
-              ),
-              child: Text(
-                _clock,
-                style: const TextStyle(
-                  fontFamily: _GsColors.fontMono,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: _GsColors.muted,
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ),
           const SizedBox(width: 8),
 
           // ── Botón World ──
