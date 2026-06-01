@@ -5,12 +5,35 @@ import '../../domain/history_providers.dart';
 import '../../domain/history_models.dart';
 import '../../data/history_service.dart';
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-const _kAccent = Color(0xFF5B4FD8);
-const _kBg = Color(0xFFF0EDE8);
-const _kDark = Color(0xFF1A1A2E);
-const _kMuted = Color(0xFF88887D);
-const _kBorder = Color(0xFFC4BFB8);
+// ─── Paleta neobrutalista ─────────────────────────────────────────────────────
+const _kBg      = Color(0xFFF0EDE8);  // crema base
+const _kDark    = Color(0xFF1A1A2E);  // casi negro azulado
+const _kAccent  = Color(0xFF5B4FD8);  // violeta
+const _kGold    = Color(0xFFF59E0B);  // oro
+const _kGreen   = Color(0xFF1D9E75);  // verde
+const _kMuted   = Color(0xFF88887D);
+const _kBorder  = Color(0xFF1A1A2E);  // borde negro duro (neobrutalista)
+const _kBorderL = Color(0xFFC4BFB8);  // borde suave para divisores internos
+
+// Sombra desplazada — signature del neobrutalismo
+BoxDecoration _neoBox({
+  Color bg = _kBg,
+  Color border = _kBorder,
+  double shadowX = 3,
+  double shadowY = 3,
+  Color? shadowColor,
+}) =>
+    BoxDecoration(
+      color: bg,
+      border: Border.all(color: border, width: 1.5),
+      boxShadow: [
+        BoxShadow(
+          color: shadowColor ?? _kDark.withOpacity(0.55),
+          offset: Offset(shadowX, shadowY),
+          blurRadius: 0,
+        ),
+      ],
+    );
 
 TextStyle _mono({
   Color color = _kDark,
@@ -27,7 +50,7 @@ TextStyle _mono({
     );
 
 // ══════════════════════════════════════════════════════════════
-//  HISTORY VAULT PAGE (landing)
+//  ROOT
 // ══════════════════════════════════════════════════════════════
 
 class HistoryVaultPage extends ConsumerWidget {
@@ -42,10 +65,8 @@ class HistoryVaultPage extends ConsumerWidget {
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // ── Hero header ──
           SliverToBoxAdapter(child: _HeroHeader()),
 
-          // ── Stats row ──
           SliverToBoxAdapter(
             child: statsAsync.when(
               data: (s) => _StatsRow(stats: s),
@@ -54,71 +75,63 @@ class HistoryVaultPage extends ConsumerWidget {
             ),
           ),
 
-          // ── Featured carousel (events) ──
           SliverToBoxAdapter(child: _FeaturedCarousel()),
 
-          // ── Section label ──
+          // Label EXPLORA POR SECCIONES
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 28, 16, 12),
               child: Row(
                 children: [
-                  Container(width: 3, height: 14, color: _kAccent),
+                  Container(width: 4, height: 14, color: _kAccent),
                   const SizedBox(width: 8),
                   Text(
                     'EXPLORA POR SECCIONES',
-                    style: _mono(
-                      size: 10,
-                      weight: FontWeight.w700,
-                      letterSpacing: 1.4,
-                      color: _kMuted,
-                    ),
+                    style: _mono(size: 10, weight: FontWeight.w700, letterSpacing: 1.6, color: _kMuted),
                   ),
                 ],
               ),
             ),
           ),
 
-          // ── 3 section cards (sin línea rara) ──
+          // Section cards
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                childAspectRatio: 0.85,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.75,
               ),
               delegate: SliverChildListDelegate([
                 _SectionCard(
                   icon: Icons.emoji_events_outlined,
                   label: 'COMPETICIONES',
-                  subtitle: 'Torneos y campeonatos que hicieron historia.',
+                  subtitle: 'Torneos y campeonatos históricos.',
                   section: 'competitions',
-                  color: const Color(0xFFF59E0B),
+                  color: _kGold,
                 ),
                 _SectionCard(
                   icon: Icons.star_border_rounded,
                   label: 'EVENTOS',
-                  subtitle: 'Momentos inolvidables del fútbol mundial.',
+                  subtitle: 'Momentos del fútbol mundial.',
                   section: 'events',
-                  color: const Color(0xFF8B5CF6),
+                  color: _kAccent,
                 ),
                 _SectionCard(
                   icon: Icons.person_outline_rounded,
                   label: 'LEYENDAS',
-                  subtitle: 'Los jugadores que cambiaron el juego.',
+                  subtitle: 'Jugadores que cambiaron el juego.',
                   section: 'players',
-                  color: const Color(0xFF1D9E75),
+                  color: _kGreen,
                 ),
               ]),
             ),
           ),
 
-          // ── Equipos destacados (4 más recientes, grid 2×2) ──
-          SliverToBoxAdapter(child: _FeaturedTeamsGrid()),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+          SliverToBoxAdapter(child: _FeaturedTeamsStrip()),
+          const SliverToBoxAdapter(child: SizedBox(height: 40)),
         ],
       ),
     );
@@ -126,49 +139,73 @@ class HistoryVaultPage extends ConsumerWidget {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  HERO HEADER
+//  HERO HEADER — retro editorial con dot grid decorativo
 // ══════════════════════════════════════════════════════════════
 
 class _HeroHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 20),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: _kBorder, width: 1)),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 22),
+      decoration: BoxDecoration(
+        color: _kBg,
+        border: Border(bottom: BorderSide(color: _kBorder, width: 1.5)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Row(
+          // Dot grid decorativo (esquina superior derecha)
+          Positioned(
+            right: 0,
+            top: 0,
+            child: _DotGrid(cols: 6, rows: 5),
+          ),
+
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                color: _kAccent,
-                child: Text(
-                  'GLOBALSCORE',
-                  style: _mono(color: Colors.white, size: 9, weight: FontWeight.w800, letterSpacing: 1.2),
-                ),
+              // Breadcrumb
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: _neoBox(bg: _kAccent, shadowX: 2, shadowY: 2),
+                    child: Text(
+                      'GLOBALSCORE',
+                      style: _mono(color: Colors.white, size: 9, weight: FontWeight.w800, letterSpacing: 1.4),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('HISTÓRICO', style: _mono(size: 9, color: _kMuted, letterSpacing: 1.2)),
+                ],
               ),
-              const SizedBox(width: 8),
-              Text('HISTÓRICO', style: _mono(size: 9, color: _kMuted, letterSpacing: 1.2)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'BÓVEDA\nHISTÓRICA',
-            style: _mono(size: 36, weight: FontWeight.w900, letterSpacing: -1),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Container(width: 3, height: 36, color: _kAccent),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Explora la historia que\ndefinió el fútbol.',
-                  style: _mono(size: 13, color: _kMuted),
-                ),
+              const SizedBox(height: 14),
+
+              // Título grande
+              Text(
+                'BÓVEDA\nHISTÓRICA',
+                style: _mono(size: 38, weight: FontWeight.w900, letterSpacing: -1.5),
+              ),
+              const SizedBox(height: 14),
+
+              // Subtítulo con barra izquierda
+              Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: _kAccent,
+                      border: Border.all(color: _kBorder, width: 1),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Explora la historia que\ndefinió el fútbol.',
+                      style: _mono(size: 13, color: _kMuted),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -178,8 +215,44 @@ class _HeroHeader extends StatelessWidget {
   }
 }
 
+// Dot grid decorativo — no requiere assets
+class _DotGrid extends StatelessWidget {
+  final int cols;
+  final int rows;
+  const _DotGrid({required this.cols, required this.rows});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: cols * 14.0,
+      height: rows * 14.0,
+      child: CustomPaint(painter: _DotPainter(cols: cols, rows: rows)),
+    );
+  }
+}
+
+class _DotPainter extends CustomPainter {
+  final int cols;
+  final int rows;
+  _DotPainter({required this.cols, required this.rows});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = _kBorder.withOpacity(0.18);
+    final step = 14.0;
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        canvas.drawCircle(Offset(c * step + 7, r * step + 7), 1.5, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_) => false;
+}
+
 // ══════════════════════════════════════════════════════════════
-//  STATS ROW
+//  STATS ROW — sombra desplazada en cada celda
 // ══════════════════════════════════════════════════════════════
 
 class _StatsRow extends StatelessWidget {
@@ -195,10 +268,8 @@ class _StatsRow extends StatelessWidget {
     ];
 
     return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border.all(color: _kBorder, width: 1),
-      ),
+      margin: const EdgeInsets.fromLTRB(16, 20, 16, 4),
+      decoration: _neoBox(shadowX: 4, shadowY: 4),
       child: IntrinsicHeight(
         child: Row(
           children: items.asMap().entries.map((e) {
@@ -209,36 +280,31 @@ class _StatsRow extends StatelessWidget {
                 decoration: BoxDecoration(
                   border: isLast
                       ? null
-                      : const Border(right: BorderSide(color: _kBorder)),
+                      : Border(right: BorderSide(color: _kBorder, width: 1.5)),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
                         color: _kAccent,
-                        child: Icon(icon, size: 16, color: Colors.white),
+                        border: Border.all(color: _kBorder, width: 1),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '$count',
-                              style: _mono(size: 18, weight: FontWeight.w900, color: _kAccent),
-                            ),
-                            Text(
-                              label,
-                              style: _mono(size: 7, weight: FontWeight.w700, letterSpacing: 0.8, color: _kMuted),
-                            ),
-                          ],
-                        ),
+                      child: Icon(icon, size: 16, color: Colors.white),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('$count', style: _mono(size: 18, weight: FontWeight.w900, color: _kAccent)),
+                          Text(label, style: _mono(size: 7, weight: FontWeight.w700, letterSpacing: 0.8, color: _kMuted)),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             );
@@ -250,7 +316,7 @@ class _StatsRow extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  FEATURED CAROUSEL (events) — fix: usa bannerImagePath ?? imagePath
+//  FEATURED CAROUSEL — borde negro + sombra desplazada
 // ══════════════════════════════════════════════════════════════
 
 class _FeaturedCarousel extends ConsumerStatefulWidget {
@@ -263,10 +329,7 @@ class _FeaturedCarouselState extends ConsumerState<_FeaturedCarousel> {
   int _current = 0;
 
   @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
+  void dispose() { _ctrl.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
@@ -275,42 +338,47 @@ class _FeaturedCarouselState extends ConsumerState<_FeaturedCarousel> {
     return eventsAsync.when(
       loading: () => Container(
         height: 200,
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        color: _kDark,
+        margin: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+        decoration: _neoBox(bg: _kDark),
         child: const Center(child: CircularProgressIndicator(color: _kAccent)),
       ),
       error: (_, __) => const SizedBox.shrink(),
       data: (events) {
         final featured = events.take(4).toList();
         if (featured.isEmpty) return const SizedBox.shrink();
-
         return Column(
           children: [
-            SizedBox(
-              height: 200,
-              child: PageView.builder(
-                controller: _ctrl,
-                onPageChanged: (i) => setState(() => _current = i),
-                itemCount: featured.length,
-                itemBuilder: (_, i) => _EventCarouselCard(
-                  event: featured[i],
-                  onTap: () {
-                    ref.read(historySectionProvider.notifier).setSection('events');
-                    ref.read(selectedEventProvider.notifier).select(featured[i]);
-                  },
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+              child: SizedBox(
+                height: 210,
+                child: PageView.builder(
+                  controller: _ctrl,
+                  onPageChanged: (i) => setState(() => _current = i),
+                  itemCount: featured.length,
+                  itemBuilder: (_, i) => _EventCarouselCard(
+                    event: featured[i],
+                    onTap: () {
+                      ref.read(historySectionProvider.notifier).setSection('events');
+                      ref.read(selectedEventProvider.notifier).select(featured[i]);
+                    },
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(featured.length, (i) {
                 return AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: _current == i ? 16 : 6,
+                  width: _current == i ? 18 : 6,
                   height: 6,
-                  color: _current == i ? _kAccent : _kBorder,
+                  decoration: BoxDecoration(
+                    color: _current == i ? _kAccent : _kBorderL,
+                    border: Border.all(color: _kBorder, width: _current == i ? 1 : 0.5),
+                  ),
                 );
               }),
             ),
@@ -328,7 +396,6 @@ class _EventCarouselCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // FIX: prioriza bannerImagePath, luego imagePath
     final rawPath = event.bannerImagePath ?? event.imagePath;
     final imgUrl = getHistoricalImageUrl(rawPath);
     final year = event.year;
@@ -336,30 +403,19 @@ class _EventCarouselCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
         clipBehavior: Clip.hardEdge,
-        decoration: BoxDecoration(
-          color: _kDark,
-          border: Border.all(color: _kBorder),
-        ),
+        decoration: _neoBox(bg: _kDark, shadowX: 4, shadowY: 4),
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Background image
             if (imgUrl != null)
-              Image.network(
-                imgUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(color: _kDark),
-                loadingBuilder: (_, child, progress) {
-                  if (progress == null) return child;
-                  return Container(color: _kDark);
-                },
-              )
+              Image.network(imgUrl, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(color: _kDark),
+                  loadingBuilder: (_, child, p) => p == null ? child : Container(color: _kDark))
             else
               Container(color: _kDark),
 
-            // Gradient overlay
+            // Gradiente oscuro abajo
             Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
@@ -370,11 +426,9 @@ class _EventCarouselCard extends StatelessWidget {
               ),
             ),
 
-            // Content
+            // Contenido
             Positioned(
-              left: 12,
-              right: 52,
-              bottom: 12,
+              left: 12, right: 52, bottom: 12,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -382,33 +436,33 @@ class _EventCarouselCard extends StatelessWidget {
                   if (event.eventType != null)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                      color: _kAccent,
-                      child: Text(
-                        event.eventType!.toUpperCase(),
-                        style: _mono(color: Colors.white, size: 8, weight: FontWeight.w700, letterSpacing: 1),
+                      decoration: BoxDecoration(
+                        color: _kAccent,
+                        border: Border.all(color: Colors.white24, width: 0.5),
                       ),
+                      child: Text(event.eventType!.toUpperCase(),
+                          style: _mono(color: Colors.white, size: 8, weight: FontWeight.w700, letterSpacing: 1)),
                     ),
                   const SizedBox(height: 6),
                   if (year != null)
                     Text('$year', style: _mono(color: Colors.white70, size: 10)),
-                  Text(
-                    event.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: _mono(color: Colors.white, size: 16, weight: FontWeight.w800),
-                  ),
+                  Text(event.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: _mono(color: Colors.white, size: 16, weight: FontWeight.w800)),
                 ],
               ),
             ),
 
-            // Arrow button
+            // Botón flecha neobrutalista
             Positioned(
-              right: 12,
-              bottom: 12,
+              right: 12, bottom: 12,
               child: Container(
-                width: 32,
-                height: 32,
-                color: _kAccent,
+                width: 34, height: 34,
+                decoration: BoxDecoration(
+                  color: _kAccent,
+                  border: Border.all(color: Colors.white, width: 1.5),
+                ),
                 child: const Icon(Icons.arrow_forward, color: Colors.white, size: 16),
               ),
             ),
@@ -420,7 +474,7 @@ class _EventCarouselCard extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  SECTION CARDS — sin borde extra que generaba "línea rara"
+//  SECTION CARDS — neobrutalista: borde negro + sombra desplazada
 // ══════════════════════════════════════════════════════════════
 
 class _SectionCard extends ConsumerWidget {
@@ -443,44 +497,34 @@ class _SectionCard extends ConsumerWidget {
     return GestureDetector(
       onTap: () => ref.read(historySectionProvider.notifier).setSection(section),
       child: Container(
-        // Solo border simple, sin decoración extra
-        decoration: BoxDecoration(
-          color: _kBg,
-          border: Border.all(color: _kBorder, width: 1),
-        ),
+        decoration: _neoBox(shadowX: 3, shadowY: 3),
         padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 34,
-              height: 34,
-              color: color,
+              width: 34, height: 34,
+              decoration: BoxDecoration(
+                color: color,
+                border: Border.all(color: _kBorder, width: 1),
+              ),
               child: Icon(icon, size: 17, color: Colors.white),
             ),
             const SizedBox(height: 8),
-            Text(
-              label,
-              style: _mono(size: 9, weight: FontWeight.w800),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+            Text(label, style: _mono(size: 9, weight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 3),
             Expanded(
-              child: Text(
-                subtitle,
-                style: _mono(size: 8, color: _kMuted),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(subtitle, style: _mono(size: 8, color: _kMuted), maxLines: 3, overflow: TextOverflow.ellipsis),
             ),
             const SizedBox(height: 6),
             Align(
               alignment: Alignment.bottomRight,
               child: Container(
-                width: 22,
-                height: 22,
-                color: color,
+                width: 22, height: 22,
+                decoration: BoxDecoration(
+                  color: color,
+                  border: Border.all(color: _kBorder, width: 1),
+                ),
                 child: const Icon(Icons.arrow_forward, size: 11, color: Colors.white),
               ),
             ),
@@ -492,10 +536,10 @@ class _SectionCard extends ConsumerWidget {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  EQUIPOS DESTACADOS — grid 2×2 (reemplaza al random spinner)
+//  EQUIPOS DESTACADOS — horizontal scroll, chips neobrutalistas
 // ══════════════════════════════════════════════════════════════
 
-class _FeaturedTeamsGrid extends ConsumerWidget {
+class _FeaturedTeamsStrip extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final teamsAsync = ref.watch(historyTeamsProvider);
@@ -505,41 +549,36 @@ class _FeaturedTeamsGrid extends ConsumerWidget {
       error: (_, __) => const SizedBox.shrink(),
       data: (teams) {
         if (teams.isEmpty) return const SizedBox.shrink();
-        // Los 4 primeros (el servicio ya los ordena; aquí tomamos los primeros
-        // de la lista que equivalen a los más recientes por cómo fetchTeams ordena)
         final featured = teams.take(4).toList();
 
         return Column(
           children: [
-            // Header
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 28, 16, 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
                     children: [
-                      Container(width: 3, height: 14, color: _kAccent),
+                      Container(width: 4, height: 14, color: _kAccent),
                       const SizedBox(width: 8),
-                      Text(
-                        'EQUIPOS DESTACADOS',
-                        style: _mono(size: 10, weight: FontWeight.w700, letterSpacing: 1.2, color: _kMuted),
-                      ),
+                      Text('EQUIPOS DESTACADOS',
+                          style: _mono(size: 10, weight: FontWeight.w700, letterSpacing: 1.2, color: _kMuted)),
                     ],
                   ),
                   GestureDetector(
                     onTap: () => ref.read(historySectionProvider.notifier).setSection('teams'),
                     child: Row(
                       children: [
-                        Text(
-                          'VER TODOS',
-                          style: _mono(size: 9, weight: FontWeight.w700, color: _kAccent, letterSpacing: 0.8),
-                        ),
+                        Text('VER TODOS',
+                            style: _mono(size: 9, weight: FontWeight.w700, color: _kAccent, letterSpacing: 0.8)),
                         const SizedBox(width: 6),
                         Container(
-                          width: 20,
-                          height: 20,
-                          color: _kAccent,
+                          width: 20, height: 20,
+                          decoration: BoxDecoration(
+                            color: _kAccent,
+                            border: Border.all(color: _kBorder, width: 1),
+                          ),
                           child: const Icon(Icons.add, size: 12, color: Colors.white),
                         ),
                       ],
@@ -549,20 +588,13 @@ class _FeaturedTeamsGrid extends ConsumerWidget {
               ),
             ),
 
-            // Grid 2×2
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  childAspectRatio: 1.15,
-                ),
+            SizedBox(
+              height: 130,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: featured.length,
-                itemBuilder: (_, i) => _FeaturedTeamCard(team: featured[i]),
+                itemBuilder: (_, i) => _TeamChip(team: featured[i]),
               ),
             ),
           ],
@@ -572,24 +604,21 @@ class _FeaturedTeamsGrid extends ConsumerWidget {
   }
 }
 
-class _FeaturedTeamCard extends ConsumerWidget {
+class _TeamChip extends ConsumerWidget {
   final HistoricalTeam team;
-  const _FeaturedTeamCard({required this.team});
+  const _TeamChip({required this.team});
 
-  Color get _primaryColor {
+  Color get _teamColor {
     if (team.primaryColor == null) return _kAccent;
     try {
       final hex = team.primaryColor!.replaceAll('#', '');
       return Color(int.parse('FF$hex', radix: 16));
-    } catch (_) {
-      return _kAccent;
-    }
+    } catch (_) { return _kAccent; }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final imgUrl = getHistoricalImageUrl(team.imagePath);
-    final color = _primaryColor;
 
     return GestureDetector(
       onTap: () {
@@ -597,43 +626,31 @@ class _FeaturedTeamCard extends ConsumerWidget {
         ref.read(selectedTeamProvider.notifier).select(team);
       },
       child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: _kBorder, width: 1),
-          color: _kBg,
-        ),
-        padding: const EdgeInsets.all(12),
+        width: 100,
+        margin: const EdgeInsets.only(right: 10),
+        decoration: _neoBox(shadowX: 3, shadowY: 3),
+        padding: const EdgeInsets.all(10),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
-              width: 52,
-              height: 52,
+              width: 52, height: 52,
               child: imgUrl != null
-                  ? Image.network(
-                      imgUrl,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) =>
-                          Icon(Icons.shield, size: 32, color: color),
-                    )
-                  : Icon(Icons.shield, size: 32, color: color),
+                  ? Image.network(imgUrl, fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Icon(Icons.shield, size: 30, color: _teamColor))
+                  : Icon(Icons.shield, size: 30, color: _teamColor),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 7),
             Text(
               team.name.toUpperCase(),
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: _mono(size: 9, weight: FontWeight.w800),
+              style: _mono(size: 8, weight: FontWeight.w800),
             ),
             if (team.era != null) ...[
               const SizedBox(height: 2),
-              Text(
-                team.era!,
-                style: _mono(size: 8, color: _kMuted),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              Text(team.era!, style: _mono(size: 7, color: _kMuted), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
             ],
           ],
         ),
