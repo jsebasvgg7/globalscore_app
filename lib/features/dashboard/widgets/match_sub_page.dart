@@ -114,69 +114,54 @@ class _BrutalistSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
     return Material(
       color: _bg,
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header ──
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-              decoration: const BoxDecoration(
-                color: _card,
-                border: Border(bottom: BorderSide(color: _borderH, width: 1.5)),
-              ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      width: 34, height: 34,
-                      decoration: BoxDecoration(
-                        color: _surface,
-                        border: Border.all(color: _borderH, width: 1.5),
-                        boxShadow: const [_shadowSm],
-                      ),
-                      child: const Icon(Icons.arrow_back, color: _muted, size: 16),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '// $subtitle',
-                          style: _mono(color: _accent, size: 8, weight: FontWeight.w700, letterSpacing: 2),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          title,
-                          style: _mono(color: _text, size: 20, weight: FontWeight.w700),
-                        ),
-                      ],
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      width: 34, height: 34,
-                      decoration: BoxDecoration(
-                        color: _surface,
-                        border: Border.all(color: _borderH, width: 1.5),
-                        boxShadow: const [_shadowSm],
-                      ),
-                      child: const Icon(Icons.close, color: _muted, size: 16),
-                    ),
-                  ),
-                ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header ──
+          Container(
+            padding: EdgeInsets.fromLTRB(16, topPad + 10, 16, 10),
+            decoration: const BoxDecoration(
+              color: _card,
+              border: Border(
+                top: BorderSide(color: _accent, width: 4),
+                bottom: BorderSide(color: _borderH, width: 1.5),
               ),
             ),
-            // ── Content ──
-            Expanded(child: child),
-          ],
-        ),
+            child: Row(
+              children: [
+                // Botón atrás — sin contenedor
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(Icons.arrow_back, color: _muted, size: 18),
+                  ),
+                ),
+                // Título centrado
+                Expanded(
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: _mono(color: _text, size: 14, weight: FontWeight.w700, letterSpacing: 1.2),
+                  ),
+                ),
+                // Botón cerrar — sin contenedor
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(Icons.close, color: _muted, size: 18),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // ── Content ──
+          Expanded(child: child),
+        ],
       ),
     );
   }

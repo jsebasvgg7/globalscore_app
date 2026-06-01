@@ -33,7 +33,6 @@ TextStyle _mono({Color color = _text, double size = 12, FontWeight weight = Font
 const _tFast   = Duration(milliseconds: 180);
 const _tMed    = Duration(milliseconds: 340);
 const _tSlow   = Duration(milliseconds: 520);
-const _tStagger= Duration(milliseconds: 80);
 
 // ─────────────────────────────────────────────────────────────
 //  WIDGET RAÍZ
@@ -59,7 +58,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
 
   // ── Controlador para progress bar fill ───────────────────
   late final AnimationController _barCtrl;
-  late final Animation<double>   _barAnim;
   double _barTarget = 0;
 
   @override
@@ -82,9 +80,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
 
     // Progress bar
     _barCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
-    _barAnim = CurvedAnimation(parent: _barCtrl, curve: Curves.easeOutCubic);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => _entryCtrl.forward());
+    _entryCtrl.value = 1; // evita frame vacío inicial
   }
 
   @override
@@ -138,8 +135,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
 
     return Scaffold(
       backgroundColor: _bg,
-      body: SafeArea(
-        child: dashAsync.when(
+      body: dashAsync.when(
           loading: () => const _BrutalistSkeleton(),
           error: (e, _) => _ErrorPanel(error: '$e', onRetry: _refresh),
           data: (data) {
@@ -226,6 +222,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       physics: const BouncingScrollPhysics(),
+                      clipBehavior: Clip.none,
                       padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
                       child: IntrinsicHeight(
                         child: Row(
@@ -314,7 +311,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
             );
           },
         ),
-      ),
     );
   }
 }
