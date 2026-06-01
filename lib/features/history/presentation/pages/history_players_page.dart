@@ -4,17 +4,39 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../data/history_service.dart';
 import '../../domain/history_models.dart';
 import '../../domain/history_providers.dart';
+// history_app_bar kept for detail view only
 import '../widgets/history_app_bar.dart';
 
-// ── Paleta ────────────────────────────────────────────────────
-const _kBg     = Color(0xFFF0EDE8);
-const _kDark   = Color(0xFF1A1A2E);
-const _kAccent = Color(0xFF5B4FD8);
-const _kGold   = Color(0xFFF59E0B);
-const _kGreen  = Color(0xFF1D9E75);
-const _kMuted  = Color(0xFF88887D);
-const _kBorder = Color(0xFFC4BFB8);
-const _kCard   = Color(0xFFEBE7E1);
+// ── Paleta (idéntica a vault_page) ────────────────────────────
+const _kBg      = Color(0xFFF0EDE8);
+const _kDark    = Color(0xFF1A1A2E);
+const _kAccent  = Color(0xFF5B4FD8);
+const _kGold    = Color(0xFFF59E0B);
+const _kGreen   = Color(0xFF1D9E75);
+const _kMuted   = Color(0xFF88887D);
+const _kBorder  = Color(0xFF1A1A2E);
+const _kBorderL = Color(0xFFC4BFB8);
+const _kCard    = Color(0xFFEBE7E1);
+
+// Sombra desplazada — neobrutalista
+BoxDecoration _neoBox({
+  Color bg = _kBg,
+  Color border = _kBorder,
+  double shadowX = 3,
+  double shadowY = 3,
+  Color? shadowColor,
+}) =>
+    BoxDecoration(
+      color: bg,
+      border: Border.all(color: border, width: 1.5),
+      boxShadow: [
+        BoxShadow(
+          color: shadowColor ?? _kDark.withOpacity(0.55),
+          offset: Offset(shadowX, shadowY),
+          blurRadius: 0,
+        ),
+      ],
+    );
 
 TextStyle _mono({
   Color color = _kDark,
@@ -33,11 +55,18 @@ TextStyle _mono({
 // ── Helpers ───────────────────────────────────────────────────
 const _positionLabel = {
   'Forward': 'Delantero',
-  'Midfielder': 'Centrocampista',
-  'Play-maker': 'Media Punta',
+  'Midfielder': 'Mediocampista',
+  'Play-maker': 'Mediocampista',
   'All-rounder': 'Todocampista',
   'Defender': 'Defensor',
   'Goalkeeper': 'Portero',
+};
+
+const _positionFilter = {
+  'DEL': 'Forward',
+  'MED': 'Midfielder',
+  'DEF': 'Defender',
+  'POR': 'Goalkeeper',
 };
 
 const _legacyLabel = {
@@ -63,9 +92,41 @@ const _titleCatColor = {
 
 const _sigLabel = ['', 'Activo', 'Notable', 'Icónico', 'Leyenda', 'GOAT'];
 
-const _positions = [
-  'Forward', 'Midfielder', 'Defender', 'Goalkeeper', 'All-rounder', 'Play-maker'
-];
+// Emojis de bandera a partir del código de país (nombre en español)
+const _countryFlag = {
+  'Alemania': '🇩🇪',
+  'Portugal': '🇵🇹',
+  'Argentina': '🇦🇷',
+  'Brasil': '🇧🇷',
+  'Holanda': '🇳🇱',
+  'Países Bajos': '🇳🇱',
+  'Francia': '🇫🇷',
+  'España': '🇪🇸',
+  'Italia': '🇮🇹',
+  'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+  'Inglaterra': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+  'Uruguay': '🇺🇾',
+  'Colombia': '🇨🇴',
+  'México': '🇲🇽',
+  'Bélgica': '🇧🇪',
+  'Croacia': '🇭🇷',
+  'Senegal': '🇸🇳',
+  'Hungría': '🇭🇺',
+  'Yugoslavia': '🇷🇸',
+  'Checoslovaquia': '🇨🇿',
+  'Soviet Union': '🇷🇺',
+  'Unión Soviética': '🇷🇺',
+  'Rumania': '🇷🇴',
+  'Polonia': '🇵🇱',
+  'Suecia': '🇸🇪',
+  'Ghana': '🇬🇭',
+  'Camerún': '🇨🇲',
+  'Nigeria': '🇳🇬',
+  'Egipto': '🇪🇬',
+  'Japón': '🇯🇵',
+  'Corea del Sur': '🇰🇷',
+  'Australia': '🇦🇺',
+};
 
 // ══════════════════════════════════════════════════════════════
 //  PLAYERS PAGE — root
@@ -96,7 +157,7 @@ class _HistoryPlayersPageState extends ConsumerState<HistoryPlayersPage> {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  LIST VIEW — estilo imagen 1 (lista limpia con foto + info)
+//  LIST VIEW — estilo neobrutalista (imagen 2)
 // ══════════════════════════════════════════════════════════════
 
 class _PlayerListView extends ConsumerWidget {
@@ -120,54 +181,70 @@ class _PlayerListView extends ConsumerWidget {
     return Scaffold(
       backgroundColor: _kBg,
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // App Bar
-          HistoryAppBar(
-            title: 'JUGADORES',
-            subtitle: 'Explora las leyendas que dejaron\nsu huella en la historia.',
-            icon: Icons.person_outline_rounded,
+          // ── Header neobrutalista ─────────────────────────────
+          _PlayersHeader(
             onBack: () => ref.read(historySectionProvider.notifier).goBack(),
           ),
 
-          // Stats strip — 149 JUGADORES · 34 GOATS · 82 PAÍSES
+          // ── Stats strip (3 cajas neobrutalistas) ─────────────
           _StatsStrip(
             total: totalCount,
             goats: goatCount,
             countries: countriesCount,
           ),
 
-          // Search + filter button
+          // ── Search + Filtros ─────────────────────────────────
           _SearchBar(controller: searchCtrl),
 
-          // Position filter tabs
+          // ── Position filter tabs (estilo imagen 2) ────────────
           _PositionFilterRow(active: posFilter),
 
-          // Results count
+          // ── Contador ─────────────────────────────────────────
           playersAsync.whenOrNull(
             data: (players) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: _kBorder, width: 0.5)),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: _kBorder, width: 1.5),
+                ),
               ),
               child: Row(
                 children: [
+                  Container(width: 3, height: 12, color: _kAccent),
+                  const SizedBox(width: 8),
                   Text(
                     'JUGADORES',
-                    style: _mono(size: 9, weight: FontWeight.w700,
-                        letterSpacing: 1.0, color: _kMuted),
+                    style: _mono(
+                        size: 9,
+                        weight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                        color: _kMuted),
                   ),
                   const Spacer(),
-                  Text(
-                    '${players.length}',
-                    style: _mono(size: 9, weight: FontWeight.w700,
-                        letterSpacing: 0.5, color: _kAccent),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _kAccent,
+                      border: Border.all(color: _kBorder, width: 1),
+                    ),
+                    child: Text(
+                      '${players.length} ENCONTRADOS',
+                      style: _mono(
+                          size: 8,
+                          weight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                          color: Colors.white),
+                    ),
                   ),
                 ],
               ),
             ),
           ) ?? const SizedBox.shrink(),
 
-          // List
+          // ── Grid 2x2 ─────────────────────────────────────────
           Expanded(
             child: playersAsync.when(
               loading: () => const Center(
@@ -181,10 +258,18 @@ class _PlayerListView extends ConsumerWidget {
                         style: _mono(color: _kMuted)),
                   );
                 }
-                return ListView.builder(
+                return GridView.builder(
                   physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.all(12),
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 0.72,
+                  ),
                   itemCount: players.length,
-                  itemBuilder: (_, i) => _PlayerListRow(
+                  itemBuilder: (_, i) => _PlayerCard(
                     player: players[i],
                     onTap: () => ref
                         .read(selectedPlayerProvider.notifier)
@@ -200,7 +285,179 @@ class _PlayerListView extends ConsumerWidget {
   }
 }
 
-// ── Stats strip (3 cajas) ─────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+//  HEADER neobrutalista — breadcrumb + título grande + back sutil
+// ══════════════════════════════════════════════════════════════
+
+class _PlayersHeader extends StatelessWidget {
+  final VoidCallback onBack;
+  const _PlayersHeader({required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 18),
+      decoration: BoxDecoration(
+        color: _kBg,
+        border: Border(bottom: BorderSide(color: _kBorder, width: 1.5)),
+      ),
+      child: Stack(
+        children: [
+          // Dot grid decorativo — esquina superior derecha
+          Positioned(
+            right: 0,
+            top: 0,
+            child: _DotGrid(cols: 5, rows: 4),
+          ),
+
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Breadcrumb: HISTÓRICO > JUGADORES
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: _kAccent,
+                      border: Border.all(color: _kBorder, width: 1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _kDark.withOpacity(0.45),
+                          offset: const Offset(2, 2),
+                          blurRadius: 0,
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      'HISTÓRICO',
+                      style: _mono(
+                          color: Colors.white,
+                          size: 8,
+                          weight: FontWeight.w800,
+                          letterSpacing: 1.2),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text('›',
+                      style: _mono(
+                          size: 12,
+                          weight: FontWeight.w700,
+                          color: _kMuted)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'JUGADORES',
+                    style: _mono(
+                        size: 9,
+                        weight: FontWeight.w600,
+                        color: _kMuted,
+                        letterSpacing: 1.0),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // Título + botón back en la misma línea
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Barra izquierda acento
+                  Container(
+                    width: 5,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: _kAccent,
+                      border: Border.all(color: _kBorder, width: 1),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+
+                  // Bloque de texto
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'JUGADORES',
+                          style: _mono(
+                              size: 28,
+                              weight: FontWeight.w900,
+                              letterSpacing: -1.0),
+                        ),
+                        Text(
+                          'Explora las leyendas del fútbol.',
+                          style: _mono(size: 11, color: _kMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Botón back — sutil, sin relleno
+                  GestureDetector(
+                    onTap: onBack,
+                    child: Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        border:
+                            Border.all(color: _kBorder.withOpacity(0.35), width: 1),
+                      ),
+                      child: Icon(Icons.arrow_back,
+                          size: 15,
+                          color: _kDark.withOpacity(0.45)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Dot grid decorativo (reutilizado del vault)
+class _DotGrid extends StatelessWidget {
+  final int cols;
+  final int rows;
+  const _DotGrid({required this.cols, required this.rows});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: cols * 14.0,
+      height: rows * 14.0,
+      child: CustomPaint(painter: _DotPainter(cols: cols, rows: rows)),
+    );
+  }
+}
+
+class _DotPainter extends CustomPainter {
+  final int cols;
+  final int rows;
+  _DotPainter({required this.cols, required this.rows});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = _kBorder.withOpacity(0.18);
+    const step = 14.0;
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        canvas.drawCircle(
+            Offset(c * step + 7, r * step + 7), 1.5, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_) => false;
+}
+
+// ── Stats strip ───────────────────────────────────────────────
 class _StatsStrip extends StatelessWidget {
   final int total;
   final int goats;
@@ -214,34 +471,34 @@ class _StatsStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: _kBg,
-        border: Border(bottom: BorderSide(color: _kBorder, width: 0.5)),
-      ),
-      child: Row(
-        children: [
-          _StatCell(
-            icon: Icons.person_outline_rounded,
-            iconBg: _kAccent,
-            value: '$total',
-            label: 'JUGADORES',
-            bordered: true,
-          ),
-          _StatCell(
-            icon: Icons.star_border_rounded,
-            iconBg: _kGold,
-            value: '$goats',
-            label: 'GOATS',
-            bordered: true,
-          ),
-          _StatCell(
-            icon: Icons.public_outlined,
-            iconBg: _kGreen,
-            value: '$countries',
-            label: 'PAÍSES',
-            bordered: false,
-          ),
-        ],
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      decoration: _neoBox(shadowX: 4, shadowY: 4),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            _StatCell(
+              icon: Icons.person_outline_rounded,
+              iconBg: _kAccent,
+              value: '$total',
+              label: 'JUGADORES',
+              bordered: true,
+            ),
+            _StatCell(
+              icon: Icons.star_border_rounded,
+              iconBg: _kGold,
+              value: '$goats',
+              label: 'GOATS',
+              bordered: true,
+            ),
+            _StatCell(
+              icon: Icons.public_outlined,
+              iconBg: _kGreen,
+              value: '$countries',
+              label: 'PAÍSES',
+              bordered: false,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -267,7 +524,7 @@ class _StatCell extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           border: bordered
-              ? const Border(right: BorderSide(color: _kBorder, width: 0.5))
+              ? Border(right: BorderSide(color: _kBorder, width: 1.5))
               : null,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
@@ -277,18 +534,19 @@ class _StatCell extends StatelessWidget {
               width: 32,
               height: 32,
               decoration: BoxDecoration(
-                color: iconBg.withOpacity(0.12),
-                border: Border.all(color: iconBg.withOpacity(0.3)),
+                color: iconBg,
+                border: Border.all(color: _kBorder, width: 1),
               ),
-              child: Icon(icon, size: 15, color: iconBg),
+              child: Icon(icon, size: 15, color: Colors.white),
             ),
             const SizedBox(width: 8),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(value,
                     style: _mono(
-                        size: 18, weight: FontWeight.w900, color: _kDark)),
+                        size: 18, weight: FontWeight.w900, color: _kAccent)),
                 Text(label,
                     style: _mono(
                         size: 7,
@@ -312,18 +570,22 @@ class _SearchBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: _kBorder, width: 0.5)),
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Row(
         children: [
           Expanded(
             child: Container(
-              height: 38,
+              height: 40,
               decoration: BoxDecoration(
-                border: Border.all(color: _kBorder),
                 color: Colors.white,
+                border: Border.all(color: _kBorder, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: _kDark.withOpacity(0.3),
+                    offset: const Offset(2, 2),
+                    blurRadius: 0,
+                  ),
+                ],
               ),
               child: TextField(
                 controller: controller,
@@ -331,16 +593,19 @@ class _SearchBar extends ConsumerWidget {
                 decoration: InputDecoration(
                   hintText: 'Buscar jugador...',
                   hintStyle: _mono(size: 12, color: _kMuted),
-                  prefixIcon:
-                      const Icon(Icons.search, size: 15, color: _kMuted),
+                  prefixIcon: const Icon(Icons.search,
+                      size: 16, color: _kMuted),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 9),
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 10),
                   suffixIcon: controller.text.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear, size: 13),
                           onPressed: () {
                             controller.clear();
-                            ref.read(playerSearchProvider.notifier).set('');
+                            ref
+                                .read(playerSearchProvider.notifier)
+                                .set('');
                           },
                         )
                       : null,
@@ -351,25 +616,30 @@ class _SearchBar extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 8),
-          // Filtros button (placeholder, mismo estilo que la imagen)
           Container(
-            height: 38,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            height: 40,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              border: Border.all(color: _kBorder),
               color: _kBg,
+              border: Border.all(color: _kBorder, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: _kDark.withOpacity(0.3),
+                  offset: const Offset(2, 2),
+                  blurRadius: 0,
+                ),
+              ],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.tune_rounded, size: 13, color: _kMuted),
+                const Icon(Icons.tune_rounded, size: 14, color: _kDark),
                 const SizedBox(width: 6),
                 Text('FILTROS',
                     style: _mono(
                         size: 9,
                         weight: FontWeight.w700,
-                        letterSpacing: 0.8,
-                        color: _kMuted)),
+                        letterSpacing: 0.8)),
               ],
             ),
           ),
@@ -379,7 +649,7 @@ class _SearchBar extends ConsumerWidget {
   }
 }
 
-// ── Position filter tabs ──────────────────────────────────────
+// ── Position filter (estilo imagen 2: botones con borde) ──────
 class _PositionFilterRow extends ConsumerWidget {
   final String active;
   const _PositionFilterRow({required this.active});
@@ -387,37 +657,38 @@ class _PositionFilterRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      height: 38,
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: _kBorder, width: 0.5)),
-      ),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+      height: 40,
+      margin: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _TabChip(
+          _FilterChip(
             label: 'TODOS',
             isActive: active.isEmpty,
             onTap: () =>
                 ref.read(playerPositionFilterProvider.notifier).set(''),
           ),
-          ..._positions.map((pos) => _TabChip(
-                label: (_positionLabel[pos] ?? pos).toUpperCase(),
-                isActive: active == pos,
-                onTap: () =>
-                    ref.read(playerPositionFilterProvider.notifier).set(pos),
-              )),
+          ..._positionFilter.entries.map(
+            (e) => _FilterChip(
+              label: e.key,
+              isActive: active == e.value ||
+                  (e.key == 'MEDIOCAMPISTAS' &&
+                      (active == 'Midfielder' || active == 'Play-maker')),
+              onTap: () =>
+                  ref.read(playerPositionFilterProvider.notifier).set(e.value),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _TabChip extends StatelessWidget {
+class _FilterChip extends StatelessWidget {
   final String label;
   final bool isActive;
   final VoidCallback onTap;
-  const _TabChip({
+  const _FilterChip({
     required this.label,
     required this.isActive,
     required this.onTap,
@@ -427,25 +698,32 @@ class _TabChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        alignment: Alignment.center,
-        margin: const EdgeInsets.only(right: 2),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        margin: const EdgeInsets.only(right: 6, top: 4, bottom: 4),
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isActive ? _kAccent : Colors.transparent,
-              width: 2,
-            ),
-          ),
+          color: isActive ? _kAccent : _kBg,
+          border: Border.all(color: _kBorder, width: 1.5),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: _kDark.withOpacity(0.4),
+                    offset: const Offset(2, 2),
+                    blurRadius: 0,
+                  ),
+                ]
+              : [],
         ),
-        child: Text(
-          label,
-          style: _mono(
-            size: 9,
-            weight: FontWeight.w700,
-            letterSpacing: 0.6,
-            color: isActive ? _kAccent : _kMuted,
+        child: Center(
+          child: Text(
+            label,
+            style: _mono(
+              size: 9,
+              weight: FontWeight.w800,
+              letterSpacing: 0.6,
+              color: isActive ? Colors.white : _kDark,
+            ),
           ),
         ),
       ),
@@ -453,184 +731,178 @@ class _TabChip extends StatelessWidget {
   }
 }
 
-// ── Player list row (estilo imagen 1) ─────────────────────────
-class _PlayerListRow extends StatelessWidget {
+// ══════════════════════════════════════════════════════════════
+//  PLAYER CARD — neobrutalista 2x2 (estilo imagen 2)
+// ══════════════════════════════════════════════════════════════
+
+class _PlayerCard extends StatelessWidget {
   final HistoricalPlayer player;
   final VoidCallback onTap;
-  const _PlayerListRow({required this.player, required this.onTap});
+  const _PlayerCard({required this.player, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final imgUrl = getHistoricalImageUrl(player.imagePath);
     final sig = player.significanceLevel ?? 0;
     final isGoat = sig == 5;
-    final isActive = sig == 1;
+    final countryFlag = _countryFlag[player.country] ?? '';
+    final posLabel = _positionLabel[player.position] ?? player.position ?? '';
 
-    final lifespan = player.birthYear != null
-        ? '${player.birthYear} - ${player.deathYear?.toString() ?? 'Presente'}'
-        : null;
+    // Trofeos basados en significanceLevel (1–4 copas)
+    final trophyCount = (sig - 1).clamp(0, 4);
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        decoration: const BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: _kBorder, width: 0.5),
-          ),
-        ),
-        child: Row(
+        decoration: _neoBox(shadowX: 4, shadowY: 4),
+        clipBehavior: Clip.hardEdge,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Imagen con badge GOAT
-            Stack(
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  color: _kAccent.withOpacity(0.07),
-                  child: imgUrl != null
-                      ? Image.network(imgUrl, fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              _Initials(name: player.name, size: 72))
-                      : _Initials(name: player.name, size: 72),
-                ),
-                // Número / número de camiseta
-                Positioned(
-                  bottom: 4,
-                  left: 4,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 5, vertical: 2),
-                    color: _kDark.withOpacity(0.7),
-                    child: Text(
-                      '#${_playerNumber(player)}',
-                      style: _mono(
-                          size: 8,
-                          weight: FontWeight.w700,
-                          color: Colors.white),
-                    ),
+            // ── Foto — ocupa el espacio principal ────────────
+            Expanded(
+              flex: 6,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Container(
+                    color: _kAccent.withOpacity(0.12),
+                    child: imgUrl != null
+                        ? Image.network(
+                            imgUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                _CardInitials(name: player.name),
+                            loadingBuilder: (_, child, p) =>
+                                p == null ? child : _CardInitials(name: player.name),
+                          )
+                        : _CardInitials(name: player.name),
                   ),
-                ),
-                if (isGoat)
+
+                  // Badge GOAT esquina sup-izq
+                  if (isGoat)
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 3),
+                        color: _kGold,
+                        child: Text(
+                          'GOAT',
+                          style: _mono(
+                              size: 8,
+                              weight: FontWeight.w900,
+                              letterSpacing: 1,
+                              color: Colors.black),
+                        ),
+                      ),
+                    ),
+
+                  // Número esquina inf-izq
                   Positioned(
-                    top: 0,
+                    bottom: 0,
                     left: 0,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 5, vertical: 2),
-                      color: _kGold,
+                          horizontal: 7, vertical: 3),
+                      color: _kDark.withOpacity(0.85),
                       child: Text(
-                        'GOAT',
+                        '#${_playerNumber(player)}',
                         style: _mono(
-                            size: 7,
-                            weight: FontWeight.w800,
-                            letterSpacing: 0.8,
-                            color: Colors.black),
+                            size: 8,
+                            weight: FontWeight.w700,
+                            color: Colors.white),
                       ),
                     ),
                   ),
-              ],
-            ),
 
-            // Info
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Nombre + badge GOAT inline
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            player.name,
-                            style: _mono(
-                                size: 14, weight: FontWeight.w800),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (isGoat) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            color: _kGold,
-                            child: Text(
-                              'GOAT',
-                              style: _mono(
-                                  size: 7,
-                                  weight: FontWeight.w800,
-                                  letterSpacing: 0.8,
-                                  color: Colors.black),
-                            ),
-                          ),
-                        ] else if (isActive) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                  color: _kGreen.withOpacity(0.4)),
-                              color: _kGreen.withOpacity(0.08),
-                            ),
-                            child: Text(
-                              'ACTIVO',
-                              style: _mono(
-                                  size: 7,
-                                  weight: FontWeight.w800,
-                                  letterSpacing: 0.8,
-                                  color: _kGreen),
-                            ),
-                          ),
-                        ],
-                      ],
+                  // Menú 3 puntos esquina sup-der
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      color: _kDark.withOpacity(0.6),
+                      child: const Icon(Icons.more_horiz,
+                          size: 14, color: Colors.white),
                     ),
-
-                    const SizedBox(height: 3),
-
-                    // País · Posición
-                    Row(
-                      children: [
-                        if (player.country != null) ...[
-                          Text(player.country!,
-                              style: _mono(size: 10, color: _kMuted)),
-                          if (player.position != null)
-                            Text(' · ',
-                                style: _mono(size: 10, color: _kBorder)),
-                        ],
-                        if (player.position != null)
-                          Text(
-                            _positionLabel[player.position!] ??
-                                player.position!,
-                            style: _mono(size: 10, color: _kMuted),
-                          ),
-                      ],
-                    ),
-
-                    // Años de vida
-                    if (lifespan != null) ...[
-                      const SizedBox(height: 2),
-                      Text(lifespan,
-                          style: _mono(size: 9, color: _kMuted)),
-                    ],
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
 
-            // Estrellas + chevron
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (sig >= 2) _Stars(level: sig, size: 9),
-                  const SizedBox(height: 4),
-                  const Icon(Icons.chevron_right,
-                      size: 16, color: _kMuted),
-                ],
+            // ── Info — zona inferior compacta ─────────────────
+            Expanded(
+              flex: 3,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 7, 8, 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Nombre centrado
+                    Text(
+                      player.name.toUpperCase(),
+                      style: _mono(
+                          size: 11,
+                          weight: FontWeight.w900,
+                          letterSpacing: -0.3),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+
+                    // País + posición centrados
+                    Column(
+                      children: [
+                        if (player.country != null)
+                          Text(
+                            player.country!.toUpperCase(),
+                            style: _mono(
+                                size: 8,
+                                weight: FontWeight.w700,
+                                color: _kAccent,
+                                letterSpacing: 0.5),
+                            textAlign: TextAlign.center,
+                          ),
+                        if (posLabel.isNotEmpty)
+                          Text(
+                            posLabel.toUpperCase(),
+                            style: _mono(
+                                size: 8,
+                                weight: FontWeight.w600,
+                                color: _kMuted),
+                            textAlign: TextAlign.center,
+                          ),
+                      ],
+                    ),
+
+                    // Fila inferior: bandera + trofeos
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (countryFlag.isNotEmpty)
+                          Text(countryFlag,
+                              style: const TextStyle(fontSize: 13))
+                        else
+                          const SizedBox(width: 13),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(
+                            trophyCount,
+                            (_) => const Padding(
+                              padding: EdgeInsets.only(left: 2),
+                              child: Icon(Icons.emoji_events_outlined,
+                                  size: 11, color: _kGold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -640,11 +912,31 @@ class _PlayerListRow extends StatelessWidget {
   }
 }
 
-// Número decorativo basado en el índice del jugador
+// Número decorativo basado en hash del ID
 String _playerNumber(HistoricalPlayer p) {
-  // Usamos los últimos 2 dígitos del hash del ID como número
   final hash = p.id.hashCode.abs() % 99 + 1;
   return hash.toString();
+}
+
+// ── Iniciales para la card ────────────────────────────────────
+class _CardInitials extends StatelessWidget {
+  final String name;
+  const _CardInitials({required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = name.split(' ');
+    final initials = parts.length >= 2
+        ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
+        : name.substring(0, name.length.clamp(0, 2)).toUpperCase();
+    return Center(
+      child: Text(
+        initials,
+        style: _mono(
+            size: 36, weight: FontWeight.w900, color: _kAccent.withOpacity(0.3)),
+      ),
+    );
+  }
 }
 
 // ── Stars widget ──────────────────────────────────────────────
@@ -662,43 +954,50 @@ class _Stars extends StatelessWidget {
         return Icon(
           filled ? Icons.star_rounded : Icons.star_border_rounded,
           size: size,
-          color: filled ? _kGold : _kBorder,
+          color: filled ? _kGold : _kBorderL,
         );
       }),
     );
   }
 }
 
-// ── Initials fallback ─────────────────────────────────────────
-class _Initials extends StatelessWidget {
-  final String name;
-  final double size;
-  const _Initials({required this.name, required this.size});
+// ── Chip ──────────────────────────────────────────────────────
+class _Chip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  const _Chip({
+    required this.label,
+    required this.icon,
+    this.color = _kMuted,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final parts = name.split(' ');
-    final initials = parts.length >= 2
-        ? '${parts[0][0]}${parts[1][0]}'.toUpperCase()
-        : name.substring(0, name.length.clamp(0, 2)).toUpperCase();
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Center(
-        child: Text(
-          initials,
-          style: _mono(
-              size: size * 0.27,
-              weight: FontWeight.w800,
-              color: _kAccent),
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        border: Border.all(
+            color: color == _kMuted ? _kBorderL : color.withOpacity(0.3)),
+        color: color == _kMuted ? Colors.transparent : color.withOpacity(0.05),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 9, color: color),
+          const SizedBox(width: 4),
+          Text(label,
+              style: _mono(
+                  size: 9,
+                  color: color == _kMuted ? _kDark : color)),
+        ],
       ),
     );
   }
 }
 
 // ══════════════════════════════════════════════════════════════
-//  DETAIL VIEW — completo con carrera, nacional, títulos
+//  DETAIL VIEW
 // ══════════════════════════════════════════════════════════════
 
 class _PlayerDetailView extends ConsumerWidget {
@@ -746,20 +1045,17 @@ class _DetailBody extends StatelessWidget {
     final isGoat = sig == 5;
     final isActive = sig == 1;
     final imgUrl = getHistoricalImageUrl(p.imagePath);
+    final countryFlag = _countryFlag[p.country] ?? '';
 
     final lifespan = p.birthYear != null
         ? '${p.birthYear}${p.deathYear != null ? ' – ${p.deathYear}' : ' – Presente'}'
         : null;
 
-    // Totales carrera
     int totalGoals = 0, totalAssists = 0, totalApps = 0;
     for (final c in detail.career) {
       totalGoals += c.goals;
       totalAssists += c.assists;
       totalApps += c.appearances;
-    }
-    for (final n in detail.national) {
-      totalGoals += n.goals;
     }
 
     int totalCaps = 0, nationalGoals = 0;
@@ -779,116 +1075,130 @@ class _DetailBody extends StatelessWidget {
         // ── Hero ──────────────────────────────────────────────
         SliverToBoxAdapter(
           child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: _kBorder)),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
               color: _kCard,
+              border: Border(
+                  bottom: BorderSide(color: _kBorder, width: 1.5)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Foto
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      width: 88,
-                      height: 88,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: _kBorder),
-                        color: _kAccent.withOpacity(0.06),
+                // Foto con sombra neobrutalista
+                Container(
+                  decoration: _neoBox(shadowX: 4, shadowY: 4),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      SizedBox(
+                        width: 88,
+                        height: 96,
+                        child: imgUrl != null
+                            ? Image.network(imgUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    _CardInitials(name: p.name))
+                            : _CardInitials(name: p.name),
                       ),
-                      child: imgUrl != null
-                          ? Image.network(imgUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  _Initials(name: p.name, size: 88))
-                          : _Initials(name: p.name, size: 88),
-                    ),
-                    if (isGoat)
-                      Positioned(
-                        bottom: -1,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          color: _kGold,
-                          padding: const EdgeInsets.symmetric(vertical: 2),
-                          child: Text(
-                            'GOAT',
-                            textAlign: TextAlign.center,
-                            style: _mono(
-                                size: 7,
-                                weight: FontWeight.w800,
-                                letterSpacing: 1.2,
-                                color: Colors.black),
+                      if (isGoat)
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            color: _kGold,
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Text(
+                              'GOAT',
+                              textAlign: TextAlign.center,
+                              style: _mono(
+                                  size: 7,
+                                  weight: FontWeight.w900,
+                                  letterSpacing: 1.2,
+                                  color: Colors.black),
+                            ),
                           ),
                         ),
-                      ),
-                    if (isActive)
-                      Positioned(
-                        bottom: -1,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          color: _kGreen,
-                          padding: const EdgeInsets.symmetric(vertical: 2),
-                          child: Text(
-                            'EN ACTIVO',
-                            textAlign: TextAlign.center,
-                            style: _mono(
-                                size: 7,
-                                weight: FontWeight.w800,
-                                letterSpacing: 1.0,
-                                color: Colors.white),
+                      if (isActive)
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            color: _kGreen,
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Text(
+                              'EN ACTIVO',
+                              textAlign: TextAlign.center,
+                              style: _mono(
+                                  size: 7,
+                                  weight: FontWeight.w900,
+                                  letterSpacing: 1,
+                                  color: Colors.white),
+                            ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
 
-                // Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(p.name,
                           style: _mono(
-                              size: 18, weight: FontWeight.w900)),
-                      const SizedBox(height: 8),
+                              size: 17, weight: FontWeight.w900)),
+                      const SizedBox(height: 6),
 
-                      // Estrellas + nivel
-                      if (sig >= 2)
+                      // País con bandera
+                      if (p.country != null)
                         Row(
                           children: [
-                            _Stars(level: sig, size: 11),
-                            const SizedBox(width: 6),
+                            if (countryFlag.isNotEmpty) ...[
+                              Text(countryFlag,
+                                  style: const TextStyle(fontSize: 14)),
+                              const SizedBox(width: 6),
+                            ],
                             Text(
-                              sig < _sigLabel.length
-                                  ? _sigLabel[sig]
-                                  : '',
+                              p.country!.toUpperCase(),
                               style: _mono(
                                   size: 9,
+                                  weight: FontWeight.w700,
+                                  color: _kAccent,
+                                  letterSpacing: 0.5),
+                            ),
+                          ],
+                        ),
+
+                      if (sig >= 2) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            _Stars(level: sig, size: 10),
+                            const SizedBox(width: 6),
+                            Text(
+                              sig < _sigLabel.length ? _sigLabel[sig] : '',
+                              style: _mono(
+                                  size: 8,
                                   color: sig == 5 ? _kGold : _kMuted,
                                   weight: FontWeight.w700,
                                   letterSpacing: 0.5),
                             ),
                           ],
                         ),
-                      const SizedBox(height: 10),
+                      ],
 
-                      // Chips
+                      const SizedBox(height: 8),
+
                       Wrap(
-                        spacing: 6,
-                        runSpacing: 5,
+                        spacing: 5,
+                        runSpacing: 4,
                         children: [
-                          if (p.country != null)
-                            _Chip(label: p.country!,
-                                icon: Icons.flag_outlined),
                           if (p.position != null)
                             _Chip(
-                              label: _positionLabel[p.position!] ??
-                                  p.position!,
+                              label: _positionLabel[p.position!] ?? p.position!,
                               icon: Icons.sports_soccer_outlined,
                               color: _kAccent,
                             ),
@@ -903,13 +1213,6 @@ class _DetailBody extends StatelessWidget {
                               icon: Icons.emoji_events_outlined,
                               color: _kGold,
                             ),
-                          if (p.legacyType != null)
-                            _Chip(
-                              label: _legacyLabel[p.legacyType!] ??
-                                  p.legacyType!,
-                              icon: Icons.auto_awesome_outlined,
-                              color: _kAccent,
-                            ),
                         ],
                       ),
                     ],
@@ -921,20 +1224,31 @@ class _DetailBody extends StatelessWidget {
         ),
 
         // ── Stats strip ────────────────────────────────────────
-        if (detail.career.isNotEmpty || detail.national.isNotEmpty || titlesCount > 0)
+        if (detail.career.isNotEmpty ||
+            detail.national.isNotEmpty ||
+            titlesCount > 0)
           SliverToBoxAdapter(
             child: Container(
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: _kBorder)),
+              decoration: BoxDecoration(
+                border: Border(
+                    bottom: BorderSide(color: _kBorder, width: 1.5)),
               ),
               child: IntrinsicHeight(
                 child: Row(
                   children: [
                     if (detail.career.isNotEmpty) ...[
-                      _StatCell2(value: '${detail.career.length}', label: 'CLUBES'),
-                      _StatCell2(value: '$totalGoals', label: 'GOLES', bordered: true),
+                      _StatCell2(
+                          value: '${detail.career.length}',
+                          label: 'CLUBES'),
+                      _StatCell2(
+                          value: '$totalGoals',
+                          label: 'GOLES',
+                          bordered: true),
                       if (totalAssists > 0)
-                        _StatCell2(value: '$totalAssists', label: 'ASIST.', bordered: true),
+                        _StatCell2(
+                            value: '$totalAssists',
+                            label: 'ASIST.',
+                            bordered: true),
                     ],
                     if (detail.national.isNotEmpty) ...[
                       _StatCell2(
@@ -970,8 +1284,8 @@ class _DetailBody extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  border:
-                      Border(left: BorderSide(color: _kAccent, width: 3)),
+                  border: Border(
+                      left: BorderSide(color: _kAccent, width: 3)),
                   color: _kAccent.withOpacity(0.04),
                 ),
                 child: Text(p.impactSummary!,
@@ -986,8 +1300,7 @@ class _DetailBody extends StatelessWidget {
             child: _Section(
               label: 'HISTORIA',
               child: Text(p.description!,
-                  style: _mono(size: 12, color: _kMuted,
-                      letterSpacing: 0)),
+                  style: _mono(size: 12, color: _kMuted)),
             ),
           ),
 
@@ -1024,7 +1337,7 @@ class _DetailBody extends StatelessWidget {
   }
 }
 
-// ── Stat cell para detalle ────────────────────────────────────
+// ── Stat cell detalle ─────────────────────────────────────────
 class _StatCell2 extends StatelessWidget {
   final String value;
   final String label;
@@ -1043,7 +1356,8 @@ class _StatCell2 extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           border: bordered
-              ? const Border(left: BorderSide(color: _kBorder, width: 0.5))
+              ? Border(
+                  left: BorderSide(color: _kBorder, width: 1.5))
               : null,
         ),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
@@ -1078,16 +1392,20 @@ class _Section extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
-            bottom: BorderSide(color: _kBorder, width: 0.5)),
+            bottom: BorderSide(color: _kBorder, width: 1.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(width: 3, height: 12, color: _kAccent),
+              Container(
+                width: 3,
+                height: 12,
+                color: _kAccent,
+              ),
               const SizedBox(width: 7),
               Text(
                 label,
@@ -1107,45 +1425,6 @@ class _Section extends StatelessWidget {
   }
 }
 
-// ── Chip ──────────────────────────────────────────────────────
-class _Chip extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  const _Chip({
-    required this.label,
-    required this.icon,
-    this.color = _kMuted,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        border: Border.all(
-            color: color == _kMuted
-                ? _kBorder
-                : color.withOpacity(0.3)),
-        color: color == _kMuted
-            ? Colors.transparent
-            : color.withOpacity(0.05),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 9, color: color),
-          const SizedBox(width: 4),
-          Text(label,
-              style: _mono(
-                  size: 9,
-                  color: color == _kMuted ? _kDark : color)),
-        ],
-      ),
-    );
-  }
-}
-
 // ── Career table ──────────────────────────────────────────────
 class _CareerTable extends StatelessWidget {
   final List<PlayerCareerEntry> rows;
@@ -1155,68 +1434,23 @@ class _CareerTable extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Header
         Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: const BoxDecoration(
-            color: _kCard,
-            border: Border(bottom: BorderSide(color: _kBorder, width: 0.5)),
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          color: _kCard,
           child: Row(
             children: [
-              Expanded(
-                  flex: 3,
-                  child: Text('CLUB',
-                      style: _mono(
-                          size: 8,
-                          weight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          color: _kMuted))),
-              Expanded(
-                  flex: 2,
-                  child: Text('PERÍODO',
-                      style: _mono(
-                          size: 8,
-                          weight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          color: _kMuted))),
-              SizedBox(
-                  width: 36,
-                  child: Text('PJ',
-                      textAlign: TextAlign.center,
-                      style: _mono(
-                          size: 8,
-                          weight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          color: _kMuted))),
-              SizedBox(
-                  width: 36,
-                  child: Text('G',
-                      textAlign: TextAlign.center,
-                      style: _mono(
-                          size: 8,
-                          weight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          color: _kMuted))),
-              SizedBox(
-                  width: 36,
-                  child: Text('A',
-                      textAlign: TextAlign.center,
-                      style: _mono(
-                          size: 8,
-                          weight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          color: _kMuted))),
+              Expanded(flex: 3, child: Text('CLUB', style: _mono(size: 8, weight: FontWeight.w700, letterSpacing: 0.8, color: _kMuted))),
+              Expanded(flex: 2, child: Text('PERÍODO', style: _mono(size: 8, weight: FontWeight.w700, letterSpacing: 0.8, color: _kMuted))),
+              SizedBox(width: 32, child: Text('PJ', textAlign: TextAlign.center, style: _mono(size: 8, weight: FontWeight.w700, letterSpacing: 0.8, color: _kMuted))),
+              SizedBox(width: 32, child: Text('G', textAlign: TextAlign.center, style: _mono(size: 8, weight: FontWeight.w700, letterSpacing: 0.8, color: _kMuted))),
+              SizedBox(width: 32, child: Text('A', textAlign: TextAlign.center, style: _mono(size: 8, weight: FontWeight.w700, letterSpacing: 0.8, color: _kMuted))),
             ],
           ),
         ),
         ...rows.map((r) => Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 10),
-              decoration: const BoxDecoration(
-                border: Border(
-                    bottom: BorderSide(color: _kBorder, width: 0.5)),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: _kBorderL, width: 0.5)),
               ),
               child: Row(
                 children: [
@@ -1225,50 +1459,16 @@ class _CareerTable extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(r.teamName,
-                            style: _mono(
-                                size: 12, weight: FontWeight.w700)),
+                        Text(r.teamName, style: _mono(size: 12, weight: FontWeight.w700)),
                         if (r.teamCountry != null)
-                          Text(r.teamCountry!,
-                              style: _mono(size: 9, color: _kMuted)),
+                          Text(r.teamCountry!, style: _mono(size: 9, color: _kMuted)),
                       ],
                     ),
                   ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      '${r.startYear ?? '?'} – ${r.endYear ?? '?'}',
-                      style: _mono(
-                          size: 10, color: _kAccent),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 36,
-                    child: Text(
-                      r.appearances > 0 ? '${r.appearances}' : '—',
-                      textAlign: TextAlign.center,
-                      style: _mono(
-                          size: 11, weight: FontWeight.w700),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 36,
-                    child: Text(
-                      r.goals > 0 ? '${r.goals}' : '—',
-                      textAlign: TextAlign.center,
-                      style: _mono(
-                          size: 11, weight: FontWeight.w700),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 36,
-                    child: Text(
-                      r.assists > 0 ? '${r.assists}' : '—',
-                      textAlign: TextAlign.center,
-                      style: _mono(
-                          size: 11, weight: FontWeight.w700),
-                    ),
-                  ),
+                  Expanded(flex: 2, child: Text('${r.startYear ?? '?'} – ${r.endYear ?? '?'}', style: _mono(size: 10, color: _kAccent))),
+                  SizedBox(width: 32, child: Text(r.appearances > 0 ? '${r.appearances}' : '—', textAlign: TextAlign.center, style: _mono(size: 11, weight: FontWeight.w700))),
+                  SizedBox(width: 32, child: Text(r.goals > 0 ? '${r.goals}' : '—', textAlign: TextAlign.center, style: _mono(size: 11, weight: FontWeight.w700))),
+                  SizedBox(width: 32, child: Text(r.assists > 0 ? '${r.assists}' : '—', textAlign: TextAlign.center, style: _mono(size: 11, weight: FontWeight.w700))),
                 ],
               ),
             )),
@@ -1287,91 +1487,28 @@ class _NationalTable extends StatelessWidget {
     return Column(
       children: [
         Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: const BoxDecoration(
-            color: _kCard,
-            border: Border(bottom: BorderSide(color: _kBorder, width: 0.5)),
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          color: _kCard,
           child: Row(
             children: [
-              Expanded(
-                  flex: 3,
-                  child: Text('SELECCIÓN',
-                      style: _mono(
-                          size: 8,
-                          weight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          color: _kMuted))),
-              Expanded(
-                  flex: 2,
-                  child: Text('PERÍODO',
-                      style: _mono(
-                          size: 8,
-                          weight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          color: _kMuted))),
-              SizedBox(
-                  width: 36,
-                  child: Text('PJ',
-                      textAlign: TextAlign.center,
-                      style: _mono(
-                          size: 8,
-                          weight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          color: _kMuted))),
-              SizedBox(
-                  width: 36,
-                  child: Text('G',
-                      textAlign: TextAlign.center,
-                      style: _mono(
-                          size: 8,
-                          weight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          color: _kMuted))),
+              Expanded(flex: 3, child: Text('SELECCIÓN', style: _mono(size: 8, weight: FontWeight.w700, letterSpacing: 0.8, color: _kMuted))),
+              Expanded(flex: 2, child: Text('PERÍODO', style: _mono(size: 8, weight: FontWeight.w700, letterSpacing: 0.8, color: _kMuted))),
+              SizedBox(width: 32, child: Text('PJ', textAlign: TextAlign.center, style: _mono(size: 8, weight: FontWeight.w700, letterSpacing: 0.8, color: _kMuted))),
+              SizedBox(width: 32, child: Text('G', textAlign: TextAlign.center, style: _mono(size: 8, weight: FontWeight.w700, letterSpacing: 0.8, color: _kMuted))),
             ],
           ),
         ),
         ...rows.map((r) => Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 10),
-              decoration: const BoxDecoration(
-                border: Border(
-                    bottom: BorderSide(color: _kBorder, width: 0.5)),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: _kBorderL, width: 0.5)),
               ),
               child: Row(
                 children: [
-                  Expanded(
-                    flex: 3,
-                    child: Text(r.country,
-                        style: _mono(
-                            size: 12, weight: FontWeight.w700)),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      '${r.startYear ?? '?'} – ${r.endYear ?? '?'}',
-                      style: _mono(size: 10, color: _kGreen),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 36,
-                    child: Text(
-                      r.caps > 0 ? '${r.caps}' : '—',
-                      textAlign: TextAlign.center,
-                      style: _mono(
-                          size: 11, weight: FontWeight.w700),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 36,
-                    child: Text(
-                      r.goals > 0 ? '${r.goals}' : '—',
-                      textAlign: TextAlign.center,
-                      style: _mono(
-                          size: 11, weight: FontWeight.w700),
-                    ),
-                  ),
+                  Expanded(flex: 3, child: Text(r.country, style: _mono(size: 12, weight: FontWeight.w700))),
+                  Expanded(flex: 2, child: Text('${r.startYear ?? '?'} – ${r.endYear ?? '?'}', style: _mono(size: 10, color: _kGreen))),
+                  SizedBox(width: 32, child: Text(r.caps > 0 ? '${r.caps}' : '—', textAlign: TextAlign.center, style: _mono(size: 11, weight: FontWeight.w700))),
+                  SizedBox(width: 32, child: Text(r.goals > 0 ? '${r.goals}' : '—', textAlign: TextAlign.center, style: _mono(size: 11, weight: FontWeight.w700))),
                 ],
               ),
             )),
@@ -1387,13 +1524,11 @@ class _TitlesList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Agrupar por categoría
     final Map<String, List<PlayerTitleEntry>> grouped = {};
     for (final t in titles) {
       grouped.putIfAbsent(t.titleCategory, () => []).add(t);
     }
-
-    final order = ['club', 'national', 'individual'];
+    const order = ['club', 'national', 'individual'];
 
     return Column(
       children: order.where((c) => grouped.containsKey(c)).map((cat) {
@@ -1404,28 +1539,25 @@ class _TitlesList extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Categoría label
             Padding(
               padding: const EdgeInsets.only(bottom: 6, top: 10),
               child: Row(
                 children: [
                   Container(
-                    width: 8,
-                    height: 8,
+                    width: 8, height: 8,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: catColor,
+                      border: Border.all(color: _kBorder, width: 1),
                     ),
                   ),
                   const SizedBox(width: 7),
-                  Text(
-                    catLabel.toUpperCase(),
-                    style: _mono(
-                        size: 9,
-                        weight: FontWeight.w700,
-                        letterSpacing: 1.0,
-                        color: catColor),
-                  ),
+                  Text(catLabel.toUpperCase(),
+                      style: _mono(
+                          size: 9,
+                          weight: FontWeight.w700,
+                          letterSpacing: 1,
+                          color: catColor)),
                 ],
               ),
             ),
@@ -1437,14 +1569,15 @@ class _TitlesList extends StatelessWidget {
                     border: Border(
                       left: BorderSide(color: catColor, width: 2),
                       bottom: const BorderSide(
-                          color: _kBorder, width: 0.5),
+                          color: _kBorderL, width: 0.5),
                     ),
                     color: _kBg,
                   ),
                   child: Row(
                     children: [
                       Icon(Icons.emoji_events_outlined,
-                          size: 11, color: catColor.withOpacity(0.7)),
+                          size: 11,
+                          color: catColor.withOpacity(0.7)),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(t.titleName,
@@ -1454,8 +1587,7 @@ class _TitlesList extends StatelessWidget {
                       if (t.teamName != null) ...[
                         const SizedBox(width: 6),
                         Text(t.teamName!,
-                            style: _mono(
-                                size: 9, color: _kMuted)),
+                            style: _mono(size: 9, color: _kMuted)),
                       ],
                       if (t.year != null) ...[
                         const SizedBox(width: 8),
