@@ -11,8 +11,10 @@ class HistoricalPlayer {
   final int? deathYear;
   final String? imagePath;
   final String? description;
-  final String? impactSummary;  // impact_summary — equivale a legacy en React
-  final int? ballonDorWins;
+  final String? impactSummary;
+  final String? legacyType;
+  final int? ballonDorCount;      // ← corregido: ballon_dor_count
+  final int? significanceLevel;   // ← nuevo: significance_level
   final bool isPublished;
 
   const HistoricalPlayer({
@@ -25,7 +27,9 @@ class HistoricalPlayer {
     this.imagePath,
     this.description,
     this.impactSummary,
-    this.ballonDorWins,
+    this.legacyType,
+    this.ballonDorCount,
+    this.significanceLevel,
     this.isPublished = true,
   });
 
@@ -39,7 +43,9 @@ class HistoricalPlayer {
         imagePath: m['image_path'] as String?,
         description: m['description'] as String?,
         impactSummary: m['impact_summary'] as String?,
-        ballonDorWins: m['ballon_dor_wins'] as int?,
+        legacyType: m['legacy_type'] as String?,
+        ballonDorCount: m['ballon_dor_count'] as int?,   // ← corregido
+        significanceLevel: m['significance_level'] as int?, // ← nuevo
         isPublished: m['is_published'] as bool? ?? true,
       );
 }
@@ -438,5 +444,110 @@ class EventDetail {
     required this.lineupA,
     required this.lineupB,
     required this.knockout,
+  });
+}
+
+// ============================================================
+// PLAYER DETAIL — carrera, nacional, títulos
+// ============================================================
+
+class PlayerCareerEntry {
+  final String teamName;
+  final String? teamCountry;
+  final int? startYear;
+  final int? endYear;
+  final int appearances;
+  final int goals;
+  final int assists;
+  final String? roleNote;
+
+  const PlayerCareerEntry({
+    required this.teamName,
+    this.teamCountry,
+    this.startYear,
+    this.endYear,
+    this.appearances = 0,
+    this.goals = 0,
+    this.assists = 0,
+    this.roleNote,
+  });
+
+  factory PlayerCareerEntry.fromMap(Map<String, dynamic> m) => PlayerCareerEntry(
+        teamName: m['team_name'] as String? ?? '—',
+        teamCountry: m['team_country'] as String?,
+        startYear: m['start_year'] as int?,
+        endYear: m['end_year'] as int?,
+        appearances: m['appearances'] as int? ?? 0,
+        goals: m['goals'] as int? ?? 0,
+        assists: m['assists'] as int? ?? 0,
+        roleNote: m['role_note'] as String?,
+      );
+}
+
+class PlayerNationalEntry {
+  final String country;
+  final int? startYear;
+  final int? endYear;
+  final int caps;
+  final int goals;
+  final int assists;
+  final String? roleNote;
+
+  const PlayerNationalEntry({
+    required this.country,
+    this.startYear,
+    this.endYear,
+    this.caps = 0,
+    this.goals = 0,
+    this.assists = 0,
+    this.roleNote,
+  });
+
+  factory PlayerNationalEntry.fromMap(Map<String, dynamic> m) => PlayerNationalEntry(
+        country: m['country'] as String? ?? '—',
+        startYear: m['start_year'] as int?,
+        endYear: m['end_year'] as int?,
+        caps: m['caps'] as int? ?? 0,
+        goals: m['goals'] as int? ?? 0,
+        assists: m['assists'] as int? ?? 0,
+        roleNote: m['role_note'] as String?,
+      );
+}
+
+class PlayerTitleEntry {
+  final String titleName;
+  final String titleCategory; // club | national | individual
+  final String? year;
+  final String? teamName;
+  final int quantity;
+
+  const PlayerTitleEntry({
+    required this.titleName,
+    required this.titleCategory,
+    this.year,
+    this.teamName,
+    this.quantity = 1,
+  });
+
+  factory PlayerTitleEntry.fromMap(Map<String, dynamic> m) => PlayerTitleEntry(
+        titleName: m['title_name'] as String? ?? '—',
+        titleCategory: m['title_category'] as String? ?? 'club',
+        year: m['year'] as String?,
+        teamName: m['team_name'] as String?,
+        quantity: m['quantity'] as int? ?? 1,
+      );
+}
+
+class PlayerDetail {
+  final HistoricalPlayer player;
+  final List<PlayerCareerEntry> career;
+  final List<PlayerNationalEntry> national;
+  final List<PlayerTitleEntry> titles;
+
+  const PlayerDetail({
+    required this.player,
+    required this.career,
+    required this.national,
+    required this.titles,
   });
 }

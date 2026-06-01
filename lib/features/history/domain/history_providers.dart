@@ -186,6 +186,15 @@ final eventDetailProvider =
 });
 
 // ══════════════════════════════════════════════════════════════
+//  PLAYER DETAIL  ← NUEVO
+// ══════════════════════════════════════════════════════════════
+
+final playerDetailProvider =
+    FutureProvider.family<PlayerDetail, String>((ref, id) {
+  return ref.watch(historyServiceProvider).fetchPlayerDetail(id);
+});
+
+// ══════════════════════════════════════════════════════════════
 //  RANDOM SPINNER
 // ══════════════════════════════════════════════════════════════
 

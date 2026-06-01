@@ -28,6 +28,45 @@ class HistoryService {
     return (res as List).map((m) => HistoricalPlayer.fromMap(m)).toList();
   }
 
+  Future<PlayerDetail> fetchPlayerDetail(String playerId) async {
+    final playerRes = await _sb
+        .from('historical_players')
+        .select(
+          'id, name, country, position, birth_year, death_year, '
+          'image_path, description, impact_summary, legacy_type, '
+          'significance_level, ballon_dor_count, is_published',
+        )
+        .eq('id', playerId)
+        .eq('is_published', true)
+        .eq('is_special', false)
+        .single();
+
+    final careerRes = await _sb
+        .from('historical_player_career')
+        .select('team_name, team_country, start_year, end_year, appearances, goals, assists, role_note')
+        .eq('player_id', playerId)
+        .order('sort_order', ascending: true);
+
+    final nationalRes = await _sb
+        .from('historical_player_national')
+        .select('country, start_year, end_year, caps, goals, assists, role_note')
+        .eq('player_id', playerId)
+        .order('start_year', ascending: true);
+
+    final titlesRes = await _sb
+        .from('historical_player_titles')
+        .select('title_name, title_category, year, team_name, quantity')
+        .eq('player_id', playerId)
+        .order('sort_order', ascending: true);
+
+    return PlayerDetail(
+      player: HistoricalPlayer.fromMap(playerRes),
+      career: (careerRes as List).map((m) => PlayerCareerEntry.fromMap(m)).toList(),
+      national: (nationalRes as List).map((m) => PlayerNationalEntry.fromMap(m)).toList(),
+      titles: (titlesRes as List).map((m) => PlayerTitleEntry.fromMap(m)).toList(),
+    );
+  }
+
   Future<List<HistoricalTeam>> fetchTeams() async {
     final res = await _sb
         .from('historical_teams')
