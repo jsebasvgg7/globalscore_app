@@ -130,10 +130,16 @@ class _EditTabState extends ConsumerState<EditTab> {
           Container(
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
+            decoration: const BoxDecoration(
+            color: Color(0xFFEAE7E1),
+            border: Border(
+              top: BorderSide(color: Color(0xFFC4BFB8), width: 1.5),
+              left: BorderSide(color: Color(0xFFC4BFB8), width: 1.5),
+              right: BorderSide(color: Color(0xFFC4BFB8), width: 1.5),
+              bottom: BorderSide(color: Color(0xFFC4BFB8), width: 1.5),
             ),
+            boxShadow: [BoxShadow(color: Color(0x55A8A49A), offset: Offset(3, 3), blurRadius: 0)],
+          ),
             child: Column(
               children: [
                 ProfileAvatar(
@@ -145,49 +151,40 @@ class _EditTabState extends ConsumerState<EditTab> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Upload button
-                    ElevatedButton.icon(
-                      onPressed:
-                          _uploadingAvatar ? null : _pickAndUploadAvatar,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF60519B),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    // Botón subir — morado, solo icono
+                    GestureDetector(
+                      onTap: _uploadingAvatar ? null : _pickAndUploadAvatar,
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF60519B),
+                          boxShadow: [BoxShadow(color: Color(0x661B14A0), offset: Offset(3, 3), blurRadius: 0)],
                         ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
+                        child: _uploadingAvatar
+                            ? const Center(
+                                child: SizedBox(width: 18, height: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)))
+                            : const Icon(Icons.upload_rounded, color: Colors.white, size: 22),
                       ),
-                      icon: _uploadingAvatar
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white),
-                            )
-                          : const Icon(Icons.upload_rounded, size: 18),
-                      label: const Text('Subir'),
                     ),
-                    const SizedBox(width: 10),
-                    // Remove button
-                    OutlinedButton.icon(
-                      onPressed: () async {
-                        await ref
-                            .read(profileServiceProvider)
-                            .updateAvatarUrl(widget.profile.id, '');
+                    const SizedBox(width: 12),
+                    // Botón quitar — rojo, solo icono
+                    GestureDetector(
+                      onTap: () async {
+                        await ref.read(profileServiceProvider).updateAvatarUrl(widget.profile.id, '');
                         ref.invalidate(ownProfileProvider);
                       },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEAE7E1),
+                          border: Border.all(color: Colors.red, width: 1.5),
+                          boxShadow: const [BoxShadow(color: Color(0x44E24B4A), offset: Offset(3, 3), blurRadius: 0)],
                         ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
+                        child: const Icon(Icons.close, color: Colors.red, size: 22),
                       ),
-                      icon: const Icon(Icons.close, size: 18),
-                      label: const Text('Quitar'),
                     ),
                   ],
                 ),
@@ -257,9 +254,8 @@ class _EditTabState extends ConsumerState<EditTab> {
                       backgroundColor: const Color(0xFF60519B),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero), // ← cambia
+                      elevation: 0,
                     ),
                     child: saveState.isLoading
                         ? const SizedBox(
@@ -326,9 +322,10 @@ class _BannerSelector extends ConsumerWidget {
         ),
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(14),
+          decoration: const BoxDecoration(
+            color: Color(0xFFEAE7E1),
+            border: Border.fromBorderSide(BorderSide(color: Color(0xFFC4BFB8), width: 1.5)),
+            boxShadow: [BoxShadow(color: Color(0x55A8A49A), offset: Offset(3, 3), blurRadius: 0)],
           ),
           clipBehavior: Clip.hardEdge,
           child: Column(
@@ -376,9 +373,8 @@ class _BannerRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           border: isSelected
-              ? Border.all(
-                  color: const Color(0xFF60519B), width: 1.5)
-              : null,
+            ? const Border.fromBorderSide(BorderSide(color: Color(0xFF60519B), width: 2))
+            : null,
           borderRadius: isSelected ? BorderRadius.circular(10) : null,
         ),
         child: Row(
@@ -479,16 +475,16 @@ class _FormField extends StatelessWidget {
           vertical: 12,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFD5D0CA)),
+          borderRadius: BorderRadius.zero,
+          borderSide: const BorderSide(color: Color(0xFFC4BFB8), width: 1.5),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFD5D0CA)),
+          borderRadius: BorderRadius.zero,
+          borderSide: const BorderSide(color: Color(0xFFC4BFB8), width: 1.5),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF60519B), width: 1.5),
+          borderRadius: BorderRadius.zero,
+          borderSide: const BorderSide(color: Color(0xFF60519B), width: 2),
         ),
       ),
     );
