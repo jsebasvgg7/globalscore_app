@@ -112,7 +112,24 @@ class OverviewTab extends ConsumerWidget {
             ),
           ],
 
-          const SizedBox(height: 16),
+          // ── Admin (solo visible para admins) ──
+          if (isOwner && profile.role == 'admin') ...[
+            const SectionHeader(label: 'Administración'),
+            ClinicalCard(
+              children: [
+                ClinicalListItem(
+                  iconColor: const Color(0xFF1A1A2E),
+                  icon: Icons.shield_outlined,
+                  title: 'Panel de Admin',
+                  subtitle: 'Partidos · Ligas · Logros · Banners',
+                  onTap: () => onNavigate('/admin'),
+                  showDivider: false,
+                ),
+              ],
+            ),
+          ],
+
+          const SizedBox(height: 16),  // ← este ya existía
         ],
       ),
     );

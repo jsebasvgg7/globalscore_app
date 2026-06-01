@@ -33,55 +33,68 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/login',    builder: (c, s) => const LoginPage()),
       GoRoute(path: '/register', builder: (c, s) => const RegisterPage()),
+
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             ScaffoldWithNavBar(navigationShell: navigationShell),
         branches: [
-          // 0 — Dashboard (trofeo central)
+          // 0 — Dashboard
           StatefulShellBranch(routes: [
-            GoRoute(path: '/dashboard', builder: (c, s) => const DashboardPage()),
+            GoRoute(
+              path: '/dashboard',
+              builder: (_, __) => const DashboardPage(),
+            ),
           ]),
           // 1 — Ranking
           StatefulShellBranch(routes: [
-            GoRoute(path: '/ranking', builder: (c, s) => const RankingPage()),
+            GoRoute(
+              path: '/ranking',
+              builder: (_, __) => const RankingPage(),
+            ),
           ]),
-          // 2 — Albums / Historia
+          // 2 — Albums
           StatefulShellBranch(routes: [
             GoRoute(
               path: '/albums',
-              builder: (c, s) => const AlbumsPage(),
+              builder: (_, __) => const AlbumsPage(),
               routes: [
                 GoRoute(
                   path: ':albumId',
-                  builder: (c, s) =>
+                  builder: (_, s) =>
                       AlbumDetailPage(albumId: s.pathParameters['albumId']!),
                 ),
               ],
             ),
           ]),
-          // 3 — Stats  ← NUEVO
-         StatefulShellBranch(routes: [
-          GoRoute(
-            path: '/stats',
-            builder: (c, s) => const StatsPage(),
-          ),
-        ]),
-          // 4 — Perfil
+          // 3 — Stats
+          StatefulShellBranch(routes: [
+            GoRoute(
+              path: '/stats',
+              builder: (_, __) => const StatsPage(),
+            ),
+          ]),
+          // 4 — Perfil propio
           StatefulShellBranch(routes: [
             GoRoute(
               path: '/profile',
-              builder: (c, s) => const ProfilePage(),
-              routes: [
-                GoRoute(
-                  path: ':userId',
-                  builder: (c, s) =>
-                      PublicProfilePage(userId: s.pathParameters['userId']!),
-                ),
-              ],
+              builder: (_, __) => const ProfilePage(),
             ),
           ]),
         ],
       ),
+
+      GoRoute(
+        path: '/profile/:userId',
+        builder: (_, state) => PublicProfilePage(
+          userId: state.pathParameters['userId']!,
+        ),
+      ),
+
+      // Admin — fuera del shell, sin nav bar
+      // GoRoute(
+      //   path: '/admin',
+      //   builder: (_, __) => const AdminPage(),
+      // ),
     ],
   );
 });

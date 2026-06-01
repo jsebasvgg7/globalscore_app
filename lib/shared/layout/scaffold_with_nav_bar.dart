@@ -3,12 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// ═══════════════════════════════════════════════════════════
-//  SCAFFOLD WITH NAV BAR — GlobalScore
-//  Estilo: Brutalista Retro (fondo crema, bordes finos, sin radios)
-//  Replica MobileHeader.jsx + bottom nav con trofeo central
-// ═══════════════════════════════════════════════════════════
-
 class ScaffoldWithNavBar extends StatefulWidget {
   final StatefulNavigationShell navigationShell;
 
@@ -19,11 +13,10 @@ class ScaffoldWithNavBar extends StatefulWidget {
 }
 
 class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
-  // Datos del usuario actual
-  String _firstName  = 'Jugador';
-  String _initials   = 'JU';
+  String  _firstName = 'Jugador';
+  String  _initials  = 'JU';
   String? _avatarUrl;
-  bool   _isAdmin    = false;
+  bool    _isAdmin   = false;
 
   @override
   void initState() {
@@ -43,34 +36,27 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
       if (data != null && mounted) {
         final name = (data['name'] as String? ?? 'Jugador');
         setState(() {
-          _firstName  = name.split(' ').first;
-          _initials   = name.length >= 2 ? name.substring(0, 2).toUpperCase() : name.toUpperCase();
-          _avatarUrl  = data['avatar_url'] as String?;
-          _isAdmin    = data['is_admin'] == true;
+          _firstName = name.split(' ').first;
+          _initials  = name.length >= 2
+              ? name.substring(0, 2).toUpperCase()
+              : name.toUpperCase();
+          _avatarUrl = data['avatar_url'] as String?;
+          _isAdmin   = data['is_admin'] == true;
         });
       }
     } catch (_) {}
   }
 
-  Future<void> _logout() async {
-    await Supabase.instance.client.auth.signOut();
-    // go_router redirige automáticamente via routerNotifier
+  // ✅ Navega al branch 4 (perfil) y sincroniza el bottom nav
+  void _goToProfile() {
+    widget.navigationShell.goBranch(
+      4,
+      initialLocation: 4 == widget.navigationShell.currentIndex,
+    );
   }
-
-  // Índice de la rama actual → rutas del StatefulShell
-  // Rama 0 = /dashboard, 1 = /ranking, 2 = /albums, 3 = /stats, 4 = /profile
-  // El botón de trofeo central es la rama 0 (dashboard)
-
-  static const _bottomItems = [
-    _NavItem(icon: Icons.shield_outlined,     activeIcon: Icons.shield,         label: 'Admin/Hist', branchIndex: 4),
-    _NavItem(icon: Icons.emoji_events_outlined,activeIcon: Icons.emoji_events,  label: 'Ranking',    branchIndex: 1),
-    _NavItem(icon: Icons.bar_chart_outlined,  activeIcon: Icons.bar_chart,      label: 'Stats',      branchIndex: 3),
-    _NavItem(icon: Icons.person_outline,      activeIcon: Icons.person,         label: 'Perfil',     branchIndex: 4),
-  ];
 
   @override
   Widget build(BuildContext context) {
-    // Ocultar status bar nativa para control total
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,
@@ -80,24 +66,21 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
       backgroundColor: _GsColors.cream,
       body: Column(
         children: [
-          // ── Top Bar ──
           _GsTopBar(
             firstName:  _firstName,
             initials:   _initials,
             avatarUrl:  _avatarUrl,
             isAdmin:    _isAdmin,
-            onWorld:    () => context.push('/world'),
+            onWorld:    () => context.push('/worldcup'),
             onNotif:    () => context.push('/notifications'),
-            onProfile:  () => context.push('/profile'),
+            onProfile:  _goToProfile, // ✅ usa goBranch, no push
           ),
-          // ── Content ──
           Expanded(child: widget.navigationShell),
         ],
       ),
-      // ── Bottom Nav ──
       bottomNavigationBar: _GsBottomNav(
-        currentIndex:  widget.navigationShell.currentIndex,
-        isAdmin:       _isAdmin,
+        currentIndex: widget.navigationShell.currentIndex,
+        isAdmin:      _isAdmin,
         onTap: (branchIndex) {
           widget.navigationShell.goBranch(
             branchIndex,
@@ -149,7 +132,6 @@ class _GsTopBarState extends State<_GsTopBar> {
   void initState() {
     super.initState();
     _tick();
-    // Actualizar reloj cada minuto
     Future.doWhile(() async {
       await Future.delayed(const Duration(seconds: 30));
       if (!mounted) return false;
@@ -180,7 +162,6 @@ class _GsTopBarState extends State<_GsTopBar> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // ── Nombre ──
           Text(
             widget.firstName,
             style: const TextStyle(
@@ -191,23 +172,15 @@ class _GsTopBarState extends State<_GsTopBar> {
               letterSpacing: -0.4,
             ),
           ),
-
           const Spacer(),
-          const SizedBox(width: 8),
-
-          // ── Botón World ──
           _TopBtn(icon: Icons.language_outlined, onTap: widget.onWorld),
           const SizedBox(width: 8),
-
-          // ── Botón Notificaciones ──
           _TopBtn(
             icon: Icons.notifications_outlined,
             hasDot: true,
             onTap: widget.onNotif,
           ),
           const SizedBox(width: 8),
-
-          // ── Avatar ──
           _AvatarBtn(
             initials:  widget.initials,
             avatarUrl: widget.avatarUrl,
@@ -219,7 +192,6 @@ class _GsTopBarState extends State<_GsTopBar> {
   }
 }
 
-// ── Botón cuadrado brutalista ──
 class _TopBtn extends StatefulWidget {
   final IconData icon;
   final bool     hasDot;
@@ -258,8 +230,11 @@ class _TopBtnState extends State<_TopBtn> {
               Positioned(
                 top: 7, right: 7,
                 child: Container(
-                  width: 5, height: 5,
-                  color: const Color(0xFFD84040),
+                  width: 6, height: 6,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFEF4444),
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
           ],
@@ -269,7 +244,6 @@ class _TopBtnState extends State<_TopBtn> {
   }
 }
 
-// ── Avatar cuadrado ──
 class _AvatarBtn extends StatefulWidget {
   final String   initials;
   final String?  avatarUrl;
@@ -336,7 +310,7 @@ class _Initials extends StatelessWidget {
 class _GsBottomNav extends StatelessWidget {
   final int  currentIndex;
   final bool isAdmin;
-  final void Function(int branchIndex) onTap;
+  final void Function(int) onTap;
   final VoidCallback onTrophy;
 
   const _GsBottomNav({
@@ -348,18 +322,45 @@ class _GsBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 2 items izquierda | trofeo central | 2 items derecha
     // branchIndex: 0=dashboard, 1=ranking, 2=albums, 3=stats, 4=profile
     final leftItems = [
+      // ✅ Admin usa branch 2 (albums) como placeholder hasta tener branch admin
+      // o simplemente navega con context.push cuando esté listo
       if (isAdmin)
-        _NavItem(icon: Icons.shield_outlined,  activeIcon: Icons.shield,       label: 'Admin',   branchIndex: 5)
+        const _NavItem(
+          icon: Icons.shield_outlined,
+          activeIcon: Icons.shield,
+          label: 'Admin',
+          branchIndex: 2, // ✅ branch válido (albums) hasta tener el branch admin
+        )
       else
-        _NavItem(icon: Icons.museum_outlined,  activeIcon: Icons.museum,       label: 'Historias', branchIndex: 2),
-      _NavItem(icon: Icons.emoji_events_outlined, activeIcon: Icons.emoji_events, label: 'Ranking', branchIndex: 1),
+        const _NavItem(
+          icon: Icons.museum_outlined,
+          activeIcon: Icons.museum,
+          label: 'Álbums',
+          branchIndex: 2,
+        ),
+      const _NavItem(
+        icon: Icons.emoji_events_outlined,
+        activeIcon: Icons.emoji_events,
+        label: 'Ranking',
+        branchIndex: 1,
+      ),
     ];
+
     final rightItems = [
-      _NavItem(icon: Icons.bar_chart_outlined, activeIcon: Icons.bar_chart,  label: 'Stats',  branchIndex: 3),
-      _NavItem(icon: Icons.person_outline,     activeIcon: Icons.person,     label: 'Perfil', branchIndex: 4),
+      const _NavItem(
+        icon: Icons.bar_chart_outlined,
+        activeIcon: Icons.bar_chart,
+        label: 'Stats',
+        branchIndex: 3,
+      ),
+      const _NavItem(
+        icon: Icons.person_outline,
+        activeIcon: Icons.person,
+        label: 'Perfil',
+        branchIndex: 4,
+      ),
     ];
 
     return Container(
@@ -373,7 +374,6 @@ class _GsBottomNav extends StatelessWidget {
           height: 56,
           child: Row(
             children: [
-              // Left items
               ...leftItems.map((item) => Expanded(
                 child: _BottomNavButton(
                   item: item,
@@ -381,16 +381,12 @@ class _GsBottomNav extends StatelessWidget {
                   onTap: () => onTap(item.branchIndex),
                 ),
               )),
-
-              // Centro: trofeo elevado
               Expanded(
                 child: _TrophyButton(
                   isActive: currentIndex == 0,
                   onTap: onTrophy,
                 ),
               ),
-
-              // Right items
               ...rightItems.map((item) => Expanded(
                 child: _BottomNavButton(
                   item: item,
@@ -406,7 +402,6 @@ class _GsBottomNav extends StatelessWidget {
   }
 }
 
-// ── Botón normal del bottom nav ──
 class _BottomNavButton extends StatefulWidget {
   final _NavItem item;
   final bool isActive;
@@ -450,7 +445,6 @@ class _BottomNavButtonState extends State<_BottomNavButton> {
   }
 }
 
-// ── Botón trofeo central elevado ──
 class _TrophyButton extends StatefulWidget {
   final bool isActive;
   final VoidCallback onTap;
@@ -478,7 +472,7 @@ class _TrophyButtonState extends State<_TrophyButton> {
           clipBehavior: Clip.none,
           children: [
             Positioned(
-              top: -11, // elevado sobre el nav bar
+              top: -11,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 100),
                 transform: _pressed
@@ -487,7 +481,6 @@ class _TrophyButtonState extends State<_TrophyButton> {
                 width: 46, height: 46,
                 decoration: BoxDecoration(
                   color: _GsColors.accent,
-                  // Sin border-radius (brutalista)
                   boxShadow: _pressed
                       ? const [BoxShadow(color: Color(0x661B14A0), offset: Offset(1, 1), blurRadius: 0)]
                       : const [BoxShadow(color: Color(0x661B14A0), offset: Offset(3, 3), blurRadius: 0)],
@@ -495,7 +488,9 @@ class _TrophyButtonState extends State<_TrophyButton> {
                 child: Icon(
                   Icons.emoji_events,
                   size: 22,
-                  color: widget.isActive ? Colors.white : Colors.white.withOpacity(0.75),
+                  color: widget.isActive
+                      ? Colors.white
+                      : Colors.white.withValues(alpha: 0.75),
                 ),
               ),
             ),
@@ -524,14 +519,13 @@ class _NavItem {
   });
 }
 
-// ── Paleta y tipografía ──
 abstract class _GsColors {
-  static const Color cream  = Color(0xFFF0EDE8);
-  static const Color surface= Color(0xFFE8E4DE);
-  static const Color border = Color(0xFFC4BFB8);
-  static const Color dark   = Color(0xFF1A1A2E);
-  static const Color accent = Color(0xFF5B4FD8);
-  static const Color muted  = Color(0xFF88887D);
+  static const Color cream   = Color(0xFFF0EDE8);
+  static const Color surface = Color(0xFFE8E4DE);
+  static const Color border  = Color(0xFFC4BFB8);
+  static const Color dark    = Color(0xFF1A1A2E);
+  static const Color accent  = Color(0xFF5B4FD8);
+  static const Color muted   = Color(0xFF88887D);
 
   static const String fontMono = 'DM Mono';
 }

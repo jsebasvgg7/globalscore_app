@@ -55,7 +55,7 @@ class _PredictionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border(left: BorderSide(color: borderColor, width: 4)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)
         ],
       ),
       clipBehavior: Clip.hardEdge,
@@ -199,7 +199,7 @@ class _TeamSection extends StatelessWidget {
           width: 56,
           height: 56,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceVariant,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(12),
           ),
           child: logoUrl != null

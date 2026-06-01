@@ -99,11 +99,11 @@ final rankPositionProvider =
 });
 
 // ─── EDIT PROFILE NOTIFIER ────────────────────
-// Maneja el estado local del formulario de edición
-class EditProfileNotifier extends StateNotifier<AsyncValue<void>> {
-  EditProfileNotifier(this._service) : super(const AsyncValue.data(null));
+class EditProfileNotifier extends Notifier<AsyncValue<void>> {
+  @override
+  AsyncValue<void> build() => const AsyncValue.data(null);
 
-  final ProfileService _service;
+  ProfileService get _service => ref.read(profileServiceProvider);
 
   Future<void> save({
     required String userId,
@@ -116,8 +116,8 @@ class EditProfileNotifier extends StateNotifier<AsyncValue<void>> {
       await _service.updateProfile(userId, input);
       state = const AsyncValue.data(null);
       onSuccess();
-    } catch (e) {
-      state = AsyncValue.error(e, StackTrace.current);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
       onError(e.toString());
     }
   }
@@ -132,13 +132,13 @@ class EditProfileNotifier extends StateNotifier<AsyncValue<void>> {
       await _service.equipBanner(userId, bannerUrl);
       state = const AsyncValue.data(null);
       onSuccess();
-    } catch (e) {
-      state = AsyncValue.error(e, StackTrace.current);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
     }
   }
 }
 
 final editProfileProvider =
-    StateNotifierProvider<EditProfileNotifier, AsyncValue<void>>((ref) {
-  return EditProfileNotifier(ref.watch(profileServiceProvider));
-});
+    NotifierProvider<EditProfileNotifier, AsyncValue<void>>(
+  EditProfileNotifier.new,
+);

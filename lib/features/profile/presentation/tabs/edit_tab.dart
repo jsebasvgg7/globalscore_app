@@ -4,7 +4,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:io';
 import '../../domain/profile_models.dart';
 import '../../domain/profile_providers.dart';
 import '../widgets/profile_hero_banner.dart';

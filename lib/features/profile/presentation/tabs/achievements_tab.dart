@@ -155,7 +155,7 @@ class _TitleRow extends StatelessWidget {
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.crown_outlined, color: color, size: 18),
+             child: Icon(Icons.workspace_premium_outlined, color: color, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
