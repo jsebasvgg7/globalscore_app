@@ -22,9 +22,9 @@ const _gold    = Color(0xFFC9A227);
 const _silver  = Color(0xFF9CA3AF);
 const _bronze  = Color(0xFFCD7C30);
 
-const _shadow   = BoxShadow(color: Color(0xFFA8A49A), offset: Offset(3, 3), blurRadius: 0);
-const _shadowSm = BoxShadow(color: Color(0xFFA8A49A), offset: Offset(2, 2), blurRadius: 0);
-const _shadowLg = BoxShadow(color: Color(0xFFA8A49A), offset: Offset(4, 4), blurRadius: 0);
+const _shadow   = BoxShadow(color: Color(0x55A8A49A), offset: Offset(3, 3), blurRadius: 0);
+const _shadowSm = BoxShadow(color: Color(0x55A8A49A), offset: Offset(2, 2), blurRadius: 0);
+const _shadowLg = BoxShadow(color: Color(0x55A8A49A), offset: Offset(4, 4), blurRadius: 0);
 
 TextStyle _mono({Color color = _text, double size = 12, FontWeight weight = FontWeight.normal, double letterSpacing = 0}) =>
     GoogleFonts.dmMono(color: color, fontSize: size, fontWeight: weight, letterSpacing: letterSpacing);
@@ -220,21 +220,22 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
 
                     const SizedBox(height: 8),
 
-                    // ── 3: Mini cards (con cross-fade de tab) ─
-                    _enter(3, SizedBox(
-                      height: 200,
-                      child: FadeTransition(
-                        opacity: _tabCtrl,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
+                 // ── 3: Mini cards (con cross-fade de tab) ─
+                  _enter(3, FadeTransition(
+                    opacity: _tabCtrl,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
+                      child: IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             if (_activeTab == 'matches') ...[
                               if (previewMatches.isEmpty) ...[
-                                _EmptyMatchCard(),                                    // ← tarjeta vacía
+                                _EmptyMatchCard(),
                                 const SizedBox(width: 10),
-                                _MoreCard(onTap: () => showMatchSubPage(context, ref)), // ← VER TODO siempre
+                                _MoreCard(onTap: () => showMatchSubPage(context, ref)),
                               ] else ...[
                                 ...previewMatches.asMap().entries.map((e) => Padding(
                                   padding: const EdgeInsets.only(right: 10),
@@ -277,7 +278,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
                           ],
                         ),
                       ),
-                    )),
+                    ),
+                  )),
 
                     // ── 4: Bottom panel ──────────────────────
                     _enter(4, Padding(
@@ -714,7 +716,10 @@ class _MiniMatchCard extends StatelessWidget {
     return Container(
       width: 164,
       decoration: BoxDecoration(color: _card, border: Border.all(color: _borderH, width: 1.5), boxShadow: const [_shadow]),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,  // ← AGREGAR
+      children: [
         Container(height: 3, color: ac),
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
@@ -827,7 +832,10 @@ class _MiniLeagueCard extends StatelessWidget {
     return Container(
       width: 236,
       decoration: BoxDecoration(color: _card, border: Border.all(color: _borderH, width: 1.5), boxShadow: const [_shadow]),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,  // ← AGREGAR ESTO
+        children: [
         Container(height: 3, color: ac),
         Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [

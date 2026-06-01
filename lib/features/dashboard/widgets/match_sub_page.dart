@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,8 +19,8 @@ const _green   = Color(0xFF1D9E75);
 const _red     = Color(0xFFE24B4A);
 const _amber   = Color(0xFFF59E0B);
 
-const _shadow   = BoxShadow(color: Color(0xFFA8A49A), offset: Offset(3, 3), blurRadius: 0);
-const _shadowSm = BoxShadow(color: Color(0xFFA8A49A), offset: Offset(2, 2), blurRadius: 0);
+const _shadow   = BoxShadow(color: Color(0x55A8A49A), offset: Offset(3, 3), blurRadius: 0);
+const _shadowSm = BoxShadow(color: Color(0x55A8A49A), offset: Offset(2, 2), blurRadius: 0);
 
 TextStyle _mono({
   Color color = _text,
@@ -34,6 +35,7 @@ TextStyle _mono({
       fontWeight: weight,
       letterSpacing: letterSpacing,
       height: height,
+      decoration: TextDecoration.none,
     );
 
 // ─────────────────────────────────────────────────────────────
@@ -41,39 +43,57 @@ TextStyle _mono({
 // ─────────────────────────────────────────────────────────────
 void showMatchSubPage(BuildContext context, WidgetRef ref, {String? jumpToMatchId}) {
   final container = ProviderScope.containerOf(context);
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => UncontrolledProviderScope(
-      container: container,
-      child: _MatchSubPageSheet(jumpToMatchId: jumpToMatchId),
+  Navigator.of(context, rootNavigator: true).push(
+    PageRouteBuilder(
+      opaque: true,
+      pageBuilder: (_, __, ___) => UncontrolledProviderScope(
+        container: container,
+        child: _MatchSubPageSheet(jumpToMatchId: jumpToMatchId),
+      ),
+      transitionsBuilder: (_, animation, __, child) => SlideTransition(
+        position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+            .animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+        child: child,
+      ),
+      transitionDuration: const Duration(milliseconds: 280),
     ),
   );
 }
 
 void showLeagueSubPage(BuildContext context, WidgetRef ref) {
   final container = ProviderScope.containerOf(context);
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => UncontrolledProviderScope(
-      container: container,
-      child: const _LeagueSubPageSheet(),
+  Navigator.of(context, rootNavigator: true).push(
+    PageRouteBuilder(
+      opaque: true,
+      pageBuilder: (_, __, ___) => UncontrolledProviderScope(
+        container: container,
+        child: const _LeagueSubPageSheet(),
+      ),
+      transitionsBuilder: (_, animation, __, child) => SlideTransition(
+        position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+            .animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+        child: child,
+      ),
+      transitionDuration: const Duration(milliseconds: 280),
     ),
   );
 }
 
 void showAwardSubPage(BuildContext context, WidgetRef ref) {
   final container = ProviderScope.containerOf(context);
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => UncontrolledProviderScope(
-      container: container,
-      child: const _AwardSubPageSheet(),
+  Navigator.of(context, rootNavigator: true).push(
+    PageRouteBuilder(
+      opaque: true,
+      pageBuilder: (_, __, ___) => UncontrolledProviderScope(
+        container: container,
+        child: const _AwardSubPageSheet(),
+      ),
+      transitionsBuilder: (_, animation, __, child) => SlideTransition(
+        position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+            .animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+        child: child,
+      ),
+      transitionDuration: const Duration(milliseconds: 280),
     ),
   );
 }
@@ -94,74 +114,69 @@ class _BrutalistSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenH = MediaQuery.of(context).size.height;
-
-    return Container(
-      height: screenH * 0.92,
-      decoration: const BoxDecoration(
-        color: _bg,
-        border: Border(
-          top: BorderSide(color: _accent, width: 4),
-          left: BorderSide(color: _borderH, width: 1.5),
-          right: BorderSide(color: _borderH, width: 1.5),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Drag handle ──
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 10, bottom: 4),
-              width: 36,
-              height: 3,
-              color: _borderH,
-            ),
-          ),
-          // ── Header ──
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
-            decoration: const BoxDecoration(
-              color: _card,
-              border: Border(bottom: BorderSide(color: _borderH, width: 1.5)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '// $subtitle',
-                      style: _mono(color: _accent, size: 8, weight: FontWeight.w700, letterSpacing: 2),
+    return Material(
+      color: _bg,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header ──
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+              decoration: const BoxDecoration(
+                color: _card,
+                border: Border(bottom: BorderSide(color: _borderH, width: 1.5)),
+              ),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: 34, height: 34,
+                      decoration: BoxDecoration(
+                        color: _surface,
+                        border: Border.all(color: _borderH, width: 1.5),
+                        boxShadow: const [_shadowSm],
+                      ),
+                      child: const Icon(Icons.arrow_back, color: _muted, size: 16),
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      title,
-                      style: _mono(color: _text, size: 22, weight: FontWeight.w700),
-                    ),
-                  ],
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: _surface,
-                      border: Border.all(color: _borderH, width: 1.5),
-                      boxShadow: const [_shadowSm],
-                    ),
-                    child: const Icon(Icons.close, color: _muted, size: 16),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '// $subtitle',
+                          style: _mono(color: _accent, size: 8, weight: FontWeight.w700, letterSpacing: 2),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          title,
+                          style: _mono(color: _text, size: 20, weight: FontWeight.w700),
+                        ),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: 34, height: 34,
+                      decoration: BoxDecoration(
+                        color: _surface,
+                        border: Border.all(color: _borderH, width: 1.5),
+                        boxShadow: const [_shadowSm],
+                      ),
+                      child: const Icon(Icons.close, color: _muted, size: 16),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          // ── Content ──
-          Expanded(child: child),
-        ],
+            // ── Content ──
+            Expanded(child: child),
+          ],
+        ),
       ),
     );
   }
@@ -178,104 +193,449 @@ class _MatchSubPageSheet extends ConsumerStatefulWidget {
   ConsumerState<_MatchSubPageSheet> createState() => _MatchSubPageSheetState();
 }
 
+// ── Categorías de liga (mismo sistema que React) ──────────────
+const _leagueCats = [
+  {'id': 'all',          'name': 'Todos',        'icon': '🌍', 'leagues': <String>[]},
+  {'id': 'europe',       'name': 'Europa',       'icon': '🏆', 'leagues': ['Champions League', 'Europa League', 'Conference League']},
+  {'id': 'england',      'name': 'Inglaterra',   'icon': '🏴󠁧󠁢󠁥󠁮󠁧󠁿', 'leagues': ['Premier League', 'Championship', 'FA Cup', 'EFL Cup']},
+  {'id': 'spain',        'name': 'España',       'icon': '🇪🇸', 'leagues': ['La Liga', 'Copa del Rey', 'Supercopa']},
+  {'id': 'italy',        'name': 'Italia',       'icon': '🇮🇹', 'leagues': ['Serie A', 'Coppa Italia', 'Supercoppa']},
+  {'id': 'germany',      'name': 'Alemania',     'icon': '🇩🇪', 'leagues': ['Bundesliga', 'DFB Pokal']},
+  {'id': 'france',       'name': 'Francia',      'icon': '🇫🇷', 'leagues': ['Ligue 1', 'Coupe de France', 'Coupe de la Ligue']},
+  {'id': 'southamerica', 'name': 'Sudamérica',   'icon': '🌎', 'leagues': ['Copa Libertadores', 'Copa Sudamericana', 'FIFA']},
+];
+
 class _MatchSubPageSheetState extends ConsumerState<_MatchSubPageSheet> {
-  String _filter = 'all'; // all | pending | saved | live
+  // true = más próximos primero, false = más lejanos primero
+  bool _nearestFirst = true;
+  bool _showFilter   = false;
+  String _leagueCat  = 'all';
+
+  // Etiqueta legible para un string de fecha ISO "yyyy-MM-dd"
+  String _dateLabel(String? dateStr) {
+    if (dateStr == null) return 'SIN FECHA';
+    try {
+      final d = DateTime.parse(dateStr);
+      final now = DateTime.now();
+      final today    = DateTime(now.year, now.month, now.day);
+      final tomorrow = today.add(const Duration(days: 1));
+      final day      = DateTime(d.year, d.month, d.day);
+      if (day == today)    return 'HOY';
+      if (day == tomorrow) return 'MAÑANA';
+      // Día de semana abreviado
+      const days = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
+      return '${days[d.weekday - 1]} ${d.day}/${d.month}';
+    } catch (_) {
+      return dateStr;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final dashAsync = ref.watch(dashboardDataProvider);
     final userAsync = ref.watch(currentUserProvider);
+    final screenH = MediaQuery.of(context).size.height;
 
-    return _BrutalistSheet(
-      title: 'PARTIDOS',
-      subtitle: 'DASHBOARD',
-      child: dashAsync.when(
-        loading: () => const Center(child: _SheetLoader()),
-        error: (e, _) => Center(
-          child: Text('Error: $e', style: _mono(color: _red, size: 11)),
+    return Container(
+      height: screenH,
+      decoration: const BoxDecoration(
+        color: _bg,
+        border: Border(
+          left: BorderSide(color: _borderH, width: 1.5),
+          right: BorderSide(color: _borderH, width: 1.5),
         ),
+      ),
+      child: dashAsync.when(
+        loading: () => Column(children: [
+          _buildTopBar(0),
+          const Expanded(child: Center(child: _SheetLoader())),
+        ]),
+        error: (e, _) => Column(children: [
+          _buildTopBar(0),
+          Expanded(child: Center(child: Text('Error: $e', style: _mono(color: _red, size: 11)))),
+        ]),
         data: (data) {
           final matches = data['matches'] as List;
           final userId = userAsync.value?['id'] as String?;
 
-          // Base: solo partidos NO finalizados
-          final active = matches.where((m) => m['status'] != 'finished').toList();
+          // Solo partidos NO finalizados, filtrados y ordenados
+          var active = matches
+              .where((m) => m['status'] != 'finished')
+              .toList();
 
-          // Filtros dentro de los activos
-          final filtered = active.where((m) {
-            if (_filter == 'pending') {
-              final preds = (m['predictions'] as List?) ?? [];
-              final hasPred = preds.any((p) => p['user_id'] == userId);
-              return m['status'] == 'pending' && !hasPred;
+          // Filtrar por categoría de liga
+          if (_leagueCat != 'all') {
+            final cat = _leagueCats.firstWhere((c) => c['id'] == _leagueCat, orElse: () => _leagueCats[0]);
+            final leagues = cat['leagues'] as List<String>;
+            if (leagues.isNotEmpty) {
+              active = active.where((m) {
+                final league = (m['league'] ?? m['league_name'] ?? '').toString().toLowerCase();
+                return leagues.any((l) => league.contains(l.toLowerCase()));
+              }).toList();
             }
-            if (_filter == 'saved') {
-              final preds = (m['predictions'] as List?) ?? [];
-              return preds.any((p) => p['user_id'] == userId);
+          }
+
+          active.sort((a, b) {
+              final da = DateTime.tryParse('${a['date']}T${a['time'] ?? '00:00'}') ?? DateTime(2099);
+              final db = DateTime.tryParse('${b['date']}T${b['time'] ?? '00:00'}') ?? DateTime(2099);
+              return _nearestFirst ? da.compareTo(db) : db.compareTo(da);
+            });
+
+          // Construir lista de items: cada item es un match o un separador de fecha
+          final items = <dynamic>[];
+          String? lastDate;
+          for (final m in active) {
+            final d = m['date'] as String?;
+            if (d != lastDate) {
+              items.add(_DateSeparator(label: _dateLabel(d)));
+              lastDate = d;
             }
-            if (_filter == 'live') return m['status'] == 'live';
-            if (_filter == 'closed') return m['status'] == 'closed';
-            return true;
-          }).toList();
+            items.add(m);
+          }
 
-          final pendingCount = active.where((m) {
-            final preds = (m['predictions'] as List?) ?? [];
-            return m['status'] == 'pending' && !preds.any((p) => p['user_id'] == userId);
-          }).length;
-          final savedCount = active.where((m) {
-            final preds = (m['predictions'] as List?) ?? [];
-            return preds.any((p) => p['user_id'] == userId);
-          }).length;
-          final liveCount = active.where((m) => m['status'] == 'live').length;
-          final closedCount = active.where((m) => m['status'] == 'closed').length;
-
-          return Column(
+          return Stack(
             children: [
-              // Filter chips
-              _FilterBar(
-                active: _filter,
-                onSelect: (f) => setState(() => _filter = f),
-                counts: {
-                  'all': active.length,
-                  'pending': pendingCount,
-                  'saved': savedCount,
-                  'live': liveCount,
-                  'closed': closedCount,
-                },
-              ),
-              // List
-              Expanded(
-                child: filtered.isEmpty
-                    ? _EmptyState(label: 'Sin partidos\nen esta categoría')
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
-                        itemCount: filtered.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 10),
-                        itemBuilder: (_, i) {
-                          final m = Map<String, dynamic>.from(filtered[i] as Map);
-                          return _MatchPredictionCard(
-                            match: m,
-                            userId: userId,
-                            onPredict: (matchId, home, away, adv) async {
-                              if (userId == null) return;
-                              await DashboardService.upsertMatchPrediction(
-                                matchId: matchId,
-                                userId: userId,
-                                homeScore: home,
-                                awayScore: away,
-                                advancingTeam: adv,
+              Column(
+                children: [
+                  _buildTopBar(active.length),
+                  _buildSortBar(),
+                  Expanded(
+                    child: active.isEmpty
+                        ? _EmptyState(label: 'Sin partidos\npendientes')
+                        : ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(16, 10, 16, 40),
+                            itemCount: items.length,
+                            itemBuilder: (_, i) {
+                              final item = items[i];
+                              if (item is _DateSeparator) return item;
+                              final m = Map<String, dynamic>.from(item as Map);
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: _MatchPredictionCard(
+                                  match: m,
+                                  userId: userId,
+                                  onPredict: (matchId, home, away, adv) async {
+                                    if (userId == null) return;
+                                    await DashboardService.upsertMatchPrediction(
+                                      matchId: matchId,
+                                      userId: userId,
+                                      homeScore: home,
+                                      awayScore: away,
+                                      advancingTeam: adv,
+                                    );
+                                    ref.invalidate(dashboardDataProvider);
+                                  },
+                                ),
                               );
-                              ref.invalidate(dashboardDataProvider);
                             },
-                          );
-                        },
-                      ),
+                          ),
+                  ),
+                ],
               ),
+              // ── FILTER OVERLAY ──
+              if (_showFilter) _buildFilterOverlay(),
             ],
           );
         },
       ),
     );
   }
+
+  // ── Header: safe area + "PARTIDOS [N]" + filtro ──
+  Widget _buildTopBar(int count) {
+    final topPad = MediaQuery.of(context).padding.top;
+    return Container(
+      padding: EdgeInsets.fromLTRB(16, topPad + 10, 16, 10),
+      decoration: const BoxDecoration(
+        color: _card,
+        border: Border(
+          top: BorderSide(color: _accent, width: 4),
+          bottom: BorderSide(color: _borderH, width: 1.5),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Botón atrás — sin contenedor
+          GestureDetector(
+            onTap: () => Navigator.of(context).pop(),
+            child: const Padding(
+              padding: EdgeInsets.all(4),
+              child: Icon(Icons.arrow_back, color: _muted, size: 18),
+            ),
+          ),
+          // Título + badge centrados
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  'PARTIDOS',
+                  style: _mono(color: _text, size: 14, weight: FontWeight.w700, letterSpacing: 1.2),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _accent.withValues(alpha: 0.1),
+                    border: Border.all(color: _accent, width: 1.5),
+                  ),
+                  child: Text(
+                    '$count',
+                    style: _mono(color: _accent, size: 11, weight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Botón filtro — sin contenedor
+          GestureDetector(
+            onTap: () => setState(() => _showFilter = true),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Icon(
+                Icons.tune,
+                color: _leagueCat != 'all' ? _accent : _muted,
+                size: 18,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Sort bar: centrado con icono en el medio ──
+  Widget _buildSortBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: _border, width: 1)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _SortBtn(
+                label: 'MÁS PRÓXIMOS',
+                active: _nearestFirst,
+                onTap: () { if (!_nearestFirst) setState(() => _nearestFirst = true); },
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Icon(Icons.swap_vert, color: _muted, size: 16),
+              ),
+              _SortBtn(
+                label: 'MÁS LEJANOS',
+                active: !_nearestFirst,
+                onTap: () { if (_nearestFirst) setState(() => _nearestFirst = false); },
+              ),
+            ],
+          ),
+          if (_leagueCat != 'all') ...[
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () => setState(() => _leagueCat = 'all'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: _accent.withValues(alpha: 0.08),
+                  border: Border.all(color: _accent, width: 1.5),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      (_leagueCats.firstWhere((c) => c['id'] == _leagueCat)['icon'] as String),
+                      style: const TextStyle(fontSize: 11, decoration: TextDecoration.none),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      (_leagueCats.firstWhere((c) => c['id'] == _leagueCat)['name'] as String).toUpperCase(),
+                      style: _mono(color: _accent, size: 8, weight: FontWeight.w700, letterSpacing: 0.8),
+                    ),
+                    const SizedBox(width: 5),
+                    const Icon(Icons.close, size: 10, color: _accent),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ── Panel lateral de filtro ──
+  Widget _buildFilterOverlay() {
+    final topPad = MediaQuery.of(context).padding.top;
+    return GestureDetector(
+      onTap: () => setState(() => _showFilter = false),
+      child: Container(
+        color: const Color(0x720A0814),
+        child: Row(
+          children: [
+            Expanded(child: GestureDetector(onTap: () => setState(() => _showFilter = false))),
+            // Panel derecho
+            Container(
+              width: 264,
+              height: double.infinity,
+              decoration: const BoxDecoration(
+                color: _bg,
+                border: Border(
+                  left: BorderSide(color: _borderH, width: 1.5),
+                  top: BorderSide(color: _accent, width: 3),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header del panel
+                  Container(
+                    padding: EdgeInsets.fromLTRB(16, topPad + 16, 16, 14),
+                    decoration: const BoxDecoration(
+                      color: _card,
+                      border: Border(bottom: BorderSide(color: _borderH, width: 1)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.filter_list, size: 14, color: _accent),
+                        const SizedBox(width: 7),
+                        Text('FILTRAR LIGA',
+                          style: _mono(color: _text, size: 9, weight: FontWeight.w700, letterSpacing: 1.4)),
+                        const Spacer(),
+                        if (_leagueCat != 'all')
+                          GestureDetector(
+                            onTap: () => setState(() { _leagueCat = 'all'; _showFilter = false; }),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: _borderH, width: 1.5),
+                              ),
+                              child: Text('RESET',
+                                style: _mono(color: _accent, size: 8, weight: FontWeight.w700, letterSpacing: 1)),
+                            ),
+                          ),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () => setState(() => _showFilter = false),
+                          child: Container(
+                            width: 30, height: 30,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: _borderH, width: 1.5),
+                            ),
+                            child: const Icon(Icons.close, size: 14, color: _muted),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Lista de categorías
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.all(10),
+                      children: _leagueCats.map((cat) {
+                        final isActive = _leagueCat == cat['id'];
+                        return GestureDetector(
+                          onTap: () => setState(() { _leagueCat = cat['id'] as String; _showFilter = false; }),
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: isActive ? _text : _card,
+                              border: Border.all(
+                                color: isActive ? _text : _borderH,
+                                width: 1.5,
+                              ),
+                              boxShadow: isActive ? const [_shadowSm] : null,
+                            ),
+                            child: Row(
+                              children: [
+                                Text(cat['icon'] as String, style: const TextStyle(fontSize: 16, decoration: TextDecoration.none)),
+                                const SizedBox(width: 12),
+                                Text(
+                                  cat['name'] as String,
+                                  style: _mono(
+                                    color: isActive ? _bg : _text,
+                                    size: 12,
+                                    weight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Botón de ordenación estilo brutalista
+class _SortBtn extends StatelessWidget {
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  const _SortBtn({required this.label, required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      decoration: BoxDecoration(
+        color: active ? _accent : _card,
+        border: Border.all(color: active ? _accent : _borderH, width: 1.5),
+        boxShadow: active ? const [_shadowSm] : null,
+      ),
+      child: Text(
+        label,
+        style: _mono(
+          color: active ? Colors.white : _muted,
+          size: 9,
+          weight: FontWeight.w700,
+          letterSpacing: 0.8,
+        ),
+      ),
+    ),
+  );
+}
+
+// Separador de fecha entre grupos de partidos
+class _DateSeparator extends StatelessWidget {
+  final String label;
+  const _DateSeparator({required this.label});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 10),
+    child: Row(
+      children: [
+        Expanded(child: Container(height: 1, color: _border)),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: _card,
+            border: Border.all(color: _borderH, width: 1.5),
+          ),
+          child: Text(
+            label,
+            style: _mono(color: _muted, size: 8, weight: FontWeight.w700, letterSpacing: 1.6),
+          ),
+        ),
+        Expanded(child: Container(height: 1, color: _border)),
+      ],
+    ),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -382,99 +742,6 @@ class _AwardSubPageSheet extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  FILTER BAR
-// ─────────────────────────────────────────────────────────────
-class _FilterBar extends StatelessWidget {
-  final String active;
-  final ValueChanged<String> onSelect;
-  final Map<String, int> counts;
-
-  const _FilterBar({required this.active, required this.onSelect, required this.counts});
-
-  @override
-  Widget build(BuildContext context) {
-    final filters = [
-      {'id': 'all',     'label': 'TODOS'},
-      {'id': 'pending', 'label': 'PEND.'},
-      {'id': 'saved',   'label': 'GUARD.'},
-      {'id': 'live',    'label': 'VIVO'},
-      {'id': 'closed',  'label': 'CERR.'},
-    ];
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: _border, width: 1)),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-        children: filters.map((f) {
-          final id = f['id']!;
-          final isActive = active == id;
-          final count = counts[id] ?? 0;
-          final isLive = id == 'live';
-
-          return GestureDetector(
-            onTap: () => onSelect(id),
-            child: Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: isActive ? _accent : _card,
-                border: Border.all(
-                  color: isActive ? _accent : _borderH,
-                  width: 1.5,
-                ),
-                boxShadow: isActive ? const [_shadowSm] : null,
-              ),
-              child: Row(
-                children: [
-                  if (isLive && count > 0) ...[
-                    Container(
-                      width: 5,
-                      height: 5,
-                      margin: const EdgeInsets.only(right: 5),
-                      decoration: const BoxDecoration(
-                        color: _amber,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ],
-                  Text(
-                    f['label']!,
-                    style: _mono(
-                      color: isActive ? Colors.white : _muted,
-                      size: 8,
-                      weight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                    color: isActive ? Colors.white.withValues(alpha: 0.2) : _bg,
-                    child: Text(
-                      '$count',
-                      style: _mono(
-                        color: isActive ? Colors.white : _muted,
-                        size: 8,
-                        weight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
 //  MATCH PREDICTION CARD (tarjeta completa con +/- inline)
 // ─────────────────────────────────────────────────────────────
 class _MatchPredictionCard extends StatefulWidget {
@@ -497,7 +764,8 @@ class _MatchPredictionCardState extends State<_MatchPredictionCard> {
   late int _away;
   String? _advancing;
   bool _saving = false;
-  bool _saved = false; // feedback visual inmediato
+  bool _saved = false;
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -506,6 +774,13 @@ class _MatchPredictionCardState extends State<_MatchPredictionCard> {
     _home = pred?['home_score'] as int? ?? 0;
     _away = pred?['away_score'] as int? ?? 0;
     _advancing = pred?['predicted_advancing_team'] as String?;
+    _saved = pred != null;
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
   }
 
   Map? get _myPred {
@@ -548,7 +823,7 @@ class _MatchPredictionCardState extends State<_MatchPredictionCard> {
   Future<void> _save() async {
     if (_isDisabled || _saving) return;
     HapticFeedback.lightImpact();
-    setState(() => _saving = true);
+    setState(() { _saving = true; _saved = false; });
     try {
       await widget.onPredict(
         widget.match['id'] as String,
@@ -557,34 +832,46 @@ class _MatchPredictionCardState extends State<_MatchPredictionCard> {
         _advancing,
       );
       if (mounted) setState(() => _saved = true);
+    } catch (_) {
+      if (mounted) setState(() => _saved = false);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  void _triggerAutoSave() {
+    if (_isDisabled) return;
+    _debounce?.cancel();
+    setState(() { _saved = false; }); // feedback inmediato: vuelve a "sin guardar"
+    _debounce = Timer(const Duration(milliseconds: 600), _save);
   }
 
   void _inc(bool isHome) {
     if (_isDisabled) return;
     HapticFeedback.selectionClick();
     setState(() {
-      if (isHome) { if (_home < 20) { _home++; } }
-      else        { if (_away < 20) { _away++; } }
+      if (isHome) { if (_home < 20) _home++; }
+      else        { if (_away < 20) _away++; }
     });
-    // Auto-save con debounce sería ideal, por ahora guardamos en el botón
+    _triggerAutoSave();
   }
 
   void _dec(bool isHome) {
     if (_isDisabled) return;
     HapticFeedback.selectionClick();
     setState(() {
-      if (isHome) { if (_home > 0) { _home--; } }
-      else        { if (_away > 0) { _away--; } }
+      if (isHome) { if (_home > 0) _home--; }
+      else        { if (_away > 0) _away--; }
     });
+    _triggerAutoSave();
   }
 
   @override
   Widget build(BuildContext context) {
     final m = widget.match;
     final ac = _accentColor;
+
+    final isSavedNow = _saved || _myPred != null;
 
     return Container(
       decoration: BoxDecoration(
@@ -594,61 +881,51 @@ class _MatchPredictionCardState extends State<_MatchPredictionCard> {
       ),
       child: Column(
         children: [
-          // ── Accent left bar + Header ──
-          IntrinsicHeight(
+          // ── Borde superior coloreado ──
+          Container(height: 3, color: ac),
+
+          // ── Header: logo liga + nombre + KO badge + pill ──
+          Container(
+            padding: const EdgeInsets.fromLTRB(13, 9, 13, 9),
+            color: _card,
             child: Row(
               children: [
-                // Barra lateral de color (brutalist)
-                Container(width: 4, color: ac),
+                // Logo liga cuadrado
+                Container(
+                  width: 22, height: 22,
+                  decoration: BoxDecoration(
+                    color: _bg,
+                    border: Border.all(color: _borderH, width: 1.5),
+                  ),
+                  child: m['league_logo_url'] != null
+                      ? Image.network(
+                          m['league_logo_url'] as String,
+                          fit: BoxFit.contain,
+                          gaplessPlayback: true,
+                          filterQuality: FilterQuality.medium,
+                          errorBuilder: (_, _, _) => const Center(
+                              child: Text('🏆', style: TextStyle(fontSize: 10, decoration: TextDecoration.none))),
+                        )
+                      : const Center(child: Text('🏆', style: TextStyle(fontSize: 10, decoration: TextDecoration.none))),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                    color: _card,
-                    child: Row(
-                      children: [
-                        // Logo liga pequeño
-                        Container(
-                          width: 22,
-                          height: 22,
-                          decoration: BoxDecoration(
-                            color: _bg,
-                            border: Border.all(color: _borderH, width: 1.5),
-                          ),
-                          child: m['league_logo_url'] != null
-                              ? Image.network(
-                                  m['league_logo_url'] as String,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, _, _) => const Center(
-                                      child: Text('🏆', style: TextStyle(fontSize: 10))),
-                                )
-                              : const Center(child: Text('🏆', style: TextStyle(fontSize: 10))),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            (m['league_name'] ?? m['league'] ?? 'LIGA').toString().toUpperCase(),
-                            style: _mono(color: _muted, size: 8, weight: FontWeight.w700, letterSpacing: 1.2),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        // KO badge si aplica
-                        if (_isKnockout) ...[
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: _red, width: 1),
-                            ),
-                            child: Text('KO', style: _mono(color: _red, size: 7, weight: FontWeight.w800, letterSpacing: 1)),
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                        // Pill estado
-                        _StatusPill(label: _pillLabel, color: ac),
-                      ],
-                    ),
+                  child: Text(
+                    (m['league_name'] ?? m['league'] ?? 'LIGA').toString().toUpperCase(),
+                    style: _mono(color: _muted, size: 8, weight: FontWeight.w700, letterSpacing: 1.2),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                if (_isKnockout) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(border: Border.all(color: _red, width: 1)),
+                    child: Text('KO', style: _mono(color: _red, size: 7, weight: FontWeight.w800, letterSpacing: 1)),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                _StatusPill(label: _pillLabel, color: ac),
               ],
             ),
           ),
@@ -661,19 +938,32 @@ class _MatchPredictionCardState extends State<_MatchPredictionCard> {
             isDisabled: _isDisabled,
             isAdvancing: _advancing == 'home',
             isKnockout: _isKnockout,
+            isSaved: isSavedNow,
             onInc: () => _inc(true),
             onDec: () => _dec(true),
             onAdvTap: () {
               if (!_isKnockout || _isDisabled) return;
               setState(() => _advancing = _advancing == 'home' ? null : 'home');
+              _triggerAutoSave();
             },
           ),
 
-          // ── Divisor central ──
-          Container(
-            height: 1,
-            color: _border,
-            margin: const EdgeInsets.symmetric(horizontal: 0),
+          // ── VS con líneas laterales ──
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 13),
+            child: Row(
+              children: [
+                Expanded(child: Container(height: 1, color: _border)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Text(
+                    _isKnockout && !_isDisabled ? '⚔' : 'VS',
+                    style: _mono(color: _borderH, size: 9, weight: FontWeight.w700, letterSpacing: 2),
+                  ),
+                ),
+                Expanded(child: Container(height: 1, color: _border)),
+              ],
+            ),
           ),
 
           // ── AWAY team row ──
@@ -684,57 +974,54 @@ class _MatchPredictionCardState extends State<_MatchPredictionCard> {
             isDisabled: _isDisabled,
             isAdvancing: _advancing == 'away',
             isKnockout: _isKnockout,
+            isSaved: isSavedNow,
             onInc: () => _inc(false),
             onDec: () => _dec(false),
             onAdvTap: () {
               if (!_isKnockout || _isDisabled) return;
               setState(() => _advancing = _advancing == 'away' ? null : 'away');
+              _triggerAutoSave();
             },
           ),
 
-          // ── Footer ──
+          // ── Footer: hora | fecha | estado auto-guardado ──
           Container(
-            padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
             decoration: const BoxDecoration(
               color: _card,
-              border: Border(top: BorderSide(color: _borderH, width: 1.5)),
+              border: Border(top: BorderSide(color: _border, width: 1)),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Hora + fecha
-                Row(
-                  children: [
-                    const Icon(Icons.access_time, size: 10, color: _muted),
-                    const SizedBox(width: 4),
-                    Text(m['time'] as String? ?? '—', style: _mono(color: _muted, size: 9)),
-                    const SizedBox(width: 10),
-                    const Icon(Icons.calendar_today_outlined, size: 10, color: _muted),
-                    const SizedBox(width: 4),
-                    Text(m['date'] as String? ?? '—', style: _mono(color: _muted, size: 9)),
-                  ],
-                ),
-                if (!_isDisabled)
-                  GestureDetector(
-                    onTap: _saving ? null : _save,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: _saving ? _muted : (_saved || _myPred != null ? _green : _accent),
-                        boxShadow: const [_shadowSm],
-                      ),
-                      child: Text(
-                        _saving ? 'GUARD...' : (_saved || _myPred != null ? '✓ ACTUALIZAR' : 'GUARDAR'),
-                        style: _mono(color: Colors.white, size: 9, weight: FontWeight.w800, letterSpacing: 1),
-                      ),
-                    ),
-                  )
-                else
+                const Icon(Icons.access_time, size: 10, color: _muted),
+                const SizedBox(width: 4),
+                Text(m['time'] as String? ?? '—', style: _mono(color: _muted, size: 9)),
+                Container(width: 1, height: 10, margin: const EdgeInsets.symmetric(horizontal: 10), color: _border),
+                const Icon(Icons.calendar_today_outlined, size: 10, color: _muted),
+                const SizedBox(width: 4),
+                Text(m['date'] as String? ?? '—', style: _mono(color: _muted, size: 9)),
+                const Spacer(),
+                // Indicador de estado compacto
+                if (_isDisabled)
                   Text(
                     _isLive ? '● EN VIVO' : 'CERRADO',
                     style: _mono(color: _isLive ? _amber : _muted, size: 8, weight: FontWeight.w700, letterSpacing: 1.2),
-                  ),
+                  )
+                else if (_saving)
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    SizedBox(
+                      width: 8, height: 8,
+                      child: CircularProgressIndicator(color: _accent, strokeWidth: 1.5),
+                    ),
+                    const SizedBox(width: 5),
+                    Text('GUARDANDO', style: _mono(color: _accent, size: 7, weight: FontWeight.w700, letterSpacing: 1)),
+                  ])
+                else if (isSavedNow)
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.check, size: 9, color: _green),
+                    const SizedBox(width: 4),
+                    Text('GUARDADO', style: _mono(color: _green, size: 7, weight: FontWeight.w700, letterSpacing: 1)),
+                  ]),
               ],
             ),
           ),
@@ -1158,7 +1445,7 @@ class _AwardPredictionCardState extends State<_AwardPredictionCard> {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  TEAM SCORE ROW — estilo brutalist con logo grande
+//  TEAM SCORE ROW — escudo circular + score accent + keycap
 // ─────────────────────────────────────────────────────────────
 class _TeamScoreRow extends StatelessWidget {
   final String name;
@@ -1167,6 +1454,7 @@ class _TeamScoreRow extends StatelessWidget {
   final bool isDisabled;
   final bool isAdvancing;
   final bool isKnockout;
+  final bool isSaved;
   final VoidCallback onInc;
   final VoidCallback onDec;
   final VoidCallback onAdvTap;
@@ -1178,6 +1466,7 @@ class _TeamScoreRow extends StatelessWidget {
     required this.isDisabled,
     required this.isAdvancing,
     required this.isKnockout,
+    required this.isSaved,
     required this.onInc,
     required this.onDec,
     required this.onAdvTap,
@@ -1186,32 +1475,55 @@ class _TeamScoreRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      padding: const EdgeInsets.fromLTRB(13, 11, 13, 11),
       color: isAdvancing ? _accent.withValues(alpha: 0.04) : _bg,
       child: Row(
         children: [
-          // Logo equipo — cuadrado, tappable si es KO
+          // Logo equipo — CIRCULAR, tappable si es KO
           GestureDetector(
             onTap: isKnockout ? onAdvTap : null,
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: _card,
-                border: Border.all(
-                  color: isAdvancing ? _accent : _borderH,
-                  width: isAdvancing ? 2.5 : 1.5,
+            child: Stack(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _card,
+                    border: Border.all(
+                      color: isAdvancing ? _accent : _borderH,
+                      width: isAdvancing ? 2 : 1.5,
+                    ),
+                    boxShadow: isAdvancing ? const [_shadowSm] : null,
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: logoUrl != null
+                      ? Image.network(
+                          logoUrl!,
+                          fit: BoxFit.contain,
+                          gaplessPlayback: true,
+                          filterQuality: FilterQuality.medium,
+                          errorBuilder: (_, _, _) => const Center(
+                              child: Text('⚽', style: TextStyle(fontSize: 18, decoration: TextDecoration.none))))
+                      : const Center(child: Text('⚽', style: TextStyle(fontSize: 18, decoration: TextDecoration.none))),
                 ),
-                boxShadow: isAdvancing ? const [_shadowSm] : null,
-              ),
-              child: logoUrl != null
-                  ? Image.network(logoUrl!, fit: BoxFit.contain,
-                      errorBuilder: (_, _, _) => const Center(
-                          child: Text('⚽', style: TextStyle(fontSize: 22))))
-                  : const Center(child: Text('⚽', style: TextStyle(fontSize: 22))),
+                if (isKnockout && isAdvancing)
+                  Positioned(
+                    bottom: 0, right: 0,
+                    child: Container(
+                      width: 14, height: 14,
+                      decoration: const BoxDecoration(
+                        color: _green,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.check, size: 9, color: Colors.white),
+                    ),
+                  ),
+              ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           // Nombre del equipo
           Expanded(
             child: Column(
@@ -1219,7 +1531,7 @@ class _TeamScoreRow extends StatelessWidget {
               children: [
                 Text(
                   name.toUpperCase(),
-                  style: _mono(color: _text, size: 13, weight: FontWeight.w700, letterSpacing: 0.3),
+                  style: _mono(color: _text, size: 11, weight: FontWeight.w700, letterSpacing: 0.3),
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (isKnockout && isAdvancing)
@@ -1238,25 +1550,30 @@ class _TeamScoreRow extends StatelessWidget {
                 onTap: (!isDisabled && score > 0) ? onDec : null,
                 isAccent: false,
               ),
-              Container(
-                width: 44,
-                height: 44,
+              const SizedBox(width: 4),
+              // Score display — accent cuando guardado
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 38,
+                height: 40,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: _surface,
-                  border: Border.symmetric(
-                    vertical: BorderSide(color: _borderH, width: 1.5),
+                  color: isSaved ? _accent.withValues(alpha: 0.08) : _surface,
+                  border: Border.all(
+                    color: isSaved ? _accent : _borderH,
+                    width: 1.5,
                   ),
                 ),
                 child: Text(
                   '$score',
                   style: _mono(
-                    color: score > 0 ? _accent : _text,
-                    size: 22,
+                    color: isSaved ? _accent : (score > 0 ? _accent : _muted),
+                    size: 18,
                     weight: FontWeight.w700,
                   ),
                 ),
               ),
+              const SizedBox(width: 4),
               _ScoreBtn(
                 symbol: '+',
                 onTap: !isDisabled ? onInc : null,
@@ -1270,7 +1587,7 @@ class _TeamScoreRow extends StatelessWidget {
   }
 }
 
-class _ScoreBtn extends StatelessWidget {
+class _ScoreBtn extends StatefulWidget {
   final String symbol;
   final VoidCallback? onTap;
   final bool isAccent;
@@ -1278,30 +1595,88 @@ class _ScoreBtn extends StatelessWidget {
   const _ScoreBtn({required this.symbol, this.onTap, this.isAccent = false});
 
   @override
+  State<_ScoreBtn> createState() => _ScoreBtnState();
+}
+
+class _ScoreBtnState extends State<_ScoreBtn> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    final active = onTap != null;
+    final active = widget.onTap != null;
+    final faceColor = !active
+        ? _bg
+        : widget.isAccent ? _accent : _card;
+    final shadowColor = !active
+        ? _border
+        : widget.isAccent
+            ? const Color(0xFF3D35A0)
+            : const Color(0xFF8A8680);
+
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 44,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: active
-              ? (isAccent ? _accent : _card)
-              : _bg,
-          border: Border.all(
-            color: active ? (isAccent ? _accent : _borderH) : _border,
-            width: 1.5,
-          ),
-        ),
-        child: Text(
-          symbol,
-          style: _mono(
-            color: active ? (isAccent ? Colors.white : _text) : _border,
-            size: 22,
-            weight: FontWeight.w700,
-          ),
+      onTapDown: (_) {
+        if (!active) return;
+        HapticFeedback.selectionClick();
+        setState(() => _pressed = true);
+        widget.onTap?.call();
+      },
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: SizedBox(
+        width: 36,
+        height: 40,
+        child: Stack(
+          alignment: Alignment.topCenter,
+          children: [
+            // Base / sombra de la tecla
+            Positioned(
+              bottom: 0,
+              left: 1,
+              right: 1,
+              child: Container(
+                height: _pressed ? 2 : 5,
+                decoration: BoxDecoration(
+                  color: shadowColor,
+                  border: Border.all(
+                    color: active
+                        ? (widget.isAccent ? const Color(0xFF3D35A0) : _borderH)
+                        : _border,
+                    width: 1.5,
+                  ),
+                ),
+              ),
+            ),
+            // Face de la tecla
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 60),
+              top: _pressed ? 4 : 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: faceColor,
+                  border: Border.all(
+                    color: active
+                        ? (widget.isAccent ? _accent : _borderH)
+                        : _border,
+                    width: 1.5,
+                  ),
+                ),
+                child: Text(
+                  widget.symbol,
+                  style: _mono(
+                    color: active
+                        ? (widget.isAccent ? Colors.white : _text)
+                        : _border,
+                    size: 18,
+                    weight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1424,8 +1799,8 @@ class _LogoBox extends StatelessWidget {
       child: url != null
           ? Image.network(url!, fit: BoxFit.contain,
               errorBuilder: (_, _, _) => Center(
-                  child: Text(fallback, style: TextStyle(fontSize: size * 0.45))))
-          : Center(child: Text(fallback, style: TextStyle(fontSize: size * 0.45))),
+                  child: Text(fallback, style: TextStyle(fontSize: size * 0.45, decoration: TextDecoration.none))))
+          : Center(child: Text(fallback, style: TextStyle(fontSize: size * 0.45, decoration: TextDecoration.none))),
     );
   }
 }
