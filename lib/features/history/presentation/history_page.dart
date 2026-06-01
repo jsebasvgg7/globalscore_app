@@ -5,7 +5,7 @@ import 'pages/history_vault_page.dart';
 import '../presentation/pages/history_competitions_page.dart';
 import '../presentation/pages/history_events_page.dart';
 import '../presentation/pages/history_teams_page.dart';
-import '../presentation/pages/history_players_page.dart';
+import 'pagePlayers/history_players_page.dart';
 
 class HistoryPage extends ConsumerWidget {
   const HistoryPage({super.key});
