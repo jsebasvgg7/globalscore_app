@@ -1,18 +1,30 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class ScaffoldWithNavBar extends StatefulWidget {
+// ── Provider global: las sub-páginas lo activan para ocultar el top bar ──
+final hideTopBarProvider =
+    NotifierProvider<HideTopBarNotifier, bool>(HideTopBarNotifier.new);
+
+class HideTopBarNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+  void show() => state = false;
+  void hide() => state = true;
+}
+
+class ScaffoldWithNavBar extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
 
   const ScaffoldWithNavBar({super.key, required this.navigationShell});
 
   @override
-  State<ScaffoldWithNavBar> createState() => _ScaffoldWithNavBarState();
+  ConsumerState<ScaffoldWithNavBar> createState() => _ScaffoldWithNavBarState();
 }
 
-class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
+class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
   String  _firstName = 'Jugador';
   String  _initials  = 'JU';
   String? _avatarUrl;
@@ -62,18 +74,26 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
       statusBarIconBrightness: Brightness.dark,
     ));
 
+    final hideTopBar = ref.watch(hideTopBarProvider);
+
     return Scaffold(
       backgroundColor: _GsColors.cream,
       body: Column(
         children: [
-          _GsTopBar(
-            firstName:  _firstName,
-            initials:   _initials,
-            avatarUrl:  _avatarUrl,
-            isAdmin:    _isAdmin,
-            onWorld:    () => context.push('/worldcup'),
-            onNotif:    () => context.push('/notifications'),
-            onProfile:  _goToProfile, // ✅ usa goBranch, no push
+          AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            child: hideTopBar
+                ? const SizedBox.shrink()
+                : _GsTopBar(
+                    firstName:  _firstName,
+                    initials:   _initials,
+                    avatarUrl:  _avatarUrl,
+                    isAdmin:    _isAdmin,
+                    onWorld:    () => context.push('/worldcup'),
+                    onNotif:    () => context.push('/notifications'),
+                    onProfile:  _goToProfile,
+                  ),
           ),
           Expanded(child: widget.navigationShell),
         ],

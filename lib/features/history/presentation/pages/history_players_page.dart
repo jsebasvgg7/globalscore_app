@@ -6,6 +6,30 @@ import '../../domain/history_models.dart';
 import '../../domain/history_providers.dart';
 // history_app_bar kept for detail view only
 import '../widgets/history_app_bar.dart';
+import '../../../../shared/layout/scaffold_with_nav_bar.dart'
+    show hideTopBarProvider;
+
+// ── Providers de filtro (Riverpod 3) ─────────────────────────
+// Filtra por legacy_type (p.ej. 'Goal Scorer', 'Leader'…)
+final playerLegacyFilterProvider =
+    NotifierProvider<_StringNotifier, String>(_StringNotifier.new);
+
+// Filtra por significance_level exacto (0 = sin filtro)
+final playerSigFilterProvider =
+    NotifierProvider<_IntNotifier, int>(_IntNotifier.new);
+
+class _StringNotifier extends Notifier<String> {
+  @override
+  String build() => '';
+  void set(String v) => state = v;
+}
+
+class _IntNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+  void set(int v) => state = v;
+}
+
 
 // ── Paleta (idéntica a vault_page) ────────────────────────────
 const _kBg      = Color(0xFFF0EDE8);
@@ -62,13 +86,6 @@ const _positionLabel = {
   'Goalkeeper': 'Portero',
 };
 
-const _positionFilter = {
-  'DEL': 'Forward',
-  'MED': 'Midfielder',
-  'DEF': 'Defender',
-  'POR': 'Goalkeeper',
-};
-
 const _legacyLabel = {
   'Goal Scorer': 'Goleador',
   'Tactician': 'Táctico',
@@ -92,42 +109,6 @@ const _titleCatColor = {
 
 const _sigLabel = ['', 'Activo', 'Notable', 'Icónico', 'Leyenda', 'GOAT'];
 
-// Emojis de bandera a partir del código de país (nombre en español)
-const _countryFlag = {
-  'Alemania': '🇩🇪',
-  'Portugal': '🇵🇹',
-  'Argentina': '🇦🇷',
-  'Brasil': '🇧🇷',
-  'Holanda': '🇳🇱',
-  'Países Bajos': '🇳🇱',
-  'Francia': '🇫🇷',
-  'España': '🇪🇸',
-  'Italia': '🇮🇹',
-  'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
-  'Inglaterra': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
-  'Uruguay': '🇺🇾',
-  'Colombia': '🇨🇴',
-  'México': '🇲🇽',
-  'Bélgica': '🇧🇪',
-  'Croacia': '🇭🇷',
-  'Senegal': '🇸🇳',
-  'Hungría': '🇭🇺',
-  'Yugoslavia': '🇷🇸',
-  'Checoslovaquia': '🇨🇿',
-  'Soviet Union': '🇷🇺',
-  'Unión Soviética': '🇷🇺',
-  'Rumania': '🇷🇴',
-  'Polonia': '🇵🇱',
-  'Suecia': '🇸🇪',
-  'Ghana': '🇬🇭',
-  'Camerún': '🇨🇲',
-  'Nigeria': '🇳🇬',
-  'Egipto': '🇪🇬',
-  'Japón': '🇯🇵',
-  'Corea del Sur': '🇰🇷',
-  'Australia': '🇦🇺',
-};
-
 // ══════════════════════════════════════════════════════════════
 //  PLAYERS PAGE — root
 // ══════════════════════════════════════════════════════════════
@@ -143,16 +124,29 @@ class _HistoryPlayersPageState extends ConsumerState<HistoryPlayersPage> {
   final _searchCtrl = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(hideTopBarProvider.notifier).hide();
+    });
+  }
+
+  @override
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
   }
 
+  void _handleBack() {
+    ref.read(hideTopBarProvider.notifier).show();
+    ref.read(historySectionProvider.notifier).goBack();
+  }
+
   @override
   Widget build(BuildContext context) {
     final selected = ref.watch(selectedPlayerProvider);
-    if (selected != null) return _PlayerDetailView(player: selected);
-    return _PlayerListView(searchCtrl: _searchCtrl);
+    if (selected != null) return _PlayerDetailView(player: selected, onBack: _handleBack);
+    return _PlayerListView(searchCtrl: _searchCtrl, onBack: _handleBack);
   }
 }
 
@@ -162,13 +156,15 @@ class _HistoryPlayersPageState extends ConsumerState<HistoryPlayersPage> {
 
 class _PlayerListView extends ConsumerWidget {
   final TextEditingController searchCtrl;
-  const _PlayerListView({required this.searchCtrl});
+  final VoidCallback onBack;
+  const _PlayerListView({required this.searchCtrl, required this.onBack});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final playersAsync = ref.watch(filteredPlayersProvider);
     final allAsync    = ref.watch(historyPlayersProvider);
-    final posFilter   = ref.watch(playerPositionFilterProvider);
+    final legacyFilter = ref.watch(playerLegacyFilterProvider);
+    final sigFilter    = ref.watch(playerSigFilterProvider);
 
     final totalCount = allAsync.whenOrNull(data: (l) => l.length) ?? 0;
     final goatCount  = allAsync.whenOrNull(
@@ -178,17 +174,30 @@ class _PlayerListView extends ConsumerWidget {
           data: (l) => l.map((p) => p.country).whereType<String>().toSet().length,
         ) ?? 0;
 
+    // Aplicar filtros extra encima del provider base
+    final filteredAsync = playersAsync.whenData((players) {
+      var list = players;
+      if (legacyFilter.isNotEmpty) {
+        list = list.where((p) => p.legacyType == legacyFilter).toList();
+      }
+      if (sigFilter > 0) {
+        list = list.where((p) => (p.significanceLevel ?? 0) == sigFilter).toList();
+      }
+      return list;
+    });
+
     return Scaffold(
       backgroundColor: _kBg,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header neobrutalista ─────────────────────────────
-          _PlayersHeader(
-            onBack: () => ref.read(historySectionProvider.notifier).goBack(),
-          ),
+          // SafeArea para cubrir la status bar (ya no está el top bar)
+          SizedBox(height: MediaQuery.of(context).padding.top),
 
-          // ── Stats strip (3 cajas neobrutalistas) ─────────────
+          // ── Header neobrutalista ─────────────────────────────
+          _PlayersHeader(onBack: onBack),
+
+          // ── Stats strip ──────────────────────────────────────
           _StatsStrip(
             total: totalCount,
             goats: goatCount,
@@ -198,11 +207,8 @@ class _PlayerListView extends ConsumerWidget {
           // ── Search + Filtros ─────────────────────────────────
           _SearchBar(controller: searchCtrl),
 
-          // ── Position filter tabs (estilo imagen 2) ────────────
-          _PositionFilterRow(active: posFilter),
-
           // ── Contador ─────────────────────────────────────────
-          playersAsync.whenOrNull(
+          filteredAsync.whenOrNull(
             data: (players) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
@@ -246,7 +252,7 @@ class _PlayerListView extends ConsumerWidget {
 
           // ── Grid 2x2 ─────────────────────────────────────────
           Expanded(
-            child: playersAsync.when(
+            child: filteredAsync.when(
               loading: () => const Center(
                   child: CircularProgressIndicator(color: _kAccent)),
               error: (e, _) => Center(
@@ -562,13 +568,17 @@ class _StatCell extends StatelessWidget {
   }
 }
 
-// ── Search bar ────────────────────────────────────────────────
+// ── Search bar con filtros funcionales ───────────────────────
 class _SearchBar extends ConsumerWidget {
   final TextEditingController controller;
   const _SearchBar({required this.controller});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final legacyFilter = ref.watch(playerLegacyFilterProvider);
+    final sigFilter    = ref.watch(playerSigFilterProvider);
+    final hasFilters   = legacyFilter.isNotEmpty || sigFilter > 0;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Row(
@@ -603,9 +613,7 @@ class _SearchBar extends ConsumerWidget {
                           icon: const Icon(Icons.clear, size: 13),
                           onPressed: () {
                             controller.clear();
-                            ref
-                                .read(playerSearchProvider.notifier)
-                                .set('');
+                            ref.read(playerSearchProvider.notifier).set('');
                           },
                         )
                       : null,
@@ -616,120 +624,309 @@ class _SearchBar extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Container(
-            height: 40,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: _kBg,
-              border: Border.all(color: _kBorder, width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: _kDark.withOpacity(0.3),
-                  offset: const Offset(2, 2),
-                  blurRadius: 0,
+          GestureDetector(
+            onTap: () => _showFilterSheet(context, ref, legacyFilter, sigFilter),
+            child: Container(
+              height: 40,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: hasFilters ? _kAccent : _kBg,
+                border: Border.all(
+                  color: hasFilters ? _kAccent : _kBorder,
+                  width: 1.5,
                 ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.tune_rounded, size: 14, color: _kDark),
-                const SizedBox(width: 6),
-                Text('FILTROS',
-                    style: _mono(
-                        size: 9,
-                        weight: FontWeight.w700,
-                        letterSpacing: 0.8)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Position filter (estilo imagen 2: botones con borde) ──────
-class _PositionFilterRow extends ConsumerWidget {
-  final String active;
-  const _PositionFilterRow({required this.active});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      height: 40,
-      margin: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _FilterChip(
-            label: 'TODOS',
-            isActive: active.isEmpty,
-            onTap: () =>
-                ref.read(playerPositionFilterProvider.notifier).set(''),
-          ),
-          ..._positionFilter.entries.map(
-            (e) => _FilterChip(
-              label: e.key,
-              isActive: active == e.value ||
-                  (e.key == 'MEDIOCAMPISTAS' &&
-                      (active == 'Midfielder' || active == 'Play-maker')),
-              onTap: () =>
-                  ref.read(playerPositionFilterProvider.notifier).set(e.value),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-  const _FilterChip({
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        margin: const EdgeInsets.only(right: 6, top: 4, bottom: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: isActive ? _kAccent : _kBg,
-          border: Border.all(color: _kBorder, width: 1.5),
-          boxShadow: isActive
-              ? [
+                boxShadow: [
                   BoxShadow(
-                    color: _kDark.withOpacity(0.4),
+                    color: _kDark.withOpacity(0.3),
                     offset: const Offset(2, 2),
                     blurRadius: 0,
                   ),
-                ]
-              : [],
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: _mono(
-              size: 9,
-              weight: FontWeight.w800,
-              letterSpacing: 0.6,
-              color: isActive ? Colors.white : _kDark,
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.tune_rounded, size: 14,
+                      color: hasFilters ? Colors.white : _kDark),
+                  const SizedBox(width: 6),
+                  Text('FILTROS',
+                      style: _mono(
+                          size: 9,
+                          weight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                          color: hasFilters ? Colors.white : _kDark)),
+                  if (hasFilters) ...[
+                    const SizedBox(width: 4),
+                    Container(
+                      width: 14, height: 14,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${(legacyFilter.isNotEmpty ? 1 : 0) + (sigFilter > 0 ? 1 : 0)}',
+                          style: _mono(size: 8, weight: FontWeight.w900, color: _kAccent),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
+
+  void _showFilterSheet(
+    BuildContext context,
+    WidgetRef ref,
+    String currentLegacy,
+    int currentSig,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _FilterSheet(
+        initialLegacy: currentLegacy,
+        initialSig: currentSig,
+        onApply: (legacy, sig) {
+          ref.read(playerLegacyFilterProvider.notifier).set(legacy);
+          ref.read(playerSigFilterProvider.notifier).set(sig);
+        },
+        onClear: () {
+          ref.read(playerLegacyFilterProvider.notifier).set('');
+          ref.read(playerSigFilterProvider.notifier).set(0);
+        },
       ),
     );
   }
 }
+
+// ── Bottom sheet de filtros ───────────────────────────────────
+class _FilterSheet extends StatefulWidget {
+  final String initialLegacy;
+  final int initialSig;
+  final void Function(String legacy, int sig) onApply;
+  final VoidCallback onClear;
+  const _FilterSheet({
+    required this.initialLegacy,
+    required this.initialSig,
+    required this.onApply,
+    required this.onClear,
+  });
+
+  @override
+  State<_FilterSheet> createState() => _FilterSheetState();
+}
+
+class _FilterSheetState extends State<_FilterSheet> {
+  late String _legacy;
+  late int    _sig;
+
+  static const _legacyOptions = [
+    ('Goal Scorer', 'Goleador'),
+    ('Tactician',   'Táctico'),
+    ('Innovator',   'Genio'),
+    ('Leader',      'Líder'),
+    ('Goalkeeper',  'Portero'),
+    ('Technician',  'Técnico'),
+  ];
+
+  static const _sigOptions = [
+    (5, 'GOAT'),
+    (4, 'Leyenda'),
+    (3, 'Icónico'),
+    (2, 'Notable'),
+    (1, 'Activo'),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _legacy = widget.initialLegacy;
+    _sig    = widget.initialSig;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasActive = _legacy.isNotEmpty || _sig > 0;
+    return Container(
+      decoration: BoxDecoration(
+        color: _kBg,
+        border: Border(top: BorderSide(color: _kBorder, width: 2)),
+        boxShadow: [
+          BoxShadow(
+            color: _kDark.withOpacity(0.25),
+            offset: const Offset(0, -4),
+            blurRadius: 0,
+          ),
+        ],
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle
+          Center(
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              width: 36, height: 3,
+              decoration: BoxDecoration(
+                color: _kBorder,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+            child: Row(
+              children: [
+                Text('FILTRAR', style: _mono(size: 13, weight: FontWeight.w900, letterSpacing: 1)),
+                const Spacer(),
+                if (hasActive)
+                  GestureDetector(
+                    onTap: () {
+                      widget.onClear();
+                      Navigator.pop(context);
+                    },
+                    child: Text('Limpiar todo',
+                        style: _mono(size: 10, color: _kMuted,
+                            weight: FontWeight.w600)),
+                  ),
+              ],
+            ),
+          ),
+
+          // Legado
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('LEGADO', style: _mono(size: 9, weight: FontWeight.w700,
+                    letterSpacing: 1, color: _kMuted)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: _legacyOptions.map((opt) {
+                    final isActive = _legacy == opt.$1;
+                    return GestureDetector(
+                      onTap: () => setState(() =>
+                          _legacy = isActive ? '' : opt.$1),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 120),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isActive ? _kAccent : Colors.transparent,
+                          border: Border.all(
+                            color: isActive ? _kAccent : _kBorder,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Text(opt.$2,
+                            style: _mono(
+                                size: 10,
+                                weight: FontWeight.w700,
+                                color: isActive ? Colors.white : _kDark)),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+
+          // Nivel
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('NIVEL', style: _mono(size: 9, weight: FontWeight.w700,
+                    letterSpacing: 1, color: _kMuted)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: _sigOptions.map((opt) {
+                    final isActive = _sig == opt.$1;
+                    return GestureDetector(
+                      onTap: () => setState(() =>
+                          _sig = isActive ? 0 : opt.$1),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 120),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isActive ? _kGold : Colors.transparent,
+                          border: Border.all(
+                            color: isActive ? _kGold : _kBorder,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Text(opt.$2,
+                            style: _mono(
+                                size: 10,
+                                weight: FontWeight.w700,
+                                color: isActive ? Colors.black : _kDark)),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+
+          // Aplicar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+            child: GestureDetector(
+              onTap: () {
+                widget.onApply(_legacy, _sig);
+                Navigator.pop(context);
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: _kDark,
+                  border: Border.all(color: _kBorder, width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _kAccent.withOpacity(0.4),
+                      offset: const Offset(3, 3),
+                      blurRadius: 0,
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text('APLICAR FILTROS',
+                      style: _mono(
+                          size: 11,
+                          weight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                          color: Colors.white)),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 
 // ══════════════════════════════════════════════════════════════
 //  PLAYER CARD — neobrutalista 2x2 (estilo imagen 2)
@@ -745,11 +942,10 @@ class _PlayerCard extends StatelessWidget {
     final imgUrl = getHistoricalImageUrl(player.imagePath);
     final sig = player.significanceLevel ?? 0;
     final isGoat = sig == 5;
-    final countryFlag = _countryFlag[player.country] ?? '';
     final posLabel = _positionLabel[player.position] ?? player.position ?? '';
 
-    // Trofeos basados en significanceLevel (1–4 copas)
-    final trophyCount = (sig - 1).clamp(0, 4);
+    // Trofeos: GOAT=5, Leyenda=4, Icónico=3, Notable=2, Activo=1, 0=ninguno
+    final trophyCount = sig.clamp(0, 5);
 
     return GestureDetector(
       onTap: onTap,
@@ -759,7 +955,7 @@ class _PlayerCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Foto — ocupa el espacio principal ────────────
+            // ── Foto ─────────────────────────────────────────
             Expanded(
               flex: 6,
               child: Stack(
@@ -779,7 +975,7 @@ class _PlayerCard extends StatelessWidget {
                         : _CardInitials(name: player.name),
                   ),
 
-                  // Badge GOAT esquina sup-izq
+                  // Badge GOAT
                   if (isGoat)
                     Positioned(
                       top: 0,
@@ -817,7 +1013,7 @@ class _PlayerCard extends StatelessWidget {
                     ),
                   ),
 
-                  // Menú 3 puntos esquina sup-der
+                  // Menú 3 puntos
                   Positioned(
                     top: 4,
                     right: 4,
@@ -833,7 +1029,7 @@ class _PlayerCard extends StatelessWidget {
               ),
             ),
 
-            // ── Info — zona inferior compacta ─────────────────
+            // ── Info ─────────────────────────────────────────
             Expanded(
               flex: 3,
               child: Padding(
@@ -842,7 +1038,7 @@ class _PlayerCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Nombre centrado
+                    // Nombre
                     Text(
                       player.name.toUpperCase(),
                       style: _mono(
@@ -854,7 +1050,7 @@ class _PlayerCard extends StatelessWidget {
                       textAlign: TextAlign.center,
                     ),
 
-                    // País + posición centrados
+                    // País + posición
                     Column(
                       children: [
                         if (player.country != null)
@@ -879,28 +1075,21 @@ class _PlayerCard extends StatelessWidget {
                       ],
                     ),
 
-                    // Fila inferior: bandera + trofeos
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (countryFlag.isNotEmpty)
-                          Text(countryFlag,
-                              style: const TextStyle(fontSize: 13))
-                        else
-                          const SizedBox(width: 13),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: List.generate(
-                            trophyCount,
-                            (_) => const Padding(
-                              padding: EdgeInsets.only(left: 2),
-                              child: Icon(Icons.emoji_events_outlined,
-                                  size: 11, color: _kGold),
-                            ),
+                    // Trofeos centrados
+                    if (trophyCount > 0)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          trophyCount,
+                          (_) => const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 1.5),
+                            child: Icon(Icons.emoji_events_outlined,
+                                size: 11, color: _kGold),
                           ),
                         ),
-                      ],
-                    ),
+                      )
+                    else
+                      const SizedBox(height: 11),
                   ],
                 ),
               ),
@@ -1002,7 +1191,8 @@ class _Chip extends StatelessWidget {
 
 class _PlayerDetailView extends ConsumerWidget {
   final HistoricalPlayer player;
-  const _PlayerDetailView({required this.player});
+  final VoidCallback onBack;
+  const _PlayerDetailView({required this.player, required this.onBack});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1012,6 +1202,7 @@ class _PlayerDetailView extends ConsumerWidget {
       backgroundColor: _kBg,
       body: Column(
         children: [
+          SizedBox(height: MediaQuery.of(context).padding.top),
           HistoryAppBar(
             title: player.name.toUpperCase(),
             subtitle: player.country ?? '',
@@ -1045,7 +1236,6 @@ class _DetailBody extends StatelessWidget {
     final isGoat = sig == 5;
     final isActive = sig == 1;
     final imgUrl = getHistoricalImageUrl(p.imagePath);
-    final countryFlag = _countryFlag[p.country] ?? '';
 
     final lifespan = p.birthYear != null
         ? '${p.birthYear}${p.deathYear != null ? ' – ${p.deathYear}' : ' – Presente'}'
@@ -1152,15 +1342,10 @@ class _DetailBody extends StatelessWidget {
                               size: 17, weight: FontWeight.w900)),
                       const SizedBox(height: 6),
 
-                      // País con bandera
+                      // País
                       if (p.country != null)
                         Row(
                           children: [
-                            if (countryFlag.isNotEmpty) ...[
-                              Text(countryFlag,
-                                  style: const TextStyle(fontSize: 14)),
-                              const SizedBox(width: 6),
-                            ],
                             Text(
                               p.country!.toUpperCase(),
                               style: _mono(
