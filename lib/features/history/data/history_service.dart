@@ -1,14 +1,18 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../domain/history_models.dart';
 
-// ── Cloudinary image helper (same as React getHistoricalImageUrl) ─────────────
+// ── Image helper — usa Supabase Storage (bucket: historical) ─────────────────
+// El React usa: supabase.storage.from('historical').getPublicUrl(imagePath)
+// Flutter equivalente:
 String? getHistoricalImageUrl(String? imagePath) {
   if (imagePath == null || imagePath.isEmpty) return null;
+  // Si ya es una URL completa (http/https), devolverla tal cual
   if (imagePath.startsWith('http')) return imagePath;
-  const cloudName = 'dkxoanvyv';
-  const base = 'https://res.cloudinary.com/$cloudName/image/upload';
-  const transform = 'w_400,h_400,c_fill,q_auto,f_auto';
-  return '$base/$transform/$imagePath';
+  // Construir URL pública de Supabase Storage
+  final storageUrl = Supabase.instance.client.storage
+      .from('historical')
+      .getPublicUrl(imagePath);
+  return storageUrl;
 }
 
 class HistoryService {
@@ -31,15 +35,16 @@ class HistoryService {
   }
 
   // ══════════════════════════════════════════════════════════════
-  //  TEAMS
+  //  TEAMS — columnas reales de la BD (sin confederation, con era_dominance)
   // ══════════════════════════════════════════════════════════════
 
   Future<List<HistoricalTeam>> fetchTeams() async {
     final res = await _sb
         .from('historical_teams')
         .select(
-          'id, name, country, confederation, era, image_path, '
-          'description, primary_color, secondary_color, is_published',
+          'id, name, country, era_dominance, active_years, legacy_type, '
+          'image_path, description, primary_color, secondary_color, '
+          'titles_count, is_published',
         )
         .eq('is_published', true)
         .order('name', ascending: true);
@@ -121,8 +126,8 @@ class HistoryService {
           'id, title, event_type, event_category, event_date, description, '
           'context_text, impact_text, image_path, banner_image_path, '
           'score_a, score_b, team_a_name, team_b_name, is_published, '
-          'historical_players(id, name, image_path, country, position), '
-          'historical_teams(id, name, image_path, primary_color, country)',
+          'historical_players:protagonist_id(id, name, image_path, country, position), '
+          'historical_teams:team_protagonist_id(id, name, image_path, primary_color, country)',
         )
         .eq('is_published', true)
         .order('event_date', ascending: false);
@@ -136,8 +141,8 @@ class HistoryService {
           'id, title, event_type, event_category, event_date, description, '
           'context_text, impact_text, image_path, banner_image_path, '
           'score_a, score_b, team_a_name, team_b_name, is_published, '
-          'historical_players(id, name, image_path, country, position), '
-          'historical_teams(id, name, image_path, primary_color, country)',
+          'historical_players:protagonist_id(id, name, image_path, country, position), '
+          'historical_teams:team_protagonist_id(id, name, image_path, primary_color, country)',
         )
         .eq('id', eventId)
         .single();
@@ -170,7 +175,7 @@ class HistoryService {
   }
 
   // ══════════════════════════════════════════════════════════════
-  //  STATS for the landing page
+  //  STATS
   // ══════════════════════════════════════════════════════════════
 
   Future<HistoryStats> fetchStats() async {

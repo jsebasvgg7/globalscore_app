@@ -276,8 +276,6 @@ class _TeamDetailView extends ConsumerWidget {
                               _InfoChip(label: team.country!, icon: Icons.flag_outlined),
                             if (team.era != null)
                               _InfoChip(label: team.era!, icon: Icons.access_time_rounded),
-                            if (team.confederation != null)
-                              _InfoChip(label: team.confederation!, icon: Icons.public_rounded),
                           ],
                         ),
 

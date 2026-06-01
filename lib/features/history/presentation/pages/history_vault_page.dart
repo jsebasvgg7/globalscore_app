@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -55,7 +54,7 @@ class HistoryVaultPage extends ConsumerWidget {
             ),
           ),
 
-          // ── Featured carousel (events as "momento histórico") ──
+          // ── Featured carousel (events) ──
           SliverToBoxAdapter(child: _FeaturedCarousel()),
 
           // ── Section label ──
@@ -80,7 +79,7 @@ class HistoryVaultPage extends ConsumerWidget {
             ),
           ),
 
-          // ── 4 section cards (2×2 grid) ──
+          // ── 3 section cards (sin línea rara) ──
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             sliver: SliverGrid(
@@ -106,28 +105,18 @@ class HistoryVaultPage extends ConsumerWidget {
                   color: const Color(0xFF8B5CF6),
                 ),
                 _SectionCard(
-                  icon: Icons.shield_outlined,
-                  label: 'EQUIPOS',
-                  subtitle: 'Clubes y selecciones legendarias.',
-                  section: 'teams',
-                  color: _kAccent,
+                  icon: Icons.person_outline_rounded,
+                  label: 'LEYENDAS',
+                  subtitle: 'Los jugadores que cambiaron el juego.',
+                  section: 'players',
+                  color: const Color(0xFF1D9E75),
                 ),
-                // _SectionCard(
-                //   icon: Icons.person_outline_rounded,
-                //   label: 'LEYENDAS',
-                //   subtitle: 'Los jugadores que cambiaron el juego.',
-                //   section: 'players',
-                //   color: const Color(0xFF1D9E75),
-                // ),
               ]),
             ),
           ),
 
-          // ── Random spinner ──
-          SliverToBoxAdapter(child: _RandomSpinner()),
-
-          // ── Featured teams strip ──
-          SliverToBoxAdapter(child: _FeaturedTeamsStrip()),
+          // ── Equipos destacados (4 más recientes, grid 2×2) ──
+          SliverToBoxAdapter(child: _FeaturedTeamsGrid()),
 
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
         ],
@@ -151,7 +140,6 @@ class _HeroHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top label
           Row(
             children: [
               Container(
@@ -167,15 +155,11 @@ class _HeroHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-
-          // Big title
           Text(
             'BÓVEDA\nHISTÓRICA',
             style: _mono(size: 36, weight: FontWeight.w900, letterSpacing: -1),
           ),
           const SizedBox(height: 12),
-
-          // Subtitle with left bar
           Row(
             children: [
               Container(width: 3, height: 36, color: _kAccent),
@@ -183,7 +167,7 @@ class _HeroHeader extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Explora la historia que\ndefinió el fútbol.',
-                  style: _mono(size: 13, color: _kMuted, letterSpacing: 0),
+                  style: _mono(size: 13, color: _kMuted),
                 ),
               ),
             ],
@@ -205,7 +189,7 @@ class _StatsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      (Icons.person_outline, stats.players, 'LEYENDAS'),
+      (Icons.bookmark_border_rounded, stats.players, 'LEYENDAS'),
       (Icons.emoji_events_outlined, stats.competitions, 'TORNEOS'),
       (Icons.shield_outlined, stats.teams, 'EQUIPOS'),
     ];
@@ -228,7 +212,7 @@ class _StatsRow extends StatelessWidget {
                       : const Border(right: BorderSide(color: _kBorder)),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
                   child: Row(
                     children: [
                       Container(
@@ -248,7 +232,7 @@ class _StatsRow extends StatelessWidget {
                             ),
                             Text(
                               label,
-                              style: _mono(size: 8, weight: FontWeight.w700, letterSpacing: 1, color: _kMuted),
+                              style: _mono(size: 7, weight: FontWeight.w700, letterSpacing: 0.8, color: _kMuted),
                             ),
                           ],
                         ),
@@ -266,7 +250,7 @@ class _StatsRow extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  FEATURED CAROUSEL (events)
+//  FEATURED CAROUSEL (events) — fix: usa bannerImagePath ?? imagePath
 // ══════════════════════════════════════════════════════════════
 
 class _FeaturedCarousel extends ConsumerStatefulWidget {
@@ -292,7 +276,7 @@ class _FeaturedCarouselState extends ConsumerState<_FeaturedCarousel> {
       loading: () => Container(
         height: 200,
         margin: const EdgeInsets.symmetric(horizontal: 16),
-        color: _kBorder,
+        color: _kDark,
         child: const Center(child: CircularProgressIndicator(color: _kAccent)),
       ),
       error: (_, __) => const SizedBox.shrink(),
@@ -344,13 +328,16 @@ class _EventCarouselCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imgUrl = getHistoricalImageUrl(event.imagePath ?? event.bannerImagePath);
+    // FIX: prioriza bannerImagePath, luego imagePath
+    final rawPath = event.bannerImagePath ?? event.imagePath;
+    final imgUrl = getHistoricalImageUrl(rawPath);
     final year = event.year;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16),
+        clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
           color: _kDark,
           border: Border.all(color: _kBorder),
@@ -364,7 +351,13 @@ class _EventCarouselCard extends StatelessWidget {
                 imgUrl,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(color: _kDark),
-              ),
+                loadingBuilder: (_, child, progress) {
+                  if (progress == null) return child;
+                  return Container(color: _kDark);
+                },
+              )
+            else
+              Container(color: _kDark),
 
             // Gradient overlay
             Container(
@@ -380,10 +373,11 @@ class _EventCarouselCard extends StatelessWidget {
             // Content
             Positioned(
               left: 12,
-              right: 12,
+              right: 52,
               bottom: 12,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   if (event.eventType != null)
                     Container(
@@ -401,13 +395,13 @@ class _EventCarouselCard extends StatelessWidget {
                     event.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: _mono(color: Colors.white, size: 18, weight: FontWeight.w800),
+                    style: _mono(color: Colors.white, size: 16, weight: FontWeight.w800),
                   ),
                 ],
               ),
             ),
 
-            // Arrow
+            // Arrow button
             Positioned(
               right: 12,
               bottom: 12,
@@ -426,7 +420,7 @@ class _EventCarouselCard extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  SECTION CARDS
+//  SECTION CARDS — sin borde extra que generaba "línea rara"
 // ══════════════════════════════════════════════════════════════
 
 class _SectionCard extends ConsumerWidget {
@@ -449,37 +443,45 @@ class _SectionCard extends ConsumerWidget {
     return GestureDetector(
       onTap: () => ref.read(historySectionProvider.notifier).setSection(section),
       child: Container(
+        // Solo border simple, sin decoración extra
         decoration: BoxDecoration(
           color: _kBg,
-          border: Border.all(color: _kBorder),
+          border: Border.all(color: _kBorder, width: 1),
         ),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 34,
+              height: 34,
               color: color,
-              child: Icon(icon, size: 18, color: Colors.white),
+              child: Icon(icon, size: 17, color: Colors.white),
             ),
             const SizedBox(height: 8),
-            Text(label, style: _mono(size: 10, weight: FontWeight.w800)),
-            const SizedBox(height: 4),
             Text(
-              subtitle,
-              style: _mono(size: 9, color: _kMuted),
-              maxLines: 3,
+              label,
+              style: _mono(size: 9, weight: FontWeight.w800),
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const Spacer(),
+            const SizedBox(height: 3),
+            Expanded(
+              child: Text(
+                subtitle,
+                style: _mono(size: 8, color: _kMuted),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(height: 6),
             Align(
               alignment: Alignment.bottomRight,
               child: Container(
-                width: 24,
-                height: 24,
+                width: 22,
+                height: 22,
                 color: color,
-                child: const Icon(Icons.arrow_forward, size: 12, color: Colors.white),
+                child: const Icon(Icons.arrow_forward, size: 11, color: Colors.white),
               ),
             ),
           ],
@@ -490,208 +492,10 @@ class _SectionCard extends ConsumerWidget {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  RANDOM SPINNER
+//  EQUIPOS DESTACADOS — grid 2×2 (reemplaza al random spinner)
 // ══════════════════════════════════════════════════════════════
 
-class _RandomSpinner extends ConsumerStatefulWidget {
-  @override
-  ConsumerState<_RandomSpinner> createState() => _RandomSpinnerState();
-}
-
-class _RandomSpinnerState extends ConsumerState<_RandomSpinner>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _rot;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    );
-    _rot = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _spin() async {
-    final service = ref.read(historyServiceProvider);
-    ref.read(spinnerProvider.notifier).spin();
-    _ctrl.repeat();
-
-    // Pick random from all items
-    final players = await service.fetchPlayers();
-    final teams   = await service.fetchTeams();
-    final events  = await service.fetchEvents();
-
-    final all = <SpinnerResult>[
-      ...players.map((p) => SpinnerResult(
-            type: 'player',
-            id: p.id,
-            name: p.name,
-            imagePath: p.imagePath,
-          )),
-      ...teams.map((t) => SpinnerResult(
-            type: 'team',
-            id: t.id,
-            name: t.name,
-            imagePath: t.imagePath,
-          )),
-      ...events.map((e) => SpinnerResult(
-            type: 'event',
-            id: e.id,
-            name: e.title,
-            imagePath: e.imagePath,
-          )),
-    ];
-
-    if (all.isEmpty) {
-      _ctrl.stop();
-      return;
-    }
-
-    await Future.delayed(const Duration(milliseconds: 700));
-    _ctrl.stop();
-    await _ctrl.animateTo(1.0);
-
-    final picked = all[Random().nextInt(all.length)];
-    ref.read(spinnerProvider.notifier).land(picked);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final spinner = ref.watch(spinnerProvider);
-    final result = spinner.result;
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border.all(color: _kBorder),
-        color: _kBg,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(width: 3, height: 14, color: const Color(0xFFF59E0B)),
-              const SizedBox(width: 8),
-              Text(
-                'DESCUBRIMIENTO ALEATORIO',
-                style: _mono(size: 9, weight: FontWeight.w700, letterSpacing: 1.2, color: _kMuted),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          Row(
-            children: [
-              // Spin button
-              GestureDetector(
-                onTap: spinner.isSpinning ? null : _spin,
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  color: _kAccent,
-                  child: RotationTransition(
-                    turns: _rot,
-                    child: const Icon(Icons.shuffle_rounded, color: Colors.white, size: 24),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-
-              // Result
-              Expanded(
-                child: result != null
-                    ? _SpinnerResult(result: result)
-                    : Text(
-                        spinner.isSpinning
-                            ? 'Buscando…'
-                            : 'Pulsa para descubrir un momento histórico aleatorio.',
-                        style: _mono(size: 12, color: _kMuted),
-                      ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SpinnerResult extends ConsumerWidget {
-  final SpinnerResult result;
-  const _SpinnerResult({required this.result});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final imgUrl = getHistoricalImageUrl(result.imagePath);
-    final typeLabel = {
-      'player': 'LEYENDA',
-      'team': 'EQUIPO',
-      'event': 'EVENTO',
-      'competition': 'TORNEO',
-    }[result.type] ?? result.type.toUpperCase();
-
-    return GestureDetector(
-      onTap: () {
-        // Navigate to the relevant section and pre-select
-        ref.read(historySectionProvider.notifier).setSection(
-              result.type == 'player'
-                  ? 'players'
-                  : result.type == 'team'
-                      ? 'teams'
-                      : result.type == 'competition'
-                          ? 'competitions'
-                          : 'events',
-            );
-      },
-      child: Row(
-        children: [
-          // Avatar
-          Container(
-            width: 48,
-            height: 48,
-            color: _kBorder,
-            child: imgUrl != null
-                ? Image.network(imgUrl, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Icon(Icons.history, size: 22))
-                : const Icon(Icons.history, size: 22),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                  color: _kAccent,
-                  child: Text(typeLabel, style: _mono(color: Colors.white, size: 7, weight: FontWeight.w800, letterSpacing: 1)),
-                ),
-                const SizedBox(height: 4),
-                Text(result.name, style: _mono(size: 13, weight: FontWeight.w700), maxLines: 2, overflow: TextOverflow.ellipsis),
-              ],
-            ),
-          ),
-          const Icon(Icons.arrow_forward_ios, size: 12, color: _kMuted),
-        ],
-      ),
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
-//  FEATURED TEAMS STRIP
-// ══════════════════════════════════════════════════════════════
-
-class _FeaturedTeamsStrip extends ConsumerWidget {
+class _FeaturedTeamsGrid extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final teamsAsync = ref.watch(historyTeamsProvider);
@@ -701,12 +505,15 @@ class _FeaturedTeamsStrip extends ConsumerWidget {
       error: (_, __) => const SizedBox.shrink(),
       data: (teams) {
         if (teams.isEmpty) return const SizedBox.shrink();
-        final featured = teams.take(6).toList();
+        // Los 4 primeros (el servicio ya los ordena; aquí tomamos los primeros
+        // de la lista que equivalen a los más recientes por cómo fetchTeams ordena)
+        final featured = teams.take(4).toList();
 
         return Column(
           children: [
+            // Header
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -724,7 +531,10 @@ class _FeaturedTeamsStrip extends ConsumerWidget {
                     onTap: () => ref.read(historySectionProvider.notifier).setSection('teams'),
                     child: Row(
                       children: [
-                        Text('VER TODOS', style: _mono(size: 9, weight: FontWeight.w700, color: _kAccent, letterSpacing: 0.8)),
+                        Text(
+                          'VER TODOS',
+                          style: _mono(size: 9, weight: FontWeight.w700, color: _kAccent, letterSpacing: 0.8),
+                        ),
                         const SizedBox(width: 6),
                         Container(
                           width: 20,
@@ -738,13 +548,21 @@ class _FeaturedTeamsStrip extends ConsumerWidget {
                 ],
               ),
             ),
-            SizedBox(
-              height: 110,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+
+            // Grid 2×2
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  childAspectRatio: 1.15,
+                ),
                 itemCount: featured.length,
-                itemBuilder: (_, i) => _TeamChip(team: featured[i]),
+                itemBuilder: (_, i) => _FeaturedTeamCard(team: featured[i]),
               ),
             ),
           ],
@@ -754,13 +572,24 @@ class _FeaturedTeamsStrip extends ConsumerWidget {
   }
 }
 
-class _TeamChip extends ConsumerWidget {
+class _FeaturedTeamCard extends ConsumerWidget {
   final HistoricalTeam team;
-  const _TeamChip({required this.team});
+  const _FeaturedTeamCard({required this.team});
+
+  Color get _primaryColor {
+    if (team.primaryColor == null) return _kAccent;
+    try {
+      final hex = team.primaryColor!.replaceAll('#', '');
+      return Color(int.parse('FF$hex', radix: 16));
+    } catch (_) {
+      return _kAccent;
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final imgUrl = getHistoricalImageUrl(team.imagePath);
+    final color = _primaryColor;
 
     return GestureDetector(
       onTap: () {
@@ -768,34 +597,44 @@ class _TeamChip extends ConsumerWidget {
         ref.read(selectedTeamProvider.notifier).select(team);
       },
       child: Container(
-        width: 90,
-        margin: const EdgeInsets.only(right: 8),
         decoration: BoxDecoration(
-          border: Border.all(color: _kBorder),
+          border: Border.all(color: _kBorder, width: 1),
           color: _kBg,
         ),
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
-              width: 48,
-              height: 48,
+              width: 52,
+              height: 52,
               child: imgUrl != null
-                  ? Image.network(imgUrl, fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.shield, size: 28, color: _kMuted))
-                  : const Icon(Icons.shield, size: 28, color: _kMuted),
+                  ? Image.network(
+                      imgUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) =>
+                          Icon(Icons.shield, size: 32, color: color),
+                    )
+                  : Icon(Icons.shield, size: 32, color: color),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               team.name.toUpperCase(),
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: _mono(size: 8, weight: FontWeight.w800),
+              style: _mono(size: 9, weight: FontWeight.w800),
             ),
-            if (team.era != null)
-              Text(team.era!, style: _mono(size: 7, color: _kMuted), textAlign: TextAlign.center),
+            if (team.era != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                team.era!,
+                style: _mono(size: 8, color: _kMuted),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ],
         ),
       ),

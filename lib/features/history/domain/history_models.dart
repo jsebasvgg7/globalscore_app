@@ -45,44 +45,53 @@ class HistoricalPlayer {
 }
 
 // ============================================================
-// TEAMS
+// TEAMS — columnas reales: era_dominance, legacy_type, active_years
 // ============================================================
 
 class HistoricalTeam {
   final String id;
   final String name;
   final String? country;
-  final String? confederation;
-  final String? era;
+  final String? eraDominance;   // era_dominance (era de dominio, ej. "1970-1986")
+  final String? activeYears;    // active_years
+  final String? legacyType;     // legacy_type (Dynastic, Continental, etc.)
   final String? imagePath;
   final String? description;
   final String? primaryColor;
   final String? secondaryColor;
+  final int? titlesCount;
   final bool isPublished;
 
   const HistoricalTeam({
     required this.id,
     required this.name,
     this.country,
-    this.confederation,
-    this.era,
+    this.eraDominance,
+    this.activeYears,
+    this.legacyType,
     this.imagePath,
     this.description,
     this.primaryColor,
     this.secondaryColor,
+    this.titlesCount,
     this.isPublished = true,
   });
+
+  // Getter de compatibilidad — para los widgets que usaban .era
+  String? get era => eraDominance ?? activeYears;
 
   factory HistoricalTeam.fromMap(Map<String, dynamic> m) => HistoricalTeam(
         id: m['id'] as String,
         name: m['name'] as String,
         country: m['country'] as String?,
-        confederation: m['confederation'] as String?,
-        era: m['era'] as String?,
+        eraDominance: m['era_dominance'] as String?,
+        activeYears: m['active_years'] as String?,
+        legacyType: m['legacy_type'] as String?,
         imagePath: m['image_path'] as String?,
         description: m['description'] as String?,
         primaryColor: m['primary_color'] as String?,
         secondaryColor: m['secondary_color'] as String?,
+        titlesCount: m['titles_count'] as int?,
         isPublished: m['is_published'] as bool? ?? true,
       );
 }
@@ -94,8 +103,8 @@ class HistoricalTeam {
 class HistoricalCompetition {
   final String id;
   final String name;
-  final String? type;       // International | Continental | Domestic
-  final String? format;     // groups_knockout | league_only | knockout_only
+  final String? type;
+  final String? format;
   final int? year;
   final String? description;
   final String? imagePath;
@@ -104,8 +113,6 @@ class HistoricalCompetition {
   final String? country;
   final int? numTeams;
   final bool isPublished;
-
-  // Joined
   final HistoricalTeam? winnerTeam;
 
   const HistoricalCompetition({
@@ -246,7 +253,7 @@ class KnockoutMatch {
   final int? aggB;
   final int? penaltiesA;
   final int? penaltiesB;
-  final String? winner; // 'team_a' | 'team_b' | 'draw'
+  final String? winner;
   final String? notes;
   final int sortOrder;
 
@@ -310,8 +317,8 @@ class CompetitionDetail {
 class HistoricalEvent {
   final String id;
   final String title;
-  final String? eventType;      // Championship | Historic Match | Legendary Performance | Era Defining | Record
-  final String? eventCategory;  // player | team
+  final String? eventType;
+  final String? eventCategory;
   final String? eventDate;
   final String? description;
   final String? contextText;
@@ -323,8 +330,6 @@ class HistoricalEvent {
   final String? teamAName;
   final String? teamBName;
   final bool isPublished;
-
-  // Joined
   final HistoricalPlayer? player;
   final HistoricalTeam? team;
 
@@ -351,11 +356,13 @@ class HistoricalEvent {
   factory HistoricalEvent.fromMap(Map<String, dynamic> m) {
     HistoricalPlayer? player;
     HistoricalTeam? team;
-    if (m['historical_players'] != null) {
-      player = HistoricalPlayer.fromMap(m['historical_players'] as Map<String, dynamic>);
+    final playerData = m['historical_players'];
+    final teamData = m['historical_teams'];
+    if (playerData is Map<String, dynamic>) {
+      player = HistoricalPlayer.fromMap(playerData);
     }
-    if (m['historical_teams'] != null) {
-      team = HistoricalTeam.fromMap(m['historical_teams'] as Map<String, dynamic>);
+    if (teamData is Map<String, dynamic>) {
+      team = HistoricalTeam.fromMap(teamData);
     }
     return HistoricalEvent(
       id: m['id'] as String,
@@ -390,7 +397,7 @@ class HistoricalEvent {
 
 class EventLineup {
   final String id;
-  final String teamSide; // team_a | team_b
+  final String teamSide;
   final String teamName;
   final String playerName;
   final int? shirtNumber;
