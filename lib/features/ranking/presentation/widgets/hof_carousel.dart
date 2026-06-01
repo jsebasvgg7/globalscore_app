@@ -15,7 +15,8 @@ TextStyle _mono({
         color: color,
         fontSize: size,
         fontWeight: weight,
-        letterSpacing: letterSpacing);
+        letterSpacing: letterSpacing,
+        decoration: TextDecoration.none);
 
 // ── Colores ────────────────────────────────────────────────────────────────
 const _kGold   = Color(0xFFC9A227);
@@ -151,19 +152,15 @@ class _HofCarouselState extends State<HofCarousel>
                   ),
                 ),
 
-                // ── Avatar circular con anillo de color ──
+                // ── Avatar cuadrado con borde de color ──
                 GestureDetector(
                   onTap: () => widget.onSelect?.call(champ.id),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border:
-                          Border.all(color: medal.color, width: 3),
-                    ),
-                    child: RankAvatar(
-                        url: champ.avatarUrl,
-                        name: champ.name,
-                        size: 88),
+                  child: RankAvatar(
+                    url: champ.avatarUrl,
+                    name: champ.name,
+                    size: 88,
+                    borderColor: medal.color,
+                    borderWidth: 3,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -326,7 +323,7 @@ class _HofCarouselState extends State<HofCarousel>
                         ),
                         const SizedBox(width: 10),
 
-                        // Avatar circular
+                        // Avatar cuadrado
                         RankAvatar(
                             url: u.avatarUrl,
                             name: u.name,

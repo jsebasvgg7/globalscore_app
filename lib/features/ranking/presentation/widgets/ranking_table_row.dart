@@ -14,7 +14,8 @@ TextStyle _mono({
         color: color,
         fontSize: size,
         fontWeight: weight,
-        letterSpacing: letterSpacing);
+        letterSpacing: letterSpacing,
+        decoration: TextDecoration.none);
 
 const _kGold   = Color(0xFFC9A227);
 const _kSilver = Color(0xFF8A8A8A);

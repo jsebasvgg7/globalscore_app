@@ -14,7 +14,8 @@ TextStyle _mono({
         color: color,
         fontSize: size,
         fontWeight: weight,
-        letterSpacing: letterSpacing);
+        letterSpacing: letterSpacing,
+        decoration: TextDecoration.none);
 
 const _kGold = Color(0xFFC9A227);
 const _kSilver = Color(0xFF8A8A8A);
@@ -116,7 +117,7 @@ class RankingPodium extends StatelessWidget {
                               name: item.user.name,
                               size: avatarSize,
                               borderColor: color,
-                              borderWidth: isGold ? 2.5 : 1.5,
+                              borderWidth: isGold ? 3.0 : 2.0,
                             ),
                             Positioned(
                               bottom: -6,
@@ -124,10 +125,7 @@ class RankingPodium extends StatelessWidget {
                               child: Container(
                                 width: 20,
                                 height: 20,
-                                decoration: BoxDecoration(
-                                  color: color,
-                                  shape: BoxShape.circle,
-                                ),
+                                color: color,
                                 alignment: Alignment.center,
                                 child: Text(
                                   '${item.rank + 1}',

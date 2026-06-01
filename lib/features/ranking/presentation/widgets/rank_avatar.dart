@@ -22,13 +22,19 @@ class RankAvatar extends StatelessWidget {
 
     Widget avatar;
     if (url != null && url!.isNotEmpty) {
-      avatar = ClipOval(
-        child: Image.network(
-          url!,
-          width: size,
-          height: size,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _placeholder(initials, size),
+      avatar = SizedBox(
+        width: size,
+        height: size,
+        child: ClipRect(
+          child: Image.network(
+            url!,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            filterQuality: FilterQuality.medium,
+            errorBuilder: (_, __, ___) => _placeholder(initials, size),
+          ),
         ),
       );
     } else {
@@ -40,12 +46,9 @@ class RankAvatar extends StatelessWidget {
         width: size + borderWidth * 2,
         height: size + borderWidth * 2,
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
           border: Border.all(color: borderColor!, width: borderWidth),
         ),
-        child: ClipOval(
-          child: SizedBox(width: size, height: size, child: avatar),
-        ),
+        child: SizedBox(width: size, height: size, child: avatar),
       );
     }
     return SizedBox(width: size, height: size, child: avatar);
@@ -55,14 +58,7 @@ class RankAvatar extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF6055C8), Color(0xFF8B7FC7)],
-        ),
-      ),
+      color: const Color(0xFF6055C8),
       alignment: Alignment.center,
       child: Text(
         initials,
@@ -71,6 +67,7 @@ class RankAvatar extends StatelessWidget {
           fontWeight: FontWeight.w800,
           fontSize: size * 0.38,
           fontFamily: 'DMMono',
+          decoration: TextDecoration.none,
         ),
       ),
     );
