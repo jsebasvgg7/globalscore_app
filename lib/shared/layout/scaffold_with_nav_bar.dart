@@ -47,11 +47,11 @@ class _ScaffoldWithNavBarState extends State<ScaffoldWithNavBar> {
     } catch (_) {}
   }
 
-  // ✅ Navega al branch 4 (perfil) y sincroniza el bottom nav
+  // ✅ Navega al branch 5 (perfil) y sincroniza el bottom nav
   void _goToProfile() {
     widget.navigationShell.goBranch(
-      4,
-      initialLocation: 4 == widget.navigationShell.currentIndex,
+      5,
+      initialLocation: 5 == widget.navigationShell.currentIndex,
     );
   }
 
@@ -322,16 +322,15 @@ class _GsBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // branchIndex: 0=dashboard, 1=ranking, 2=albums, 3=stats, 4=profile
+    // branchIndex: 0=dashboard, 1=ranking, 2=albums, 3=stats, 4=history, 5=profile
+    // Nota: Perfil se accede desde el avatar del top bar (goBranch 5)
     final leftItems = [
-      // ✅ Admin usa branch 2 (albums) como placeholder hasta tener branch admin
-      // o simplemente navega con context.push cuando esté listo
       if (isAdmin)
         const _NavItem(
           icon: Icons.shield_outlined,
           activeIcon: Icons.shield,
           label: 'Admin',
-          branchIndex: 2, // ✅ branch válido (albums) hasta tener el branch admin
+          branchIndex: 2,
         )
       else
         const _NavItem(
@@ -356,9 +355,9 @@ class _GsBottomNav extends StatelessWidget {
         branchIndex: 3,
       ),
       const _NavItem(
-        icon: Icons.person_outline,
-        activeIcon: Icons.person,
-        label: 'Perfil',
+        icon: Icons.history_edu_outlined,
+        activeIcon: Icons.history_edu,
+        label: 'Historia',
         branchIndex: 4,
       ),
     ];

@@ -15,6 +15,7 @@ import '../../features/profile/presentation/pages/achievements_page.dart';
 import '../../features/profile/presentation/pages/championships_page.dart';
 import '../../features/profile/presentation/pages/history_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
+import '../../features/history/presentation/history_page.dart' as hist;
 import '../../shared/layout/scaffold_with_nav_bar.dart';
 import 'router_notifier.dart';
 
@@ -76,8 +77,15 @@ final routerProvider = Provider<GoRouter>((ref) {
               builder: (_, __) => const StatsPage(),
             ),
           ]),
-          // 4 — Perfil propio
+          // 4 — History
           StatefulShellBranch(routes: [
+            GoRoute(
+              path: '/history',
+              builder: (_, __) => const hist.HistoryPage(),
+            ),
+          ]),
+          // 5 — Perfil propio
+          StatefulShellBranch(routes: [  // branchIndex = 5
             GoRoute(
               path: '/profile',
               builder: (_, __) => const ProfilePage(),

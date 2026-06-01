@@ -2,8 +2,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../domain/history_providers.dart';
-import '../data/history_service.dart';
+import '../../domain/history_providers.dart';
+import '../../domain/history_models.dart';
+import '../../data/history_service.dart';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const _kAccent = Color(0xFF5B4FD8);
@@ -311,7 +312,7 @@ class _FeaturedCarouselState extends ConsumerState<_FeaturedCarousel> {
                   event: featured[i],
                   onTap: () {
                     ref.read(historySectionProvider.notifier).setSection('events');
-                    ref.read(selectedEventProvider.notifier).state = featured[i];
+                    ref.read(selectedEventProvider.notifier).select(featured[i]);
                   },
                 ),
               ),
@@ -524,15 +525,9 @@ class _RandomSpinnerState extends ConsumerState<_RandomSpinner>
     _ctrl.repeat();
 
     // Pick random from all items
-    final results = await Future.wait([
-      service.fetchPlayers(),
-      service.fetchTeams(),
-      service.fetchEvents(),
-    ]);
-
-    final players = results[0] as List<HistoricalPlayer>;
-    final teams = results[1] as List<HistoricalTeam>;
-    final events = results[2] as List<HistoricalEvent>;
+    final players = await service.fetchPlayers();
+    final teams   = await service.fetchTeams();
+    final events  = await service.fetchEvents();
 
     final all = <SpinnerResult>[
       ...players.map((p) => SpinnerResult(
@@ -770,7 +765,7 @@ class _TeamChip extends ConsumerWidget {
     return GestureDetector(
       onTap: () {
         ref.read(historySectionProvider.notifier).setSection('teams');
-        ref.read(selectedTeamProvider.notifier).state = team;
+        ref.read(selectedTeamProvider.notifier).select(team);
       },
       child: Container(
         width: 90,

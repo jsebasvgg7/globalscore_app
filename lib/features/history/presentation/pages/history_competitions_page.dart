@@ -125,7 +125,7 @@ class _CompetitionListView extends ConsumerWidget {
                   itemCount: comps.length,
                   itemBuilder: (_, i) => _CompetitionCard(
                     comp: comps[i],
-                    onTap: () => ref.read(selectedCompetitionProvider.notifier).state = comps[i],
+                    onTap: () => ref.read(selectedCompetitionProvider.notifier).select(comps[i]),
                   ),
                 );
               },
@@ -177,7 +177,7 @@ class _SearchBar extends ConsumerWidget {
                       : null,
                 ),
                 onChanged: (v) =>
-                    ref.read(competitionSearchProvider.notifier).state = v,
+               ref.read(competitionSearchProvider.notifier).set(v)
               ),
             ),
           ),
@@ -347,7 +347,7 @@ class _CompetitionDetailView extends ConsumerWidget {
             subtitle: competition.year != null ? '${competition.year}' : '',
             icon: Icons.emoji_events_outlined,
             onBack: () =>
-                ref.read(selectedCompetitionProvider.notifier).state = null,
+                 ref.read(selectedCompetitionProvider.notifier).select(null)
           ),
           Expanded(
             child: detailAsync.when(
