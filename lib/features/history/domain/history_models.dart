@@ -11,7 +11,7 @@ class HistoricalPlayer {
   final int? deathYear;
   final String? imagePath;
   final String? description;
-  final String? legacy;
+  final String? impactSummary;  // impact_summary — equivale a legacy en React
   final int? ballonDorWins;
   final bool isPublished;
 
@@ -24,7 +24,7 @@ class HistoricalPlayer {
     this.deathYear,
     this.imagePath,
     this.description,
-    this.legacy,
+    this.impactSummary,
     this.ballonDorWins,
     this.isPublished = true,
   });
@@ -38,23 +38,23 @@ class HistoricalPlayer {
         deathYear: m['death_year'] as int?,
         imagePath: m['image_path'] as String?,
         description: m['description'] as String?,
-        legacy: m['legacy'] as String?,
+        impactSummary: m['impact_summary'] as String?,
         ballonDorWins: m['ballon_dor_wins'] as int?,
         isPublished: m['is_published'] as bool? ?? true,
       );
 }
 
 // ============================================================
-// TEAMS — columnas reales: era_dominance, legacy_type, active_years
+// TEAMS
 // ============================================================
 
 class HistoricalTeam {
   final String id;
   final String name;
   final String? country;
-  final String? eraDominance;   // era_dominance (era de dominio, ej. "1970-1986")
-  final String? activeYears;    // active_years
-  final String? legacyType;     // legacy_type (Dynastic, Continental, etc.)
+  final String? eraDominance;
+  final String? activeYears;
+  final String? legacyType;
   final String? imagePath;
   final String? description;
   final String? primaryColor;
@@ -77,7 +77,6 @@ class HistoricalTeam {
     this.isPublished = true,
   });
 
-  // Getter de compatibilidad — para los widgets que usaban .era
   String? get era => eraDominance ?? activeYears;
 
   factory HistoricalTeam.fromMap(Map<String, dynamic> m) => HistoricalTeam(

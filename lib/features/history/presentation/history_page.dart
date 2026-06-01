@@ -5,16 +5,7 @@ import 'pages/history_vault_page.dart';
 import '../presentation/pages/history_competitions_page.dart';
 import '../presentation/pages/history_events_page.dart';
 import '../presentation/pages/history_teams_page.dart';
-
-// ══════════════════════════════════════════════════════════════
-//  HISTORY PAGE — root switcher
-//
-//  section == 'vault'        → HistoryVaultPage (landing)
-//  section == 'competitions' → HistoryCompetitionsPage
-//  section == 'events'       → HistoryEventsPage
-//  section == 'teams'        → HistoryTeamsPage
-//  section == 'players'      → (future: HistoryPlayersPage)
-// ══════════════════════════════════════════════════════════════
+import '../presentation/pages/history_players_page.dart';
 
 class HistoryPage extends ConsumerWidget {
   const HistoryPage({super.key});
@@ -25,7 +16,8 @@ class HistoryPage extends ConsumerWidget {
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 200),
-      transitionBuilder: (child, anim) => FadeTransition(opacity: anim, child: child),
+      transitionBuilder: (child, anim) =>
+          FadeTransition(opacity: anim, child: child),
       child: _buildSection(section),
     );
   }
@@ -38,7 +30,8 @@ class HistoryPage extends ConsumerWidget {
         return const HistoryEventsPage(key: ValueKey('events'));
       case 'teams':
         return const HistoryTeamsPage(key: ValueKey('teams'));
-      // 'players' — add HistoryPlayersPage when ready
+      case 'players':
+        return const HistoryPlayersPage(key: ValueKey('players'));
       default:
         return const HistoryVaultPage(key: ValueKey('vault'));
     }

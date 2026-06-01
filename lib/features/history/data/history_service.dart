@@ -1,14 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../domain/history_models.dart';
 
-// ── Image helper — usa Supabase Storage (bucket: historical) ─────────────────
-// El React usa: supabase.storage.from('historical').getPublicUrl(imagePath)
-// Flutter equivalente:
 String? getHistoricalImageUrl(String? imagePath) {
   if (imagePath == null || imagePath.isEmpty) return null;
-  // Si ya es una URL completa (http/https), devolverla tal cual
   if (imagePath.startsWith('http')) return imagePath;
-  // Construir URL pública de Supabase Storage
   final storageUrl = Supabase.instance.client.storage
       .from('historical')
       .getPublicUrl(imagePath);
@@ -18,25 +13,20 @@ String? getHistoricalImageUrl(String? imagePath) {
 class HistoryService {
   final _sb = Supabase.instance.client;
 
-  // ══════════════════════════════════════════════════════════════
-  //  PLAYERS
-  // ══════════════════════════════════════════════════════════════
-
   Future<List<HistoricalPlayer>> fetchPlayers() async {
     final res = await _sb
         .from('historical_players')
         .select(
           'id, name, country, position, birth_year, death_year, '
-          'image_path, description, legacy, ballon_dor_wins, is_published',
+          'image_path, description, impact_summary, legacy_type, '
+          'significance_level, ballon_dor_count, is_published',
         )
         .eq('is_published', true)
+        .eq('is_special', false)
+        .order('significance_level', ascending: false)
         .order('name', ascending: true);
     return (res as List).map((m) => HistoricalPlayer.fromMap(m)).toList();
   }
-
-  // ══════════════════════════════════════════════════════════════
-  //  TEAMS — columnas reales de la BD (sin confederation, con era_dominance)
-  // ══════════════════════════════════════════════════════════════
 
   Future<List<HistoricalTeam>> fetchTeams() async {
     final res = await _sb
@@ -50,10 +40,6 @@ class HistoryService {
         .order('name', ascending: true);
     return (res as List).map((m) => HistoricalTeam.fromMap(m)).toList();
   }
-
-  // ══════════════════════════════════════════════════════════════
-  //  COMPETITIONS
-  // ══════════════════════════════════════════════════════════════
 
   Future<List<HistoricalCompetition>> fetchCompetitions() async {
     final res = await _sb
@@ -115,10 +101,6 @@ class HistoryService {
     );
   }
 
-  // ══════════════════════════════════════════════════════════════
-  //  EVENTS
-  // ══════════════════════════════════════════════════════════════
-
   Future<List<HistoricalEvent>> fetchEvents() async {
     final res = await _sb
         .from('historical_events')
@@ -127,7 +109,7 @@ class HistoryService {
           'context_text, impact_text, image_path, banner_image_path, '
           'score_a, score_b, team_a_name, team_b_name, is_published, '
           'historical_players:protagonist_id(id, name, image_path, country, position), '
-          'historical_teams:team_protagonist_id(id, name, image_path, primary_color, country)',
+          'historical_teams:team_protagonist_id(id, name, image_path, primary_color)',
         )
         .eq('is_published', true)
         .order('event_date', ascending: false);
@@ -142,7 +124,7 @@ class HistoryService {
           'context_text, impact_text, image_path, banner_image_path, '
           'score_a, score_b, team_a_name, team_b_name, is_published, '
           'historical_players:protagonist_id(id, name, image_path, country, position), '
-          'historical_teams:team_protagonist_id(id, name, image_path, primary_color, country)',
+          'historical_teams:team_protagonist_id(id, name, image_path, primary_color)',
         )
         .eq('id', eventId)
         .single();
@@ -174,18 +156,13 @@ class HistoryService {
     );
   }
 
-  // ══════════════════════════════════════════════════════════════
-  //  STATS
-  // ══════════════════════════════════════════════════════════════
-
   Future<HistoryStats> fetchStats() async {
     final results = await Future.wait([
-      _sb.from('historical_players').select('id').eq('is_published', true),
+      _sb.from('historical_players').select('id').eq('is_published', true).eq('is_special', false),
       _sb.from('historical_teams').select('id').eq('is_published', true),
       _sb.from('historical_competitions').select('id').eq('is_published', true),
       _sb.from('historical_events').select('id').eq('is_published', true),
     ]);
-
     return HistoryStats(
       players: (results[0] as List).length,
       teams: (results[1] as List).length,
@@ -200,7 +177,6 @@ class HistoryStats {
   final int teams;
   final int competitions;
   final int events;
-
   const HistoryStats({
     required this.players,
     required this.teams,
