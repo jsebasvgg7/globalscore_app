@@ -166,8 +166,8 @@ Future<List<String>> fetchUserTitleIds(String userId) async {
         .from('predictions')
         .select('*, matches(*)')
         .eq('user_id', userId)
-        .order('created_at', ascending: false)
-        .limit(100);
+        .order('created_at', ascending: false);
+    // ← Sin .limit(100)
 
     return (data as List)
         .map(

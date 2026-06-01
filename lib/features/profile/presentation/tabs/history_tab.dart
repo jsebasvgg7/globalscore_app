@@ -173,7 +173,7 @@ class _FilterHeader extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────
 //  FILTER BUTTON
 // ─────────────────────────────────────────────────────────────
-class _FilterButton extends StatefulWidget {
+class _FilterButton extends StatelessWidget {
   final _HistFilter filter;
   final Map<_HistFilter, int> counts;
   final void Function(_HistFilter) onFilterChanged;
@@ -184,111 +184,89 @@ class _FilterButton extends StatefulWidget {
     required this.onFilterChanged,
   });
 
-  @override
-  State<_FilterButton> createState() => _FilterButtonState();
-}
+  Future<void> _show(BuildContext context) async {
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
 
-class _FilterButtonState extends State<_FilterButton> {
-  final _key = GlobalKey();
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(button.size.bottomLeft(Offset.zero),
+            ancestor: overlay),
+        button.localToGlobal(button.size.bottomRight(Offset.zero),
+            ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
 
-  void _showModal() {
-    final box = _key.currentContext?.findRenderObject() as RenderBox?;
-    if (box == null) return;
-    final pos  = box.localToGlobal(Offset.zero);
-    final size = box.size;
-
-    showDialog(
+    final selected = await showMenu<_HistFilter>(
       context: context,
-      barrierColor: Colors.black26,
-      builder: (_) => Stack(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(color: Colors.transparent),
-          ),
-          Positioned(
-            top: pos.dy + size.height + 4,
-            right: MediaQuery.of(context).size.width - pos.dx - size.width,
-            child: Material(
-              color: Colors.transparent,
-              child: Container(
-                width: 200,
-                decoration: BoxDecoration(
-                  color: _card,
-                  border: Border.all(color: _borderH, width: 1.5),
-                  boxShadow: const [_shadow],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: _HistFilter.values.map((f) {
-                    final isActive = f == widget.filter;
-                    final count    = widget.counts[f] ?? 0;
-                    final isLast   = f == _HistFilter.values.last;
-                    return GestureDetector(
-                      onTap: () {
-                        widget.onFilterChanged(f);
-                        Navigator.pop(context);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 11),
-                        decoration: BoxDecoration(
-                          color: isActive ? _accent : Colors.transparent,
-                          border: Border(
-                            bottom: BorderSide(
-                              color: _borderH.withValues(alpha: 0.5),
-                              width: isLast ? 0 : 1,
-                            ),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Text(
-                              f.label,
-                              style: TextStyle(
-                                fontFamily: 'DM Mono',
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: isActive ? Colors.white : _text,
-                              ),
-                            ),
-                            const Spacer(),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 7, vertical: 2),
-                              color: isActive
-                                  ? Colors.white.withValues(alpha: 0.2)
-                                  : _borderH.withValues(alpha: 0.2),
-                              child: Text(
-                                '$count',
-                                style: TextStyle(
-                                  fontFamily: 'DM Mono',
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: isActive ? Colors.white : _muted,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
+      position: position,
+      color: _card,
+      elevation: 4,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      items: _HistFilter.values.map((f) {
+        final isActive = f == filter;
+        final count = counts[f] ?? 0;
+        return PopupMenuItem<_HistFilter>(
+          value: f,
+          padding: EdgeInsets.zero,
+          child: Container(
+            width: 200,
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              color: isActive ? _accent : Colors.transparent,
+              border: Border(
+                bottom: BorderSide(
+                  color: _borderH.withValues(alpha: 0.5),
+                  width: f == _HistFilter.values.last ? 0 : 1,
                 ),
               ),
             ),
+            child: Row(
+              children: [
+                Text(
+                  f.label,
+                  style: TextStyle(
+                    fontFamily: 'DM Mono',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isActive ? Colors.white : _text,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 7, vertical: 2),
+                  color: isActive
+                      ? Colors.white.withValues(alpha: 0.2)
+                      : _borderH.withValues(alpha: 0.2),
+                  child: Text(
+                    '$count',
+                    style: TextStyle(
+                      fontFamily: 'DM Mono',
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: isActive ? Colors.white : _muted,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
+        );
+      }).toList(),
     );
+
+    if (selected != null) onFilterChanged(selected);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isFiltered = widget.filter != _HistFilter.all;
+    final isFiltered = filter != _HistFilter.all;
     return GestureDetector(
-      key: _key,
-      onTap: _showModal,
+      onTap: () => _show(context),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
@@ -307,7 +285,7 @@ class _FilterButtonState extends State<_FilterButton> {
                 color: isFiltered ? Colors.white : _muted),
             const SizedBox(width: 5),
             Text(
-              widget.filter.label,
+              filter.label,
               style: TextStyle(
                 fontFamily: 'DM Mono',
                 fontSize: 11,
