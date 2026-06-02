@@ -119,8 +119,6 @@ class _PlayerListView extends ConsumerWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: MediaQuery.of(context).padding.top),
-
           _PlayersHeader(onBack: onBack),
 
           _StatsStrip(
@@ -227,11 +225,13 @@ class _CounterRow extends StatelessWidget {
 class _PlayersHeader extends StatelessWidget {
   final VoidCallback onBack;
   const _PlayersHeader({required this.onBack});
-
+ 
   @override
   Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
+ 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 18),
+      padding: EdgeInsets.fromLTRB(16, topPad + 12, 16, 18),
       decoration: BoxDecoration(
         color: kHistBg,
         border: Border(bottom: BorderSide(color: kHistBorder, width: 1.5)),
@@ -239,56 +239,73 @@ class _PlayersHeader extends StatelessWidget {
       child: Stack(
         children: [
           const Positioned(
-            right: 0, top: 0,
+            right: 0,
+            top: 0,
             child: DotGrid(cols: 5, rows: 4),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ── Breadcrumb combinado (mismo estilo que teams) ──
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: kHistAccent,
-                      border: Border.all(color: kHistBorder, width: 1),
-                      boxShadow: [
-                        BoxShadow(
-                          color: kHistDark.withOpacity(0.45),
-                          offset: const Offset(2, 2),
-                          blurRadius: 0,
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      'HISTÓRICO',
-                      style: monoStyle(
-                        color: Colors.white, size: 8,
-                        weight: FontWeight.w800, letterSpacing: 1.2,
+                  GestureDetector(
+                    onTap: onBack,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: kHistBg,
+                        border:
+                            Border.all(color: kHistBorder, width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: kHistDark.withOpacity(0.45),
+                            offset: const Offset(2, 2),
+                            blurRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.arrow_back,
+                              size: 10, color: kHistDark),
+                          const SizedBox(width: 5),
+                          Text(
+                            'HISTÓRICO',
+                            style: monoStyle(
+                                size: 8, weight: FontWeight.w700),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Text('›',
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    color: kHistAccent,
+                    child: Text(
+                      'JUGADORES',
                       style: monoStyle(
-                          size: 12, weight: FontWeight.w700, color: kHistMuted)),
-                  const SizedBox(width: 6),
-                  Text(
-                    'JUGADORES',
-                    style: monoStyle(
-                      size: 9, weight: FontWeight.w600,
-                      color: kHistMuted, letterSpacing: 1.0,
+                        size: 8,
+                        color: Colors.white,
+                        weight: FontWeight.w800,
+                        letterSpacing: 1.0,
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
+ 
+              // ── Título grande ──────────────────────────────────
               Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    width: 5, height: 44,
+                    width: 5,
+                    height: 44,
                     decoration: BoxDecoration(
                       color: kHistAccent,
                       border: Border.all(color: kHistBorder, width: 1),
@@ -302,7 +319,8 @@ class _PlayersHeader extends StatelessWidget {
                         Text(
                           'JUGADORES',
                           style: monoStyle(
-                            size: 28, weight: FontWeight.w900,
+                            size: 28,
+                            weight: FontWeight.w900,
                             letterSpacing: -1.0,
                           ),
                         ),
@@ -311,19 +329,6 @@ class _PlayersHeader extends StatelessWidget {
                           style: monoStyle(size: 11, color: kHistMuted),
                         ),
                       ],
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: onBack,
-                    child: Container(
-                      width: 34, height: 34,
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        border: Border.all(
-                            color: kHistBorder.withOpacity(0.35), width: 1),
-                      ),
-                      child: Icon(Icons.arrow_back, size: 15,
-                          color: kHistDark.withOpacity(0.45)),
                     ),
                   ),
                 ],

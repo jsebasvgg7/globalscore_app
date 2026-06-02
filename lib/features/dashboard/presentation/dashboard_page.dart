@@ -136,7 +136,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
     return Scaffold(
       backgroundColor: _bg,
       body: dashAsync.when(
-          loading: () => const _BrutalistSkeleton(),
+          loading: () => const _AppSplash(),
           error: (e, _) => _ErrorPanel(error: '$e', onRetry: _refresh),
           data: (data) {
             final matches    = data['matches']  as List;
@@ -1288,7 +1288,92 @@ class _StatCellBar extends StatelessWidget {
     ),
   );
 }
+// ─────────────────────────────────────────────────────────────
+//  SPLASH DE CARGA — reemplaza el skeleton genérico
+// ─────────────────────────────────────────────────────────────
+class _AppSplash extends StatefulWidget {
+  const _AppSplash();
+  @override
+  State<_AppSplash> createState() => _AppSplashState();
+}
 
+class _AppSplashState extends State<_AppSplash> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
+      ..repeat(reverse: true);
+    _pulse = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (_, __) => Container(
+        color: _bg,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icono / logo
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: _accent,
+                  border: Border.all(color: _text, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _text.withOpacity(0.25 + _pulse.value * 0.15),
+                      offset: const Offset(4, 4),
+                      blurRadius: 0,
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.emoji_events, color: Colors.white, size: 36),
+              ),
+              const SizedBox(height: 20),
+              // Nombre de la app
+              Text(
+                'GLOBALSCORE',
+                style: _mono(
+                  size: 18,
+                  weight: FontWeight.w900,
+                  letterSpacing: 3,
+                  color: Color.lerp(_text, _accent, _pulse.value * 0.4)!,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'cargando...',
+                style: _mono(size: 9, color: _muted, letterSpacing: 1.5),
+              ),
+              const SizedBox(height: 32),
+              // Barra de progreso indeterminada
+              SizedBox(
+                width: 120,
+                child: ClipRRect(
+                  child: LinearProgressIndicator(
+                    backgroundColor: _border,
+                    color: _accent,
+                    minHeight: 3,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 // ─────────────────────────────────────────────────────────────
 //  SKELETON — con shimmer
 // ─────────────────────────────────────────────────────────────

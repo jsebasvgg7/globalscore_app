@@ -45,8 +45,6 @@ class HistoryPlayerDetail extends ConsumerWidget {
       backgroundColor: kHistBg,
       body: Column(
         children: [
-          SizedBox(height: MediaQuery.of(context).padding.top),
-
           // ── Top bar ────────────────────────────────────────
           _DetailTopBar(player: player, onBack: onBack),
 
