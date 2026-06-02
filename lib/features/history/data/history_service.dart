@@ -232,8 +232,45 @@ class HistoryService {
       events: (results[3] as List).length,
     );
   }
-}
 
+  // ─── NUEVO ───────────────────────────────────────────────
+  Future<TeamDetail> fetchTeamDetail(String teamId) async {
+    final teamRes = await _sb
+        .from('historical_teams')
+        .select(
+          'id, name, country, era_dominance, active_years, legacy_type, '
+          'image_path, description, primary_color, secondary_color, '
+          'titles_count, is_published',
+        )
+        .eq('id', teamId)
+        .eq('is_published', true)
+        .single();
+
+    final lineupRes = await _sb
+        .from('historical_team_lineup')
+        .select(
+          'id, shirt_number, player_name, position_role, team_side, '
+          'notes, sort_order, '
+          'historical_players(id, image_path)',
+        )
+        .eq('team_id', teamId)
+        .order('sort_order', ascending: true)
+        .order('shirt_number', ascending: true);
+
+    final titlesRes = await _sb
+        .from('historical_team_titles')
+        .select('id, title_name, category, year, notes, sort_order')
+        .eq('team_id', teamId)
+        .order('sort_order', ascending: true)
+        .order('year', ascending: true);
+
+    return TeamDetail(
+      team: HistoricalTeam.fromMap(teamRes),
+      lineup: (lineupRes as List).map((m) => TeamLineup.fromMap(m)).toList(),
+      titles: (titlesRes as List).map((m) => TeamTitle.fromMap(m)).toList(),
+    );
+  }
+}  // ← cierre de clase
 class HistoryStats {
   final int players;
   final int teams;

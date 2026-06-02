@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/history_providers.dart';
 import 'pages/history_vault_page.dart';
-import '../presentation/pages/history_competitions_page.dart';
+import 'pages/history_competitions_page.dart';
 import '../presentation/pages/history_events_page.dart';
-import '../presentation/pages/history_teams_page.dart';
+import 'pageTeams/history_teams_page.dart';
 import 'pagePlayers/history_players_page.dart';
 
 class HistoryPage extends ConsumerWidget {

@@ -625,3 +625,89 @@ class PlayerDetail {
     this.eventLinks = const [],
   });
 }
+
+ 
+// Alineación histórica del equipo (historical_team_lineup)
+class TeamLineup {
+  final String id;
+  final int? shirtNumber;
+  final String playerName;
+  final String? positionRole;
+  final String? teamSide;   // si hay sub-equipos (ej: once ideal A/B)
+  final String? notes;
+  final int sortOrder;
+ 
+  // Enlace opcional al jugador histórico
+  final String? historicalPlayerId;
+  final String? historicalPlayerImagePath;
+ 
+  const TeamLineup({
+    required this.id,
+    this.shirtNumber,
+    required this.playerName,
+    this.positionRole,
+    this.teamSide,
+    this.notes,
+    this.sortOrder = 0,
+    this.historicalPlayerId,
+    this.historicalPlayerImagePath,
+  });
+ 
+  factory TeamLineup.fromMap(Map<String, dynamic> m) {
+    // Soporta join con historical_players
+    final player = m['historical_players'];
+    return TeamLineup(
+      id: m['id'] as String,
+      shirtNumber: m['shirt_number'] as int?,
+      playerName: m['player_name'] as String? ?? '—',
+      positionRole: m['position_role'] as String?,
+      teamSide: m['team_side'] as String?,
+      notes: m['notes'] as String?,
+      sortOrder: m['sort_order'] as int? ?? 0,
+      historicalPlayerId: player != null ? (player['id'] as String?) : null,
+      historicalPlayerImagePath:
+          player != null ? (player['image_path'] as String?) : null,
+    );
+  }
+}
+ 
+// Título ganado por el equipo (historical_team_titles)
+class TeamTitle {
+  final String id;
+  final String? titleName;
+  final String? category;   // Liga | Copa | Europa | etc.
+  final String? year;
+  final String? notes;
+  final int sortOrder;
+ 
+  const TeamTitle({
+    required this.id,
+    this.titleName,
+    this.category,
+    this.year,
+    this.notes,
+    this.sortOrder = 0,
+  });
+ 
+  factory TeamTitle.fromMap(Map<String, dynamic> m) => TeamTitle(
+        id: m['id'] as String,
+        titleName: m['title_name'] as String?,
+        category: m['category'] as String?,
+        year: m['year']?.toString(),
+        notes: m['notes'] as String?,
+        sortOrder: m['sort_order'] as int? ?? 0,
+      );
+}
+ 
+// Detalle completo del equipo
+class TeamDetail {
+  final HistoricalTeam team;
+  final List<TeamLineup> lineup;
+  final List<TeamTitle> titles;
+ 
+  const TeamDetail({
+    required this.team,
+    required this.lineup,
+    required this.titles,
+  });
+}

@@ -655,11 +655,11 @@ class _RandomPlayerModalState extends State<_RandomPlayerModal> {
 
     int i = 0;
     Future.doWhile(() async {
-      await Future.delayed(const Duration(milliseconds: 80));
+      await Future.delayed(const Duration(milliseconds: 100));
       if (!mounted) return false;
       setState(() => _displayed = widget.players[i % widget.players.length]);
       i++;
-      return i < 35; // ~2.8s
+      return i < 35;
     }).then((_) {
       if (!mounted) return;
       setState(() {
