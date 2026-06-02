@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../domain/ranking_providers.dart';
@@ -8,10 +8,22 @@ import 'widgets/ranking_stats_row.dart';
 import 'widgets/hof_carousel.dart';
 import '../data/ranking_service.dart';
 
+// ── Paleta Neobrutalismo ───────────────────────────────────────────────────────
+const _bg      = Color(0xFFF0EDE8);
+const _card    = Color(0xFFEAE7E1);
+const _border  = Color(0xFF1A1A2E);
+const _accent  = Color(0xFF5B4FD8);
+const _text    = Color(0xFF1A1A2E);
+const _muted   = Color(0xFF6B6580);
+const _gold    = Color(0xFFC9A227);
 
-// ── Helpers de tipografía ──────────────────────────────────────────────────
+// Sombras duras neobrutalistas (sin blur)
+const _shadowColor = Color(0xFF1A1A2E);
+const _shadow   = BoxShadow(color: _shadowColor, offset: Offset(3, 3), blurRadius: 0);
+const _shadowLg = BoxShadow(color: _shadowColor, offset: Offset(5, 5), blurRadius: 0);
+
 TextStyle _mono({
-  Color color = const Color(0xFF1A1A2E),
+  Color color = _text,
   double size = 12,
   FontWeight weight = FontWeight.normal,
   double letterSpacing = 0,
@@ -22,20 +34,17 @@ TextStyle _mono({
         fontWeight: weight,
         letterSpacing: letterSpacing);
 
-const _kAccent = Color(0xFF5B4FD8);
-const _kBg = Color(0xFFF0EDE8);
-
 class RankingPage extends ConsumerWidget {
   const RankingPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tab = ref.watch(rankingTabProvider);
-    final usersAsync = ref.watch(rankingUsersProvider);
+    final tab            = ref.watch(rankingTabProvider);
+    final usersAsync     = ref.watch(rankingUsersProvider);
     final championsAsync = ref.watch(hofChampionsProvider);
 
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: _bg,
       body: Column(
         children: [
           _TabBar(
@@ -45,13 +54,31 @@ class RankingPage extends ConsumerWidget {
           Expanded(
             child: usersAsync.when(
               loading: () => const Center(
-                child: CircularProgressIndicator(color: _kAccent),
+                child: CircularProgressIndicator(color: _accent, strokeWidth: 2),
               ),
               error: (e, _) => Center(
-                child: Text(
-                  'Error cargando ranking\n$e',
-                  textAlign: TextAlign.center,
-                  style: _mono(color: const Color(0xFF888880)),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: _card,
+                      border: Border.all(color: _border, width: 2),
+                      boxShadow: const [_shadowLg],
+                    ),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Row(children: [
+                        Container(width: 4, height: 20, color: const Color(0xFFE24B4A)),
+                        const SizedBox(width: 8),
+                        Text('ERROR',
+                            style: _mono(color: const Color(0xFFE24B4A), size: 10, weight: FontWeight.w900, letterSpacing: 2)),
+                      ]),
+                      const SizedBox(height: 10),
+                      Text('Error cargando ranking\n$e',
+                          textAlign: TextAlign.center,
+                          style: _mono(color: _muted, size: 11)),
+                    ]),
+                  ),
                 ),
               ),
               data: (users) {
@@ -78,7 +105,7 @@ class RankingPage extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TABS — estilo fiel al diseño original
+// TAB BAR — estilo neobrutalista con bordes duros y sombras
 // ─────────────────────────────────────────────────────────────────────────────
 class _TabBar extends StatelessWidget {
   final String activeTab;
@@ -87,24 +114,21 @@ class _TabBar extends StatelessWidget {
   const _TabBar({required this.activeTab, required this.onTab});
 
   static const _tabs = [
-    ('global',     Icons.public_rounded,             'GLOBAL'),
-    ('monthly',    Icons.calendar_month_rounded,     'MENSUAL'),
-    ('halloffame', Icons.workspace_premium_rounded,  'S. FAMA'),
+    ('global',     Icons.public_rounded,            'GLOBAL',  'ranking general'),
+    ('monthly',    Icons.calendar_month_rounded,    'MENSUAL', 'este mes'),
+    ('halloffame', Icons.workspace_premium_rounded, 'S. FAMA', 'campeones'),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 54,
       decoration: const BoxDecoration(
-        color: _kBg,
-        border: Border(
-          bottom: BorderSide(color: Color(0x14000000), width: 1),
-        ),
+        color: _bg,
+        border: Border(bottom: BorderSide(color: _border, width: 2)),
       ),
       child: Row(
         children: _tabs.map((t) {
-          final (key, icon, label) = t;
+          final (key, icon, label, sub) = t;
           final isActive = activeTab == key;
 
           return Expanded(
@@ -113,35 +137,50 @@ class _TabBar extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
-                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
+                  color: isActive ? _accent.withOpacity(0.06) : Colors.transparent,
                   border: Border(
                     bottom: BorderSide(
-                      color: isActive ? _kAccent : Colors.transparent,
-                      width: 2,
+                      color: isActive ? _accent : Colors.transparent,
+                      width: 2.5,
                     ),
                   ),
                 ),
-                child: Row(
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      icon,
-                      size: 12,
-                      color: isActive
-                          ? _kAccent
-                          : const Color(0xFF888880),
+                    // Icono con caja cuadrada cuando activo
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      width: isActive ? 26 : 22,
+                      height: isActive ? 26 : 22,
+                      decoration: isActive
+                          ? BoxDecoration(
+                              color: _accent,
+                              boxShadow: const [BoxShadow(color: _shadowColor, offset: Offset(2, 2), blurRadius: 0)],
+                            )
+                          : null,
+                      alignment: Alignment.center,
+                      child: Icon(
+                        icon,
+                        size: 12,
+                        color: isActive ? Colors.white : _muted,
+                      ),
                     ),
-                    const SizedBox(width: 5),
+                    const SizedBox(height: 4),
                     Text(
                       label,
                       style: _mono(
-                        size: 11,
-                        weight: FontWeight.w700,
-                        letterSpacing: 0.6,
-                        color: isActive ? _kAccent : const Color(0xFF888880),
+                        size: 9,
+                        weight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                        color: isActive ? _accent : _muted,
                       ),
+                    ),
+                    Text(
+                      sub,
+                      style: _mono(size: 7, letterSpacing: 0.4, color: isActive ? _accent.withOpacity(0.7) : _muted.withOpacity(0.6)),
                     ),
                   ],
                 ),
@@ -175,6 +214,7 @@ class _RankingContent extends ConsumerWidget {
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
       slivers: [
+        // Stats row
         SliverToBoxAdapter(
           child: RankingStatsRow(
             rankingType: tab,
@@ -182,19 +222,21 @@ class _RankingContent extends ConsumerWidget {
             champions: champions,
           ),
         ),
+
+        // Hall of Fame
         if (tab == 'halloffame') ...[
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.only(top: 20, bottom: 32),
               child: HofCarousel(
                 champions: champions,
-                onSelect: (userId) {
-                  // TODO: navigate to PublicProfilePage(userId)
-                },
+                onSelect: (userId) {},
               ),
             ),
           ),
         ],
+
+        // Podio
         if (tab != 'halloffame' && sorted.isNotEmpty) ...[
           SliverToBoxAdapter(
             child: RankingPodium(
@@ -203,30 +245,40 @@ class _RankingContent extends ConsumerWidget {
             ),
           ),
         ],
+
+        // Cabecera tabla — neobrutalista
         if (tab != 'halloffame') ...[
           SliverToBoxAdapter(
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8E4DE),
+                color: _card,
                 border: Border(
-                  top: BorderSide(
-                      color: Colors.black.withOpacity(0.07), width: 0.5),
-                  bottom: BorderSide(
-                      color: Colors.black.withOpacity(0.07), width: 0.5),
+                  top: BorderSide(color: _border.withOpacity(0.5), width: 0.5),
+                  bottom: BorderSide(color: _border, width: 2),
                 ),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  // Barra de acento
+                  Container(width: 4, height: 16, color: _accent),
+                  const SizedBox(width: 8),
                   Text(
                     'CLASIFICACIÓN',
-                    style: _mono(size: 10, weight: FontWeight.w700, letterSpacing: 1.4, color: const Color(0xFF888880)),
+                    style: _mono(size: 10, weight: FontWeight.w800, letterSpacing: 1.8, color: _text),
                   ),
-                  Text(
-                    tab == 'monthly' ? _currentMonthLabel() : 'GLOBAL',
-                    style: _mono(size: 10, weight: FontWeight.w700, letterSpacing: 1.4, color: const Color(0xFF888880)),
+                  const Spacer(),
+                  // Badge de periodo — pill sólida
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: const BoxDecoration(
+                      color: _accent,
+                      boxShadow: [BoxShadow(color: _shadowColor, offset: Offset(2, 2), blurRadius: 0)],
+                    ),
+                    child: Text(
+                      tab == 'monthly' ? _currentMonthLabel() : 'GLOBAL',
+                      style: _mono(color: Colors.white, size: 8, weight: FontWeight.w800, letterSpacing: 1.2),
+                    ),
                   ),
                 ],
               ),

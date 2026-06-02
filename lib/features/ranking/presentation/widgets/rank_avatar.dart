@@ -1,5 +1,13 @@
 import 'package:flutter/material.dart';
 
+// ── Paleta Neobrutalismo ───────────────────────────────────────────────────────
+const _border      = Color(0xFF1A1A2E);
+const _accent      = Color(0xFF5B4FD8);
+const _shadowColor = Color(0xFF1A1A2E);
+
+/// Avatar cuadrado con estilo neobrutalista.
+/// Soporta imagen de red con fallback a inicial del nombre.
+/// El borde y la sombra dura se controlan externamente.
 class RankAvatar extends StatelessWidget {
   final String? url;
   final String name;
@@ -46,6 +54,7 @@ class RankAvatar extends StatelessWidget {
         width: size + borderWidth * 2,
         height: size + borderWidth * 2,
         decoration: BoxDecoration(
+          // Borde de color de medalla
           border: Border.all(color: borderColor!, width: borderWidth),
         ),
         child: SizedBox(width: size, height: size, child: avatar),
@@ -58,13 +67,14 @@ class RankAvatar extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      color: const Color(0xFF6055C8),
+      // Fondo de acento — consistente con dashboard
+      color: _accent,
       alignment: Alignment.center,
       child: Text(
         initials,
         style: TextStyle(
           color: Colors.white,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w900,
           fontSize: size * 0.38,
           fontFamily: 'DMMono',
           decoration: TextDecoration.none,
