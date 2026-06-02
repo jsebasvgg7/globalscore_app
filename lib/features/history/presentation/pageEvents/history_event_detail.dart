@@ -1,0 +1,284 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/history_models.dart';
+import '../../domain/history_providers.dart';
+import 'history_events_shared.dart';
+import 'event_tab_info.dart';
+import 'event_tab_alineaciones.dart';
+import 'event_tab_historia.dart';
+
+class HistoryEventDetail extends ConsumerStatefulWidget {
+  final HistoricalEvent event;
+  final VoidCallback onBack;
+
+  const HistoryEventDetail({
+    super.key,
+    required this.event,
+    required this.onBack,
+  });
+
+  @override
+  ConsumerState<HistoryEventDetail> createState() => _HistoryEventDetailState();
+}
+
+class _HistoryEventDetailState extends ConsumerState<HistoryEventDetail>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+  late final List<(IconData, String)> _tabs;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabs = _buildTabs(widget.event.eventCategory);
+    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController.addListener(() => setState(() {}));
+  }
+
+  List<(IconData, String)> _buildTabs(String? category) {
+    if (category == 'player') {
+      return [
+        (Icons.info_outline, 'INFO'),
+        (Icons.groups_outlined, 'ALINEACIONES'),
+      ];
+    } else if (category == 'team') {
+      return [
+        (Icons.info_outline, 'INFO'),
+        (Icons.history_edu_outlined, 'HISTORIA'),
+      ];
+    }
+    return [(Icons.info_outline, 'INFO')];
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final detailAsync = ref.watch(eventDetailProvider(widget.event.id));
+    final accentColor = catColor(widget.event.eventCategory);
+
+    return Scaffold(
+      backgroundColor: kEvBg,
+      body: Column(
+        children: [
+          _EventAppBar(
+            event: widget.event,
+            accentColor: accentColor,
+            onBack: widget.onBack,
+          ),
+          _EventTabBar(
+            controller: _tabController,
+            tabs: _tabs,
+            accentColor: accentColor,
+          ),
+          Expanded(
+            child: detailAsync.when(
+              loading: () => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(color: accentColor, strokeWidth: 2),
+                    const SizedBox(height: 14),
+                    Text('Cargando evento…', style: evMono(size: 12, color: kEvMuted)),
+                  ],
+                ),
+              ),
+              error: (e, _) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 36, color: kEvRed),
+                    const SizedBox(height: 12),
+                    Text('Error: $e', style: evMono(size: 12, color: kEvRed)),
+                    const SizedBox(height: 16),
+                    GestureDetector(
+                      onTap: () => ref.refresh(eventDetailProvider(widget.event.id)),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: evNeoBox(),
+                        child: Text('REINTENTAR',
+                            style: evMono(size: 11, weight: FontWeight.w700, color: kEvAccent)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              data: (detail) => TabBarView(
+                controller: _tabController,
+                physics: const NeverScrollableScrollPhysics(),
+                children: _buildTabViews(detail),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildTabViews(EventDetail detail) {
+    final cat = widget.event.eventCategory;
+    if (cat == 'player') {
+      return [
+        EventTabInfo(detail: detail),
+        EventTabAlineaciones(detail: detail),
+      ];
+    } else if (cat == 'team') {
+      return [
+        EventTabInfo(detail: detail),
+        EventTabHistoria(detail: detail),
+      ];
+    }
+    return [EventTabInfo(detail: detail)];
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  APP BAR
+// ══════════════════════════════════════════════════════════════
+
+class _EventAppBar extends StatelessWidget {
+  final HistoricalEvent event;
+  final Color accentColor;
+  final VoidCallback onBack;
+
+  const _EventAppBar({
+    required this.event,
+    required this.accentColor,
+    required this.onBack,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
+    return Container(
+      decoration: BoxDecoration(
+        color: kEvBg,
+        border: Border(
+          bottom: BorderSide(color: kEvBorder, width: 1.5),
+          top: BorderSide(color: accentColor, width: 3),
+        ),
+      ),
+      padding: EdgeInsets.fromLTRB(14, topPad + 14, 14, 12),
+      child: Row(
+        children: [
+          // Back
+          GestureDetector(
+            onTap: onBack,
+            child: Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: kEvBg,
+                border: Border.all(color: kEvBorder, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: kEvDark.withOpacity(0.4),
+                    offset: const Offset(2, 2),
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.arrow_back, size: 16, color: kEvDark),
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Año badge
+          if (event.year != null)
+            Container(
+              width: 36, height: 36,
+              color: accentColor,
+              child: Center(
+                child: Text(
+                  '${event.year}',
+                  style: evMono(size: 9, weight: FontWeight.w900, color: Colors.white),
+                ),
+              ),
+            ),
+          const SizedBox(width: 10),
+
+          // Título + tipo
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  event.title.toUpperCase(),
+                  style: evMono(size: 12, weight: FontWeight.w800, letterSpacing: 0.2),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (event.eventType != null)
+                  Text(
+                    kEventTypeLabel[event.eventType] ?? event.eventType!,
+                    style: evMono(size: 9, color: kEvMuted),
+                  ),
+              ],
+            ),
+          ),
+
+          // Cat badge
+          if (event.eventCategory != null)
+            EvCatBadge(category: event.eventCategory!),
+        ],
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  TAB BAR
+// ══════════════════════════════════════════════════════════════
+
+class _EventTabBar extends StatelessWidget {
+  final TabController controller;
+  final List<(IconData, String)> tabs;
+  final Color accentColor;
+
+  const _EventTabBar({
+    required this.controller,
+    required this.tabs,
+    required this.accentColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: kEvBg,
+        border: Border(bottom: BorderSide(color: kEvBorder, width: 1.5)),
+      ),
+      child: TabBar(
+        controller: controller,
+        indicatorColor: accentColor,
+        indicatorWeight: 2.5,
+        labelPadding: EdgeInsets.zero,
+        tabs: tabs.asMap().entries.map((e) {
+          final isActive = controller.index == e.key;
+          final (icon, label) = e.value;
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 16, color: isActive ? accentColor : kEvMuted),
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  style: evMono(
+                    size: 8,
+                    weight: FontWeight.w700,
+                    letterSpacing: 0.6,
+                    color: isActive ? accentColor : kEvMuted,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
