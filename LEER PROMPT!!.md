@@ -182,7 +182,12 @@ Con este contexto, por favor:
 - Hay equipos que no tienen ningun registro en sus historia plantel ni tabla.
 Revisa los archivos y los react para determinar los errores. Si notas que hay cosas que se dupean o que no deberian mostrarte por que en el react no lo amerita como historia dale otro campo o intenta que se vea diferente. Lo importante es resolver el problema. Te dejo la base de datos de las tablas de history_event
 ]
-
+Diagnóstico rápido:
+1. Error Mbappe (RangeError index: 0) — El evento Mbappe (event_category: "player") NO tiene squad (es null), solo tiene lineups. El EventTabPlantel usa detail.lineupA + detail.lineupB pero el fetchEventDetail en Flutter no consulta historical_event_squad. El RangeError viene de otro lado: en _buildTabs para player se crean 3 tabs [INFO, ALINEACIONES, PLANTEL], pero _buildTabViews también retorna 3 widgets — eso está correcto. El crash real es en EventTabPlantel cuando hace [...lineupA, ...lineupB] y ambas listas están vacías pero algo indexa en 0. Revisando mejor: el EventDetail en Flutter no tiene squad, solo lineupA/lineupB/knockout. La tabla historical_event_squad no se consulta en Flutter.
+2. Tab PLANTEL muestra ambos equipos — EventTabPlantel hace [...lineupA, ...lineupB] mostrando todos. En React solo muestra squad (el plantel del equipo protagonista). Para eventos player, el protagonista pertenece a team_a, así que el plantel debería ser solo lineupA.
+3. Alineaciones - números no simétricos — El diseño actual tiene los números del equipo B a la izquierda del nombre. Hay que espejearlos: equipo B debe mostrar nombre → número (número a la derecha).
+4. Detalle de equipo "sin plantel" — El TeamDetail usa historical_team_lineup pero los equipos de tipo evento (Leverkusen, etc.) guardan su plantel en historical_event_squad, no en historical_team_lineup.
+5. Equipos sin registros — Mostrar estado vacío apropiado.
 ---
 
 **Listo. Con este contexto, guíame en el siguiente paso de la migración.**
