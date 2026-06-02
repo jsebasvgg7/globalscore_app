@@ -48,6 +48,13 @@ class TeamTabPalmares extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Header ───────────────────────────────────────────
+          _PalmaresHeader(
+            team: team,
+            teamColor: primaryColor,
+            totalTitles: titles.length,
+          ),
+
           // ── Banner total de títulos ───────────────────────────
           _TitlesBanner(
             total: titles.length,
@@ -359,6 +366,83 @@ class _YearBadge extends StatelessWidget {
       child: Text(
         year,
         style: teamMono(size: 10, weight: FontWeight.w700, color: color),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  HEADER PALMARÉS
+// ══════════════════════════════════════════════════════════════
+
+class _PalmaresHeader extends StatelessWidget {
+  final dynamic team;
+  final Color teamColor;
+  final int totalTitles;
+
+  const _PalmaresHeader({
+    required this.team,
+    required this.teamColor,
+    required this.totalTitles,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: kTeamDark,
+        border: Border(bottom: BorderSide(color: kTeamBorder, width: 1.5)),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            color: kTeamGold,
+            child: const Icon(Icons.emoji_events, size: 20, color: Colors.white),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'PALMARÉS',
+                  style: teamMono(
+                    size: 16,
+                    weight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Historial de títulos del equipo',
+                  style: teamMono(size: 9, color: kTeamMuted),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              border: Border.all(color: kTeamGold.withOpacity(0.5)),
+              color: kTeamGold.withOpacity(0.1),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.emoji_events_outlined, size: 10, color: kTeamGold),
+                const SizedBox(width: 5),
+                Text(
+                  '$totalTitles',
+                  style: teamMono(size: 13, weight: FontWeight.w900, color: kTeamGold),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

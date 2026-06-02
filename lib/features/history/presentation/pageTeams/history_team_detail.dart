@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/history_models.dart';
 import '../../domain/history_providers.dart';
-import '../../data/history_service.dart';
 import 'history_teams_shared.dart';
 import 'team_tab_resumen.dart';
 import 'team_tab_alineacion.dart';
@@ -151,6 +150,7 @@ class _TeamAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
     return Container(
       decoration: BoxDecoration(
         color: kTeamBg,
@@ -159,7 +159,7 @@ class _TeamAppBar extends StatelessWidget {
           top: BorderSide(color: primaryColor, width: 3),
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      padding: EdgeInsets.fromLTRB(14, topPad + 14, 14, 12),
       child: Row(
         children: [
           // Back

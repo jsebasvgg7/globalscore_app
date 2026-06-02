@@ -5,6 +5,8 @@ import '../../domain/history_models.dart';
 import '../../data/history_service.dart';
 import 'history_teams_shared.dart';
 import 'history_team_detail.dart';
+import '../../../../../shared/layout/scaffold_with_nav_bar.dart'
+    show hideTopBarProvider, hideBottomNavProvider;
 
 // ══════════════════════════════════════════════════════════════
 //  ROOT
@@ -21,6 +23,21 @@ class _HistoryTeamsPageState extends ConsumerState<HistoryTeamsPage> {
   HistoricalTeam? _selected;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(hideTopBarProvider.notifier).hide();
+      ref.read(hideBottomNavProvider.notifier).hide();
+    });
+  }
+
+  void _handleBack() {
+    ref.read(hideTopBarProvider.notifier).show();
+    ref.read(hideBottomNavProvider.notifier).show();
+    ref.read(historySectionProvider.notifier).goBack();
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (_selected != null) {
       return HistoryTeamDetail(
@@ -30,6 +47,7 @@ class _HistoryTeamsPageState extends ConsumerState<HistoryTeamsPage> {
     }
     return _TeamsListView(
       onSelect: (t) => setState(() => _selected = t),
+      onBack: _handleBack,
     );
   }
 }
@@ -40,7 +58,8 @@ class _HistoryTeamsPageState extends ConsumerState<HistoryTeamsPage> {
 
 class _TeamsListView extends ConsumerStatefulWidget {
   final void Function(HistoricalTeam) onSelect;
-  const _TeamsListView({required this.onSelect});
+  final VoidCallback onBack;
+  const _TeamsListView({required this.onSelect, required this.onBack});
 
   @override
   ConsumerState<_TeamsListView> createState() => _TeamsListViewState();
@@ -79,10 +98,7 @@ class _TeamsListViewState extends ConsumerState<_TeamsListView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Header editorial ────────────────────────────────
-          _TeamsHeader(
-            onBack: () =>
-                ref.read(historySectionProvider.notifier).goBack(),
-          ),
+          _TeamsHeader(onBack: widget.onBack),
 
           // ── Stats strip ─────────────────────────────────────
           _StatsStrip(
@@ -174,8 +190,9 @@ class _TeamsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
     return Container(
-     padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+      padding: EdgeInsets.fromLTRB(16, topPad + 12, 16, 18),
       decoration: BoxDecoration(
         color: kTeamBg,
         border: Border(bottom: BorderSide(color: kTeamBorder, width: 1.5)),

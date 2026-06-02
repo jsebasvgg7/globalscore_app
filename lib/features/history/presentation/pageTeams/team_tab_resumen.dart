@@ -35,14 +35,14 @@ class TeamTabResumen extends StatelessWidget {
             primaryColor: primaryColor,
           ),
 
+          // ── Legacy / tipo ─────────────────────────────────────
+          _LegacyBlock(team: team, primaryColor: primaryColor),
+
           // ── Escudo + descripción ──────────────────────────────
           if (team.description != null) ...[
             const TeamSectionLabel(label: 'HISTORIA DEL CLUB', icon: Icons.history_edu_outlined),
             _DescriptionBlock(description: team.description!),
           ],
-
-          // ── Legacy / tipo ─────────────────────────────────────
-          _LegacyBlock(team: team, primaryColor: primaryColor),
 
           const SizedBox(height: 32),
         ],
@@ -267,8 +267,31 @@ class _QuickStats extends StatelessWidget {
                       ? null
                       : Border(right: BorderSide(color: kTeamBorder, width: 1.5)),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
-                child: TeamStatBox(value: val, label: label, color: color),
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        val,
+                        style: teamMono(
+                          size: 22,
+                          weight: FontWeight.w900,
+                          color: color,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      label,
+                      style: teamMono(size: 7, color: kTeamMuted, letterSpacing: 0.8),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
             );
           }).toList(),
@@ -339,31 +362,49 @@ class _LegacyBlock extends StatelessWidget {
           decoration: teamNeoBox(bg: kTeamDark, shadowX: 3, shadowY: 3),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 12,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (team.legacyType != null)
-                  _IdentityItem(
-                    label: 'TIPO',
-                    value: legacyTypeLabel[team.legacyType] ?? team.legacyType!,
-                    icon: Icons.category_outlined,
-                    color: primaryColor,
+                // Primera fila: TIPO + ERA DE DOMINIO lado a lado
+                if (team.legacyType != null || team.eraDominance != null)
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (team.legacyType != null)
+                          Expanded(
+                            child: _IdentityItem(
+                              label: 'TIPO',
+                              value: legacyTypeLabel[team.legacyType] ?? team.legacyType!,
+                              icon: Icons.category_outlined,
+                              color: primaryColor,
+                            ),
+                          ),
+                        if (team.legacyType != null && team.eraDominance != null)
+                          const SizedBox(width: 12),
+                        if (team.eraDominance != null)
+                          Expanded(
+                            child: _IdentityItem(
+                              label: 'ERA DE DOMINIO',
+                              value: team.eraDominance!,
+                              icon: Icons.schedule_outlined,
+                              color: kTeamGold,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                if (team.eraDominance != null)
-                  _IdentityItem(
-                    label: 'ERA DE DOMINIO',
-                    value: team.eraDominance!,
-                    icon: Icons.schedule_outlined,
-                    color: kTeamGold,
-                  ),
-                if (team.activeYears != null)
+                // Segunda fila: AÑOS ACTIVOS ancho completo
+                if (team.activeYears != null) ...[
+                  const SizedBox(height: 12),
                   _IdentityItem(
                     label: 'AÑOS ACTIVOS',
                     value: team.activeYears!,
                     icon: Icons.calendar_today_outlined,
                     color: kTeamGreen,
+                    fullWidth: true,
                   ),
+                ],
               ],
             ),
           ),
@@ -378,17 +419,20 @@ class _IdentityItem extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
+  final bool fullWidth;
 
   const _IdentityItem({
     required this.label,
     required this.value,
     required this.icon,
     required this.color,
+    this.fullWidth = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: fullWidth ? double.infinity : null,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         border: Border.all(color: color.withOpacity(0.4)),
@@ -412,6 +456,8 @@ class _IdentityItem extends StatelessWidget {
           Text(
             value,
             style: teamMono(size: 13, color: Colors.white, weight: FontWeight.w700),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

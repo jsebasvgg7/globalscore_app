@@ -54,6 +54,13 @@ class _TeamTabAlineacionState extends State<TeamTabAlineacion> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Header ───────────────────────────────────────────
+          _AlineacionHeader(
+            team: widget.detail.team,
+            teamColor: primaryColor,
+            starterCount: starters.length,
+          ),
+
           // ── Cancha táctica ────────────────────────────────────
           _TacticalPitch(
             starters: starters,
@@ -110,38 +117,43 @@ class _TacticalPitch extends StatelessWidget {
     required this.onPlayerTap,
   });
 
-  /// Retorna posición normalizada [0,1] en la cancha según posición/número
+  /// Retorna posición normalizada [0,1] en la cancha.
+  /// Usa posX/posY de la DB (0-100) si están disponibles,
+  /// y hace fallback a posición estimada por número/rol.
   Offset _positionFor(TeamLineup p, int index, int total) {
+    // ── Usar coordenadas reales de la base de datos ──────────
+    if (p.posX != null && p.posY != null) {
+      return Offset(
+        (p.posX! / 100).clamp(0.05, 0.95),
+        (p.posY! / 100).clamp(0.05, 0.95),
+      );
+    }
+
+    // ── Fallback: estimación por número/rol ──────────────────
     final pos = (p.positionRole ?? '').toLowerCase();
     final num = p.shirtNumber ?? (index + 1);
 
-    // GK — siempre abajo
     if (num == 1 || pos.contains('goal')) {
       return const Offset(0.5, 0.88);
     }
-    // Defenders (2-5) — fila baja
     if (pos.contains('defend') || pos.contains('back') || (num >= 2 && num <= 5)) {
       const defs = [0.2, 0.4, 0.6, 0.8];
       final defIndex = (num - 2).clamp(0, 3);
       return Offset(defs[defIndex], 0.68);
     }
-    // Midfielders (6-8) — fila media
     if (pos.contains('mid') || pos.contains('pivot') || (num >= 6 && num <= 8)) {
       const mids = [0.25, 0.5, 0.75];
       final midIndex = (num - 6).clamp(0, 2);
       return Offset(mids[midIndex], 0.45);
     }
-    // Wingers
     if (pos.contains('wing')) {
       return num <= 9 ? const Offset(0.15, 0.25) : const Offset(0.85, 0.25);
     }
-    // Forwards (9-11)
     if (pos.contains('forward') || pos.contains('striker') || pos.contains('attack') || (num >= 9 && num <= 11)) {
       const fwds = [0.25, 0.5, 0.75];
       final fwdIndex = (num - 9).clamp(0, 2);
       return Offset(fwds[fwdIndex], 0.22);
     }
-    // Fallback distribuido
     return Offset((index % 3 + 1) * 0.25, 0.3 + (index ~/ 3) * 0.2);
   }
 
@@ -185,7 +197,7 @@ class _TacticalPitch extends StatelessWidget {
 
                   return Positioned(
                     left: x - 22,
-                    top: y - 22,
+                    top: y - 26,
                     child: GestureDetector(
                       onTap: () => onPlayerTap(e.value),
                       child: _PitchPlayer(
@@ -339,10 +351,9 @@ class _PitchPlayer extends StatelessWidget {
     final isGK = num == 1 ||
         (player.positionRole ?? '').toLowerCase().contains('goal');
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 150),
+    return SizedBox(
       width: 44,
-      height: 44,
+      height: 52,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -688,6 +699,83 @@ class _PlayerRow extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  HEADER ALINEACIÓN
+// ══════════════════════════════════════════════════════════════
+
+class _AlineacionHeader extends StatelessWidget {
+  final dynamic team;
+  final Color teamColor;
+  final int starterCount;
+
+  const _AlineacionHeader({
+    required this.team,
+    required this.teamColor,
+    required this.starterCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: kTeamDark,
+        border: Border(bottom: BorderSide(color: kTeamBorder, width: 1.5)),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            color: teamColor,
+            child: const Icon(Icons.sports_soccer, size: 20, color: Colors.white),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ALINEACIÓN',
+                  style: teamMono(
+                    size: 16,
+                    weight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Toca un jugador para ver su detalle',
+                  style: teamMono(size: 9, color: kTeamMuted),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              border: Border.all(color: teamColor.withOpacity(0.5)),
+              color: teamColor.withOpacity(0.1),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.group_outlined, size: 10, color: teamColor),
+                const SizedBox(width: 5),
+                Text(
+                  '$starterCount',
+                  style: teamMono(size: 13, weight: FontWeight.w900, color: teamColor),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

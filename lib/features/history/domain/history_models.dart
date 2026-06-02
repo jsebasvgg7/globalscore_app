@@ -637,6 +637,10 @@ class TeamLineup {
   final String? notes;
   final int sortOrder;
  
+  // Coordenadas en el campo (0-100), mapeadas desde pos_x / pos_y
+  final double? posX;
+  final double? posY;
+
   // Enlace opcional al jugador histórico
   final String? historicalPlayerId;
   final String? historicalPlayerImagePath;
@@ -649,6 +653,8 @@ class TeamLineup {
     this.teamSide,
     this.notes,
     this.sortOrder = 0,
+    this.posX,
+    this.posY,
     this.historicalPlayerId,
     this.historicalPlayerImagePath,
   });
@@ -663,6 +669,8 @@ class TeamLineup {
       teamSide: null,   // no existe en DB
       notes: null,      // no existe en DB
       sortOrder: 0,     // no existe en DB
+      posX: (m['pos_x'] as num?)?.toDouble(),
+      posY: (m['pos_y'] as num?)?.toDouble(),
       historicalPlayerId: player != null ? (player['id'] as String?) : null,
       historicalPlayerImagePath:
           player != null ? (player['image_path'] as String?) : null,
