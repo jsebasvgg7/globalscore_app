@@ -441,100 +441,79 @@ class _ProgressBarState extends State<_ProgressBar> {
     return Container(
       margin: const EdgeInsets.fromLTRB(18, 14, 18, 0),
       decoration: BoxDecoration(
-        color: isComplete ? _accent.withOpacity(0.06) : _card,
+        color: _card,
         border: Border.all(color: _border, width: 2),
         boxShadow: const [_shadow],
       ),
-      child: Column(children: [
-        // ── Top stripe neobrutalista ──
-        Container(
-          height: 3,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [_accent, _accentL, _accent],
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
-          child: Column(children: [
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Row(children: [
-                // Bloque decorativo izquierdo
-                Container(
-                  width: 4,
-                  height: 26,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+        child: Column(children: [
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Row(children: [
+              // Bloque decorativo izquierdo
+              Container(
+                width: 4,
+                height: 26,
+                color: _accent,
+                margin: const EdgeInsets.only(right: 10),
+              ),
+              Text('PREDIC.', style: _mono(color: _muted, size: 10, weight: FontWeight.w700, letterSpacing: 2)),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
                   color: _accent,
-                  margin: const EdgeInsets.only(right: 10),
+                  boxShadow: const [_shadowSm],
                 ),
-                Text('PREDIC.', style: _mono(color: _muted, size: 10, weight: FontWeight.w700, letterSpacing: 2)),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: _accent,
-                    boxShadow: const [_shadowSm],
-                  ),
-                  child: Text('[${widget.saved}/${widget.total}]',
-                      style: _mono(color: Colors.white, size: 11, weight: FontWeight.w700)),
-                ),
-              ]),
-              Row(children: [
-                if (isComplete) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: _green.withOpacity(0.1),
-                      border: Border.all(color: _green, width: 1.5),
-                    ),
-                    child: Text('✓ COMPLETO', style: _mono(color: _green, size: 7, weight: FontWeight.w800, letterSpacing: 1)),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Container(
-                  width: 30, height: 30,
-                  decoration: BoxDecoration(
-                    color: _surface,
-                    border: Border.all(color: _border, width: 2),
-                    boxShadow: const [_shadowSm],
-                  ),
-                  child: const Icon(Icons.book_outlined, color: _accent, size: 16),
-                ),
-              ]),
+                child: Text('[${widget.saved}/${widget.total}]',
+                    style: _mono(color: Colors.white, size: 11, weight: FontWeight.w700)),
+              ),
             ]),
-            const SizedBox(height: 10),
-            // Track con marcadores de tick
-            Stack(children: [
-              Container(height: 8, color: _border),
-              TweenAnimationBuilder<double>(
-                key: ValueKey(widget.target),
-                tween: Tween(begin: 0, end: widget.target.clamp(0.0, 1.0)),
-                duration: const Duration(milliseconds: 900),
-                curve: Curves.easeOutCubic,
-                builder: (_, v, __) => FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: v,
-                  child: Container(
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: _accent,
-                      boxShadow: [BoxShadow(color: _accent.withOpacity(0.4), offset: const Offset(0, 2), blurRadius: 4)],
-                    ),
-                  ),
+            if (isComplete)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: _green.withOpacity(0.1),
+                  border: Border.all(color: _green, width: 1.5),
+                ),
+                child: Text('✓ COMPLETO', style: _mono(color: _green, size: 7, weight: FontWeight.w800, letterSpacing: 1)),
+              ),
+          ]),
+          const SizedBox(height: 10),
+          // Track con marcadores de tick
+          Stack(children: [
+            Container(
+              height: 8,
+              decoration: BoxDecoration(
+                color: _bg,
+                border: Border.all(color: _border, width: 1),
+              ),
+            ),
+            TweenAnimationBuilder<double>(
+              key: ValueKey(widget.target),
+              tween: Tween(begin: 0, end: widget.target.clamp(0.0, 1.0)),
+              duration: const Duration(milliseconds: 900),
+              curve: Curves.easeOutCubic,
+              builder: (_, v, __) => FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: v,
+                child: Container(
+                  height: 8,
+                  color: _accent,
                 ),
               ),
-              // Marcadores de cuartos
-              ...List.generate(3, (i) {
-                final pos = (i + 1) / 4;
-                return Align(
-                  alignment: Alignment(pos * 2 - 1, 0),
-                  child: Container(width: 1.5, height: 8, color: _bg.withOpacity(0.6)),
-                );
-              }),
-            ]),
+            ),
+            // Marcadores de cuartos
+            ...List.generate(3, (i) {
+              final pos = (i + 1) / 4;
+              return Align(
+                alignment: Alignment(pos * 2 - 1, 0),
+                child: Container(width: 1.5, height: 8, color: _card.withOpacity(0.8)),
+              );
+            }),
           ]),
-        ),
-      ]),
+        ]),
+      ),
     );
   }
 }
