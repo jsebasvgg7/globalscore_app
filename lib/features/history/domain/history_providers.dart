@@ -25,6 +25,7 @@ final historySectionProvider =
 // ══════════════════════════════════════════════════════════════
 
 final historyStatsProvider = FutureProvider<HistoryStats>((ref) {
+  ref.keepAlive();
   return ref.watch(historyServiceProvider).fetchStats();
 });
 
@@ -33,6 +34,7 @@ final historyStatsProvider = FutureProvider<HistoryStats>((ref) {
 // ══════════════════════════════════════════════════════════════
 
 final historyPlayersProvider = FutureProvider<List<HistoricalPlayer>>((ref) {
+  ref.keepAlive();
   return ref.watch(historyServiceProvider).fetchPlayers();
 });
 
@@ -117,6 +119,7 @@ final filteredPlayersProvider =
 });
 
 final historyTeamsProvider = FutureProvider<List<HistoricalTeam>>((ref) {
+  ref.keepAlive();
   return ref.watch(historyServiceProvider).fetchTeams();
 });
 
@@ -135,6 +138,7 @@ final filteredTeamsProvider =
 
 final historyCompetitionsProvider =
     FutureProvider<List<HistoricalCompetition>>((ref) {
+  ref.keepAlive();
   return ref.watch(historyServiceProvider).fetchCompetitions();
 });
 
@@ -156,10 +160,12 @@ final filteredCompetitionsProvider =
 
 final competitionDetailProvider =
     FutureProvider.family<CompetitionDetail, String>((ref, id) {
+  ref.keepAlive();
   return ref.watch(historyServiceProvider).fetchCompetitionDetail(id);
 });
 
 final historyEventsProvider = FutureProvider<List<HistoricalEvent>>((ref) {
+  ref.keepAlive();
   return ref.watch(historyServiceProvider).fetchEvents();
 });
 
@@ -182,16 +188,28 @@ final filteredEventsProvider =
 
 final eventDetailProvider =
     FutureProvider.family<EventDetail, String>((ref, id) {
+  ref.keepAlive();
   return ref.watch(historyServiceProvider).fetchEventDetail(id);
 });
 
 // ══════════════════════════════════════════════════════════════
-//  PLAYER DETAIL  ← NUEVO
+//  PLAYER DETAIL
 // ══════════════════════════════════════════════════════════════
 
 final playerDetailProvider =
     FutureProvider.family<PlayerDetail, String>((ref, id) {
+  ref.keepAlive();
   return ref.watch(historyServiceProvider).fetchPlayerDetail(id);
+});
+
+// ══════════════════════════════════════════════════════════════
+//  TEAM DETAIL
+// ══════════════════════════════════════════════════════════════
+
+final teamDetailProvider =
+    FutureProvider.family<TeamDetail, String>((ref, id) {
+  ref.keepAlive();
+  return ref.watch(historyServiceProvider).fetchTeamDetail(id);
 });
 
 // ══════════════════════════════════════════════════════════════

@@ -2,13 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/history_providers.dart';
 import '../../domain/history_models.dart';
-import '../../data/history_service.dart';
 import 'history_teams_shared.dart';
 import 'history_team_detail.dart';
-
-// ══════════════════════════════════════════════════════════════
-//  HISTORY TEAMS PAGE (reemplaza history_teams_page.dart)
-// ══════════════════════════════════════════════════════════════
 
 class HistoryTeamsPage extends ConsumerStatefulWidget {
   const HistoryTeamsPage({super.key});
@@ -174,8 +169,6 @@ class _TeamsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final count = teamsAsync.valueOrNull?.length ?? 0;
-
     return Container(
       decoration: BoxDecoration(
         color: kTeamBg,
@@ -438,7 +431,7 @@ class _ResultsBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final count = async.valueOrNull?.length ?? 0;
+  final count = async.value?.length ?? 0;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: const BoxDecoration(

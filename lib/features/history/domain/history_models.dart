@@ -654,23 +654,21 @@ class TeamLineup {
   });
  
   factory TeamLineup.fromMap(Map<String, dynamic> m) {
-    // Soporta join con historical_players
     final player = m['historical_players'];
     return TeamLineup(
       id: m['id'] as String,
       shirtNumber: m['shirt_number'] as int?,
       playerName: m['player_name'] as String? ?? '—',
       positionRole: m['position_role'] as String?,
-      teamSide: m['team_side'] as String?,
-      notes: m['notes'] as String?,
-      sortOrder: m['sort_order'] as int? ?? 0,
+      teamSide: null,   // no existe en DB
+      notes: null,      // no existe en DB
+      sortOrder: 0,     // no existe en DB
       historicalPlayerId: player != null ? (player['id'] as String?) : null,
       historicalPlayerImagePath:
           player != null ? (player['image_path'] as String?) : null,
     );
   }
 }
- 
 // Título ganado por el equipo (historical_team_titles)
 class TeamTitle {
   final String id;
@@ -689,14 +687,14 @@ class TeamTitle {
     this.sortOrder = 0,
   });
  
-  factory TeamTitle.fromMap(Map<String, dynamic> m) => TeamTitle(
-        id: m['id'] as String,
-        titleName: m['title_name'] as String?,
-        category: m['category'] as String?,
-        year: m['year']?.toString(),
-        notes: m['notes'] as String?,
-        sortOrder: m['sort_order'] as int? ?? 0,
-      );
+factory TeamTitle.fromMap(Map<String, dynamic> m) => TeamTitle(
+      id: m['id'] as String,
+      titleName: m['title_name'] as String?,
+      category: null,   // no existe en DB
+      year: m['year']?.toString(),
+      notes: null,
+      sortOrder: 0, 
+    );
 }
  
 // Detalle completo del equipo

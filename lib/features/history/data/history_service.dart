@@ -249,19 +249,16 @@ class HistoryService {
     final lineupRes = await _sb
         .from('historical_team_lineup')
         .select(
-          'id, shirt_number, player_name, position_role, team_side, '
-          'notes, sort_order, '
+          'id, shirt_number, player_name, position_role, '
           'historical_players(id, image_path)',
         )
         .eq('team_id', teamId)
-        .order('sort_order', ascending: true)
         .order('shirt_number', ascending: true);
 
     final titlesRes = await _sb
         .from('historical_team_titles')
-        .select('id, title_name, category, year, notes, sort_order')
+        .select('id, title_name, year')
         .eq('team_id', teamId)
-        .order('sort_order', ascending: true)
         .order('year', ascending: true);
 
     return TeamDetail(
@@ -270,7 +267,7 @@ class HistoryService {
       titles: (titlesRes as List).map((m) => TeamTitle.fromMap(m)).toList(),
     );
   }
-}  // ← cierre de clase
+}
 class HistoryStats {
   final int players;
   final int teams;
