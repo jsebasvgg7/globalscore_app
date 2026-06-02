@@ -60,7 +60,7 @@ class _KoRoundBlock extends StatelessWidget {
       case 'Final':     return kEvGold;
       case 'Semifinal': return kEvPurple;
       case 'Tercero':   return kEvBlue;
-      default:          return kEvMuted;
+      default:          return const Color.fromARGB(255, 210, 210, 199);
     }
   }
 
