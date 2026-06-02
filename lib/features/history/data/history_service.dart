@@ -193,9 +193,8 @@ class HistoryService {
 
     final category = eventRes['event_category'] as String?;
 
-    // Consultas paralelas según categoría
     final results = await Future.wait([
-      // lineups (ambas categorías pueden tenerlos, pero los usa 'player')
+      // lineups (eventos 'player')
       _sb
           .from('historical_event_lineups')
           .select(
@@ -205,7 +204,7 @@ class HistoryService {
           .eq('event_id', eventId)
           .order('sort_order'),
 
-      // knockout (ambas categorías pueden tenerlo)
+      // knockout (ambas categorías)
       _sb
           .from('historical_event_knockout')
           .select(
@@ -278,6 +277,8 @@ class HistoryService {
         .eq('is_published', true)
         .single();
 
+    final teamName = teamRes['name'] as String? ?? '';
+
     final results = await Future.wait([
       _sb
           .from('historical_team_lineup')
@@ -298,29 +299,41 @@ class HistoryService {
     final lineup = (results[0] as List).map((m) => TeamLineup.fromMap(m)).toList();
     final titles = (results[1] as List).map((m) => TeamTitle.fromMap(m)).toList();
 
-    // Si no hay lineup en historical_team_lineup, buscar en historical_event_squad
-    // para equipos que solo tienen plantel ligado a un evento.
+    // Si no hay lineup en historical_team_lineup, buscar squad en historical_event_squad
     if (lineup.isEmpty) {
-      // Buscar el evento más reciente publicado que tenga a este equipo como protagonista
       try {
-        final eventRes = await _sb
-            .from('historical_events')
-            .select('id')
-            .eq('is_published', true)
-            .not('team_protagonist_id', 'is', null)
-            // No podemos filtrar directamente por team_protagonist_id sin el id del equipo
-            // así que filtramos por nombre del equipo en team_a_name como fallback
-            .order('event_date', ascending: false)
-            .limit(20);
-
-        // Buscar el evento que corresponde a este equipo por su id de protagonista
-        final eventsForTeam = await _sb
+        // Estrategia 1: buscar evento donde team_protagonist_id == teamId
+        List eventsForTeam = await _sb
             .from('historical_events')
             .select('id')
             .eq('is_published', true)
             .eq('team_protagonist_id', teamId)
             .order('event_date', ascending: false)
             .limit(1);
+
+        // Estrategia 2: si no hay, buscar por team_a_name que coincida con el nombre del equipo
+        if ((eventsForTeam as List).isEmpty && teamName.isNotEmpty) {
+          eventsForTeam = await _sb
+              .from('historical_events')
+              .select('id')
+              .eq('is_published', true)
+              .eq('event_category', 'team')
+              .ilike('team_a_name', teamName)
+              .order('event_date', ascending: false)
+              .limit(1);
+        }
+
+        // Estrategia 3: buscar por title que contenga el nombre del equipo
+        if ((eventsForTeam as List).isEmpty && teamName.isNotEmpty) {
+          eventsForTeam = await _sb
+              .from('historical_events')
+              .select('id')
+              .eq('is_published', true)
+              .eq('event_category', 'team')
+              .ilike('title', '%$teamName%')
+              .order('event_date', ascending: false)
+              .limit(1);
+        }
 
         if ((eventsForTeam as List).isNotEmpty) {
           final eventId = eventsForTeam.first['id'] as String;
@@ -330,7 +343,6 @@ class HistoryService {
               .eq('event_id', eventId)
               .order('sort_order');
 
-          // Convertir EventSquad → TeamLineup para reutilizar la UI existente
           final squadAsLineup = (squadRes as List).map((m) {
             final sq = EventSquad.fromMap(m);
             return TeamLineup(
@@ -349,7 +361,7 @@ class HistoryService {
           );
         }
       } catch (_) {
-        // Si falla la consulta del squad, retornar sin plantel
+        // Si falla, retornar sin plantel
       }
     }
 

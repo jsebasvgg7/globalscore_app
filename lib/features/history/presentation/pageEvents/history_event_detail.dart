@@ -25,18 +25,19 @@ class HistoryEventDetail extends ConsumerStatefulWidget {
 
 class _HistoryEventDetailState extends ConsumerState<HistoryEventDetail>
     with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-  late final List<(IconData, String)> _tabs;
+  late TabController _tabController;
+  late List<(IconData, String)> _tabs;
 
   @override
   void initState() {
     super.initState();
     _tabs = _buildTabs(widget.event.eventCategory);
     _tabController = TabController(length: _tabs.length, vsync: this);
-    _tabController.addListener(() => setState(() {}));
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
-  /// ✅ FIX: maneja null category + agrega PLANTEL y TABLA para eventos 'team'
   List<(IconData, String)> _buildTabs(String? category) {
     switch (category) {
       case 'player':
@@ -53,8 +54,27 @@ class _HistoryEventDetailState extends ConsumerState<HistoryEventDetail>
           (Icons.table_chart_outlined, 'TABLA'),
         ];
       default:
-        // null o categoría desconocida → solo INFO, sin crash
         return [(Icons.info_outline, 'INFO')];
+    }
+  }
+
+  List<Widget> _buildTabViews(EventDetail detail) {
+    switch (widget.event.eventCategory) {
+      case 'player':
+        return [
+          EventTabInfo(detail: detail),
+          EventTabAlineaciones(detail: detail),
+          EventTabPlantel(detail: detail),
+        ];
+      case 'team':
+        return [
+          EventTabInfo(detail: detail),
+          EventTabHistoria(detail: detail),
+          EventTabPlantel(detail: detail),
+          EventTabTabla(detail: detail),
+        ];
+      default:
+        return [EventTabInfo(detail: detail)];
     }
   }
 
@@ -89,11 +109,9 @@ class _HistoryEventDetailState extends ConsumerState<HistoryEventDetail>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(
-                        color: accentColor, strokeWidth: 2),
+                    CircularProgressIndicator(color: accentColor, strokeWidth: 2),
                     const SizedBox(height: 14),
-                    Text('Cargando evento…',
-                        style: evMono(size: 12, color: kEvMuted)),
+                    Text('Cargando evento…', style: evMono(size: 12, color: kEvMuted)),
                   ],
                 ),
               ),
@@ -103,59 +121,55 @@ class _HistoryEventDetailState extends ConsumerState<HistoryEventDetail>
                   children: [
                     Icon(Icons.error_outline, size: 36, color: kEvRed),
                     const SizedBox(height: 12),
-                    Text('Error: $e',
-                        style: evMono(size: 12, color: kEvRed)),
+                    Text('Error: $e', style: evMono(size: 12, color: kEvRed)),
                     const SizedBox(height: 16),
                     GestureDetector(
-                      onTap: () =>
-                          ref.refresh(eventDetailProvider(widget.event.id)),
+                      onTap: () => ref.refresh(eventDetailProvider(widget.event.id)),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: evNeoBox(),
                         child: Text(
                           'REINTENTAR',
-                          style: evMono(
-                              size: 11,
-                              weight: FontWeight.w700,
-                              color: kEvAccent),
+                          style: evMono(size: 11, weight: FontWeight.w700, color: kEvAccent),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              data: (detail) => TabBarView(
-                controller: _tabController,
-                physics: const NeverScrollableScrollPhysics(),
-                children: _buildTabViews(detail),
-              ),
+              data: (detail) {
+                final views = _buildTabViews(detail);
+                // Guard: si por alguna razón el número de vistas no coincide con los tabs,
+                // reconstruir el controller de forma segura.
+                if (views.length != _tabController.length) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted) return;
+                    final newTabs = _buildTabs(widget.event.eventCategory);
+                    _tabController.dispose();
+                    setState(() {
+                      _tabs = newTabs;
+                      _tabController = TabController(length: newTabs.length, vsync: this);
+                      _tabController.addListener(() {
+                        if (mounted) setState(() {});
+                      });
+                    });
+                  });
+                  return Center(
+                    child: CircularProgressIndicator(color: accentColor, strokeWidth: 2),
+                  );
+                }
+
+                return TabBarView(
+                  controller: _tabController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: views,
+                );
+              },
             ),
           ),
         ],
       ),
     );
-  }
-
-  /// ✅ FIX: siempre el mismo número de widgets que _buildTabs retorna
-  List<Widget> _buildTabViews(EventDetail detail) {
-    switch (widget.event.eventCategory) {
-      case 'player':
-        return [
-          EventTabInfo(detail: detail),
-          EventTabAlineaciones(detail: detail),
-          EventTabPlantel(detail: detail),
-        ];
-      case 'team':
-        return [
-          EventTabInfo(detail: detail),
-          EventTabHistoria(detail: detail),
-          EventTabPlantel(detail: detail),
-          EventTabTabla(detail: detail),
-        ];
-      default:
-        return [EventTabInfo(detail: detail)];
-    }
   }
 }
 
@@ -188,7 +202,6 @@ class _EventAppBar extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(14, topPad + 14, 14, 12),
       child: Row(
         children: [
-          // Back
           GestureDetector(
             onTap: onBack,
             child: Container(
@@ -205,13 +218,11 @@ class _EventAppBar extends StatelessWidget {
                   ),
                 ],
               ),
-              child:
-                  const Icon(Icons.arrow_back, size: 16, color: kEvDark),
+              child: const Icon(Icons.arrow_back, size: 16, color: kEvDark),
             ),
           ),
           const SizedBox(width: 12),
 
-          // Año badge
           if (event.year != null)
             Container(
               width: 36,
@@ -220,26 +231,19 @@ class _EventAppBar extends StatelessWidget {
               child: Center(
                 child: Text(
                   '${event.year}',
-                  style: evMono(
-                      size: 9,
-                      weight: FontWeight.w900,
-                      color: Colors.white),
+                  style: evMono(size: 9, weight: FontWeight.w900, color: Colors.white),
                 ),
               ),
             ),
           const SizedBox(width: 10),
 
-          // Título + tipo
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   event.title.toUpperCase(),
-                  style: evMono(
-                      size: 12,
-                      weight: FontWeight.w800,
-                      letterSpacing: 0.2),
+                  style: evMono(size: 12, weight: FontWeight.w800, letterSpacing: 0.2),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -252,7 +256,6 @@ class _EventAppBar extends StatelessWidget {
             ),
           ),
 
-          // Cat badge
           if (event.eventCategory != null)
             EvCatBadge(category: event.eventCategory!),
         ],
@@ -281,8 +284,7 @@ class _EventTabBar extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: kEvBg,
-        border:
-            Border(bottom: BorderSide(color: kEvBorder, width: 1.5)),
+        border: Border(bottom: BorderSide(color: kEvBorder, width: 1.5)),
       ),
       child: TabBar(
         controller: controller,
@@ -293,14 +295,11 @@ class _EventTabBar extends StatelessWidget {
           final isActive = controller.index == e.key;
           final (icon, label) = e.value;
           return Container(
-            padding:
-                const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon,
-                    size: 16,
-                    color: isActive ? accentColor : kEvMuted),
+                Icon(icon, size: 16, color: isActive ? accentColor : kEvMuted),
                 const SizedBox(height: 3),
                 Text(
                   label,

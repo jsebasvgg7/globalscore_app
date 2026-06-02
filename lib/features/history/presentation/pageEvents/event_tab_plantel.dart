@@ -1,11 +1,29 @@
 import 'package:flutter/material.dart';
-import '../../data/history_service.dart';
 import '../../domain/history_models.dart';
 import 'history_events_shared.dart';
 
 class EventTabPlantel extends StatelessWidget {
   final EventDetail detail;
   const EventTabPlantel({super.key, required this.detail});
+
+  @override
+  Widget build(BuildContext context) {
+    final category = detail.event.eventCategory;
+
+    // Eventos 'team' → usa squad (historical_event_squad)
+    // Eventos 'player' → usa solo lineupA (equipo protagonista = team_a)
+    if (category == 'team') {
+      return _SquadPlantel(detail: detail);
+    } else {
+      return _LineupPlantel(detail: detail);
+    }
+  }
+}
+
+// ── Para eventos 'player': muestra lineupA (equipo del protagonista) ──
+class _LineupPlantel extends StatelessWidget {
+  final EventDetail detail;
+  const _LineupPlantel({required this.detail});
 
   static const _posLabel = {
     'GK': 'POR',
@@ -18,16 +36,19 @@ class EventTabPlantel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lineupA = detail.lineupA;
-    final lineupB = detail.lineupB;
-    final allPlayers = [...lineupA, ...lineupB];
+    // Solo el equipo protagonista (team_a)
+    final players = detail.lineupA;
 
-    if (allPlayers.isEmpty) {
+    if (players.isEmpty) {
       return const Center(child: EvEmpty(message: 'Sin plantel registrado'));
     }
 
-    final keyPlayers = allPlayers.where((p) => p.isProtagonist).toList();
-    final rest = allPlayers.where((p) => !p.isProtagonist).toList();
+    final keyPlayers = players.where((p) => p.isProtagonist).toList();
+    final rest = players.where((p) => !p.isProtagonist).toList();
+
+    final teamName = detail.event.teamAName ??
+        players.firstOrNull?.teamName ??
+        'Equipo';
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -37,22 +58,34 @@ class EventTabPlantel extends StatelessWidget {
           EvTabHeader(
             icon: Icons.people_outline,
             title: 'PLANTEL',
-            subtitle: 'Jugadores estelares del evento',
+            subtitle: teamName,
           ),
 
           if (keyPlayers.isNotEmpty) ...[
             EvSectionLabel(label: 'JUGADORES CLAVE', color: kEvGold),
-            ...keyPlayers
-                .map((p) => _PlayerRow(player: p, highlight: true)),
+            ...keyPlayers.map((p) => _PlayerRow(
+                  playerName: p.playerName,
+                  shirtNumber: p.shirtNumber,
+                  positionRole: p.positionRole,
+                  teamName: p.teamName,
+                  highlight: true,
+                  posLabel: _posLabel,
+                )),
           ],
 
           if (rest.isNotEmpty) ...[
             EvSectionLabel(
-              label:
-                  keyPlayers.isNotEmpty ? 'RESTO DEL PLANTEL' : 'PLANTEL',
+              label: keyPlayers.isNotEmpty ? 'RESTO DEL EQUIPO' : 'EQUIPO',
               color: kEvAccent,
             ),
-            ...rest.map((p) => _PlayerRow(player: p, highlight: false)),
+            ...rest.map((p) => _PlayerRow(
+                  playerName: p.playerName,
+                  shirtNumber: p.shirtNumber,
+                  positionRole: p.positionRole,
+                  teamName: p.teamName,
+                  highlight: false,
+                  posLabel: _posLabel,
+                )),
           ],
 
           const SizedBox(height: 32),
@@ -62,11 +95,10 @@ class EventTabPlantel extends StatelessWidget {
   }
 }
 
-class _PlayerRow extends StatelessWidget {
-  final EventLineup player;
-  final bool highlight;
-
-  const _PlayerRow({required this.player, required this.highlight});
+// ── Para eventos 'team': muestra squad (historical_event_squad) ──
+class _SquadPlantel extends StatelessWidget {
+  final EventDetail detail;
+  const _SquadPlantel({required this.detail});
 
   static const _posLabel = {
     'GK': 'POR',
@@ -79,7 +111,86 @@ class _PlayerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pos = _posLabel[player.positionRole] ?? player.positionRole;
+    final squad = detail.squad;
+
+    if (squad.isEmpty) {
+      return const Center(child: EvEmpty(message: 'Sin plantel registrado'));
+    }
+
+    final keyPlayers = squad.where((p) => p.isKeyPlayer).toList();
+    final rest = squad.where((p) => !p.isKeyPlayer).toList();
+
+    final teamName = detail.event.team?.name ??
+        detail.event.teamAName ??
+        'Equipo protagonista';
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          EvTabHeader(
+            icon: Icons.people_outline,
+            title: 'PLANTEL',
+            subtitle: teamName,
+          ),
+
+          if (keyPlayers.isNotEmpty) ...[
+            EvSectionLabel(label: 'JUGADORES CLAVE', color: kEvGold),
+            ...keyPlayers.map((p) => _PlayerRow(
+                  playerName: p.playerName,
+                  shirtNumber: p.shirtNumber,
+                  positionRole: p.positionRole,
+                  teamName: teamName,
+                  highlight: true,
+                  posLabel: _posLabel,
+                )),
+          ],
+
+          if (rest.isNotEmpty) ...[
+            EvSectionLabel(
+              label: keyPlayers.isNotEmpty ? 'RESTO DEL PLANTEL' : 'PLANTEL',
+              color: kEvAccent,
+            ),
+            ...rest.map((p) => _PlayerRow(
+                  playerName: p.playerName,
+                  shirtNumber: p.shirtNumber,
+                  positionRole: p.positionRole,
+                  teamName: teamName,
+                  highlight: false,
+                  posLabel: _posLabel,
+                )),
+          ],
+
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Row unificado (acepta campos sueltos para reusar en ambos casos) ──
+class _PlayerRow extends StatelessWidget {
+  final String playerName;
+  final int? shirtNumber;
+  final String? positionRole;
+  final String teamName;
+  final bool highlight;
+  final Map<String, String> posLabel;
+
+  const _PlayerRow({
+    required this.playerName,
+    required this.shirtNumber,
+    required this.positionRole,
+    required this.teamName,
+    required this.highlight,
+    required this.posLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pos = posLabel[positionRole] ?? positionRole;
+    final safeName = playerName.trim().isEmpty ? '—' : playerName;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
@@ -99,14 +210,14 @@ class _PlayerRow extends StatelessWidget {
             const Icon(Icons.star, size: 10, color: kEvGold),
             const SizedBox(width: 6),
           ],
-          if (player.shirtNumber != null) ...[
+          if (shirtNumber != null) ...[
             Container(
               width: 22,
               height: 22,
               color: highlight ? kEvGold : kEvDark.withOpacity(0.08),
               child: Center(
                 child: Text(
-                  '${player.shirtNumber}',
+                  '$shirtNumber',
                   style: evMono(
                     size: 9,
                     weight: FontWeight.w900,
@@ -117,17 +228,16 @@ class _PlayerRow extends StatelessWidget {
             ),
             const SizedBox(width: 8),
           ],
-          // Equipo mini-badge
+          // Equipo mini-badge (solo si el nombre no es muy largo)
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
             color: highlight
                 ? kEvGold.withOpacity(0.2)
                 : kEvBorderL.withOpacity(0.4),
             child: Text(
-              player.teamName.length > 10
-                  ? '${player.teamName.substring(0, 9)}…'
-                  : player.teamName,
+              teamName.length > 10
+                  ? '${teamName.substring(0, 9)}…'
+                  : teamName,
               style: evMono(
                 size: 7,
                 weight: FontWeight.w700,
@@ -138,7 +248,7 @@ class _PlayerRow extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              player.playerName,
+              safeName,
               style: evMono(
                 size: 12,
                 weight: highlight ? FontWeight.w800 : FontWeight.normal,
@@ -148,8 +258,7 @@ class _PlayerRow extends StatelessWidget {
           ),
           if (pos != null)
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
               color: highlight
                   ? kEvGold.withOpacity(0.15)
                   : kEvBorderL.withOpacity(0.5),
