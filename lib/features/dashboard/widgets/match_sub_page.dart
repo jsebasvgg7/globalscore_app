@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/dashboard_provider.dart';
-import '../services/dashboard_service.dart';
+import '../domain/dashboard_provider.dart';
+import '../data/dashboard_service.dart';
 
 // ── Colores (mismo sistema brutalist del dashboard) ───────────
 const _bg      = Color(0xFFF0EDE8);
@@ -19,9 +19,9 @@ const _green   = Color(0xFF1D9E75);
 const _red     = Color(0xFFE24B4A);
 const _amber   = Color(0xFFF59E0B);
 
-const _shadow   = BoxShadow(color: Color(0xFF2A2535), offset: Offset(4, 4), blurRadius: 0);
-const _shadowSm = BoxShadow(color: Color(0xFF2A2535), offset: Offset(3, 3), blurRadius: 0);
-const _shadowXs = BoxShadow(color: Color(0xFF2A2535), offset: Offset(2, 2), blurRadius: 0);
+const _shadow   = BoxShadow(color: Color(0x662A2535), offset: Offset(2, 2), blurRadius: 0);
+const _shadowSm = BoxShadow(color: Color(0x4D2A2535), offset: Offset(1, 1), blurRadius: 0);
+const _shadowXs = BoxShadow(color: Color(0x332A2535), offset: Offset(1, 1), blurRadius: 0);
 
 TextStyle _mono({
   Color color = _text,
@@ -128,7 +128,7 @@ class _BrutalistSheet extends StatelessWidget {
               color: _card,
               border: Border(
                 top: BorderSide(color: _accent, width: 5),
-                bottom: BorderSide(color: _text, width: 2),
+                bottom: BorderSide(color: _text, width: 1.5),
               ),
             ),
             child: Row(
@@ -237,8 +237,8 @@ class _MatchSubPageSheetState extends ConsumerState<_MatchSubPageSheet> {
       decoration: const BoxDecoration(
         color: _bg,
         border: Border(
-          left: BorderSide(color: _borderH, width: 1.5),
-          right: BorderSide(color: _borderH, width: 1.5),
+          left: BorderSide(color: _borderH, width: 1),
+          right: BorderSide(color: _borderH, width: 1),
         ),
       ),
       child: dashAsync.when(
@@ -346,7 +346,7 @@ class _MatchSubPageSheetState extends ConsumerState<_MatchSubPageSheet> {
         color: _card,
         border: Border(
           top: BorderSide(color: _accent, width: 5),
-          bottom: BorderSide(color: _text, width: 2),
+          bottom: BorderSide(color: _text, width: 1.5),
         ),
       ),
       child: Row(
@@ -437,7 +437,7 @@ class _MatchSubPageSheetState extends ConsumerState<_MatchSubPageSheet> {
                 margin: const EdgeInsets.symmetric(horizontal: 8),
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  border: Border.all(color: _borderH, width: 1.5),
+                  border: Border.all(color: _borderH, width: 1),
                 ),
                 child: const Icon(Icons.swap_vert, color: _muted, size: 14),
               ),
@@ -499,7 +499,7 @@ class _MatchSubPageSheetState extends ConsumerState<_MatchSubPageSheet> {
               decoration: const BoxDecoration(
                 color: _bg,
                 border: Border(
-                  left: BorderSide(color: _text, width: 2),
+                  left: BorderSide(color: _text, width: 1.5),
                   top: BorderSide(color: _accent, width: 5),
                 ),
               ),
@@ -903,7 +903,7 @@ class _MatchPredictionCardState extends State<_MatchPredictionCard> {
     return Container(
       decoration: BoxDecoration(
         color: _bg,
-        border: Border.all(color: _text, width: 2),
+        border: Border.all(color: _text, width: 1.5),
         boxShadow: const [_shadow],
       ),
       child: Column(
@@ -988,19 +988,19 @@ class _MatchPredictionCardState extends State<_MatchPredictionCard> {
             padding: const EdgeInsets.symmetric(horizontal: 13),
             child: Row(
               children: [
-                Expanded(child: Container(height: 1.5, color: _borderH)),
+                Expanded(child: Container(height: 1, color: _borderH)),
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 10),
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    border: Border.all(color: _borderH, width: 1.5),
+                    border: Border.all(color: _borderH, width: 1),
                   ),
                   child: Text(
                     _isKnockout && !_isDisabled ? '⚔' : 'VS',
                     style: _mono(color: _borderH, size: 9, weight: FontWeight.w700, letterSpacing: 2),
                   ),
                 ),
-                Expanded(child: Container(height: 1.5, color: _borderH)),
+                Expanded(child: Container(height: 1, color: _borderH)),
               ],
             ),
           ),
@@ -1163,7 +1163,7 @@ class _LeaguePredictionCardState extends State<_LeaguePredictionCard> {
     return Container(
       decoration: BoxDecoration(
         color: _bg,
-        border: Border.all(color: _text, width: 2),
+        border: Border.all(color: _text, width: 1.5),
         boxShadow: const [_shadow],
       ),
       child: Column(
@@ -1204,7 +1204,7 @@ class _LeaguePredictionCardState extends State<_LeaguePredictionCard> {
                           Container(
                             padding: const EdgeInsets.all(3),
                             decoration: BoxDecoration(
-                              border: Border.all(color: _borderH, width: 1.5),
+                              border: Border.all(color: _borderH, width: 1),
                             ),
                             child: Icon(
                               _expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
@@ -1378,7 +1378,7 @@ class _AwardPredictionCardState extends State<_AwardPredictionCard> {
     return Container(
       decoration: BoxDecoration(
         color: _bg,
-        border: Border.all(color: _text, width: 2),
+        border: Border.all(color: _text, width: 1.5),
         boxShadow: const [_shadow],
       ),
       child: Column(
@@ -1446,7 +1446,7 @@ class _AwardPredictionCardState extends State<_AwardPredictionCard> {
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: _bg,
-                        border: Border.all(color: _borderH, width: 1.5),
+                        border: Border.all(color: _borderH, width: 1),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -1604,7 +1604,7 @@ class _TeamScoreRow extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: _bg,
-                  border: Border.all(color: _text, width: 2),
+                  border: Border.all(color: _text, width: 1.5),
                   boxShadow: const [_shadowXs],
                 ),
                 child: Text(
@@ -1673,7 +1673,7 @@ class _ScoreBtnState extends State<_ScoreBtn> {
             : Matrix4.identity(),
         decoration: BoxDecoration(
           color: faceColor,
-          border: Border.all(color: _text, width: 2),
+          border: Border.all(color: _text, width: 1.5),
           boxShadow: _pressed
               ? []
               : const [_shadowXs],
@@ -1834,7 +1834,7 @@ class _StatusPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        border: Border.all(color: color, width: 2),
+        border: Border.all(color: color, width: 1.5),
         boxShadow: [BoxShadow(color: color.withValues(alpha: 0.3), offset: const Offset(2, 2), blurRadius: 0)],
       ),
       child: Text(label, style: _mono(color: color, size: 7, weight: FontWeight.w800, letterSpacing: 1)),
@@ -1859,7 +1859,7 @@ class _SaveButton extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: saving ? _muted : _accent,
-          border: Border.all(color: _text, width: 2),
+          border: Border.all(color: _text, width: 1.5),
           boxShadow: const [_shadow],
         ),
         child: Text(
@@ -1882,7 +1882,7 @@ class _PointsBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: hasPoints ? _green.withValues(alpha: 0.08) : _bg,
-        border: Border.all(color: hasPoints ? _green : _borderH, width: 2),
+        border: Border.all(color: hasPoints ? _green : _borderH, width: 1.5),
         boxShadow: hasPoints ? const [_shadowSm] : const [_shadowXs],
       ),
       child: Row(
@@ -1924,7 +1924,7 @@ class _EmptyState extends StatelessWidget {
             height: 56,
             decoration: BoxDecoration(
               color: _card,
-              border: Border.all(color: _text, width: 2),
+              border: Border.all(color: _text, width: 1.5),
               boxShadow: const [_shadow],
             ),
             child: const Icon(Icons.inbox_outlined, color: _muted, size: 24),
@@ -1953,7 +1953,7 @@ class _SheetLoader extends StatelessWidget {
           height: 34,
           decoration: BoxDecoration(
             color: _card,
-            border: Border.all(color: _text, width: 2),
+            border: Border.all(color: _text, width: 1.5),
             boxShadow: const [_shadow],
           ),
           child: const Padding(

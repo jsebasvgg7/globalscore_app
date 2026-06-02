@@ -191,13 +191,13 @@ class _GsTopBarState extends State<_GsTopBar> {
       decoration: const BoxDecoration(
         color: _GsColors.cream,
         border: Border(
-          bottom: BorderSide(color: _GsColors.dark, width: 1.5),
+          bottom: BorderSide(color: _GsColors.dark, width: 1),
         ),
         // Sombra offset neo-brutalista
         boxShadow: [
           BoxShadow(
-            color: _GsColors.dark,
-            offset: Offset(0, 3),
+            color: Color(0x661A1A2E),
+            offset: Offset(0, 2),
             blurRadius: 0,
           ),
         ],
@@ -298,13 +298,13 @@ class _TopBtnState extends State<_TopBtn> {
             : Matrix4.identity(),
         decoration: BoxDecoration(
           color: _GsColors.cream,
-          border: Border.all(color: _GsColors.dark, width: 1.5),
+          border: Border.all(color: _GsColors.dark, width: 1),
           boxShadow: _pressed
               ? []
               : const [
                   BoxShadow(
-                    color: _GsColors.dark,
-                    offset: Offset(2, 2),
+                    color: Color(0x661A1A2E),
+                    offset: Offset(1, 1),
                     blurRadius: 0,
                   ),
                 ],
@@ -367,13 +367,13 @@ class _AvatarBtnState extends State<_AvatarBtn> {
             : Matrix4.identity(),
         decoration: BoxDecoration(
           color: _GsColors.accent,
-          border: Border.all(color: _GsColors.dark, width: 1.5),
+          border: Border.all(color: _GsColors.dark, width: 1),
           boxShadow: _pressed
               ? []
               : const [
                   BoxShadow(
-                    color: _GsColors.dark,
-                    offset: Offset(2, 2),
+                    color: Color(0x661A1A2E),
+                    offset: Offset(1, 1),
                     blurRadius: 0,
                   ),
                 ],
@@ -476,8 +476,8 @@ class _GsBottomNav extends StatelessWidget {
         // Sombra hacia arriba
         boxShadow: [
           BoxShadow(
-            color: _GsColors.dark,
-            offset: Offset(0, -3),
+            color: Color(0x661A1A2E),
+            offset: Offset(0, -2),
             blurRadius: 0,
           ),
         ],
@@ -616,13 +616,13 @@ class _TrophyButtonState extends State<_TrophyButton> {
                 decoration: BoxDecoration(
                   color: _GsColors.accent,
                   border: Border.all(
-                      color: _GsColors.dark, width: 2),
+                      color: _GsColors.dark, width: 1.5),
                   boxShadow: _pressed
                       ? []
                       : const [
                           BoxShadow(
-                            color: _GsColors.dark,
-                            offset: Offset(3, 3),
+                            color: Color(0x661A1A2E),
+                            offset: Offset(1, 1),
                             blurRadius: 0,
                           ),
                         ],

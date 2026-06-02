@@ -174,7 +174,7 @@ Con este contexto, por favor:
 
 ### 🗣️ ESTADO ACTUAL DEL APRENDIZAJE
 
-[Fase 7 - Historia. Actualmente ya se crearon los nuevos archivos de la page competiciones hay que solucionar errores yrevisar que todo funcione ]
+[Fase 8 - Notas inicio de la page notas]
 ---
 
 **Listo. Con este contexto, guíame en el siguiente paso de la migración.**
@@ -194,8 +194,8 @@ PROGRESO:
 [x] Fase 4 — Ranking
 [x] Fase 5 — Stats
 [x] Fase 6 — Perfil
-[↺] Fase 7 — Historia
-[ ] Fase 8 — Notas
+[x] Fase 7 — Historia
+[↺] Fase 8 — Notas
 [ ] Fase 9 — Notificaciones
 [ ] Fase 10 — WorldCup
 [ ] Fase 11 — GlobalAlbums

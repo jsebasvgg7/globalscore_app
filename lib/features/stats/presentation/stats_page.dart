@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/stats_provider.dart';
+import '../domain/stats_provider.dart';
 import '../domain/stats_model.dart';
 
 // ── Paleta Neobrutalismo Retro
@@ -16,7 +16,7 @@ const _border    = Color(0xFF1A1A2E);   // negro profundo (bordes duros)
 const _text      = Color(0xFF1A1A2E);
 const _muted     = Color(0xFF555550);
 // sombra dura neobrut
-const _shadow    = Color(0xFF1A1A2E);
+const _shadow    = Color(0x661A1A2E);
 
 String _fmt(int n) {
   // Equivalente a toLocaleString('es-ES')
@@ -80,7 +80,7 @@ class _TopBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: const BoxDecoration(
         color: _bg,
-        border: Border(bottom: BorderSide(color: _border, width: 2)),
+        border: Border(bottom: BorderSide(color: _border, width: 1)),
       ),
       child: Row(
         children: [
@@ -132,9 +132,9 @@ class _RangePill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: active ? _accent : _bg,
-          border: Border.all(color: _border, width: 2),
+          border: Border.all(color: _border, width: 1),
           boxShadow: active
-              ? [const BoxShadow(color: _shadow, offset: Offset(3, 3), blurRadius: 0)]
+              ? [const BoxShadow(color: _shadow, offset: Offset(1, 1), blurRadius: 0)]
               : [],
         ),
         child: Text(
@@ -175,8 +175,8 @@ class _EmptyState extends StatelessWidget {
               height: 72,
               decoration: BoxDecoration(
                 color: _bg,
-                border: Border.all(color: _border, width: 3),
-                boxShadow: const [BoxShadow(color: _shadow, offset: Offset(5, 5), blurRadius: 0)],
+                border: Border.all(color: _border, width: 1),
+                boxShadow: const [BoxShadow(color: _shadow, offset: Offset(1, 1), blurRadius: 0)],
               ),
               child: const Icon(Icons.sports_soccer, size: 36, color: _accent),
             ),
@@ -250,7 +250,7 @@ class _HeroGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: _border, width: 2)),
+        border: Border(bottom: BorderSide(color: _border, width: 1)),
       ),
       child: GridView.count(
         crossAxisCount: 2,
@@ -333,8 +333,8 @@ class _HeroBlock extends StatelessWidget {
       decoration: BoxDecoration(
         color: _bg,
         border: Border(
-          right: borderRight ? const BorderSide(color: _border, width: 2) : BorderSide.none,
-          bottom: borderBottom ? const BorderSide(color: _border, width: 2) : BorderSide.none,
+          right: borderRight ? const BorderSide(color: _border, width: 1) : BorderSide.none,
+          bottom: borderBottom ? const BorderSide(color: _border, width: 1) : BorderSide.none,
         ),
       ),
       child: Stack(
@@ -366,8 +366,8 @@ class _HeroBlock extends StatelessWidget {
               height: 28,
               decoration: BoxDecoration(
                 color: iconColor,
-                border: Border.all(color: _border, width: 2),
-                boxShadow: const [BoxShadow(color: _shadow, offset: Offset(3, 3), blurRadius: 0)],
+                border: Border.all(color: _border, width: 1),
+                boxShadow: const [BoxShadow(color: _shadow, offset: Offset(1, 1), blurRadius: 0)],
               ),
               child: Icon(icon, size: 13, color: Colors.white),
             ),
@@ -382,7 +382,7 @@ class _HeroBlock extends StatelessWidget {
 class _SectionDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
-      const Divider(height: 2, thickness: 2, color: _border);
+      const Divider(height: 1, thickness: 1, color: _border);
 }
 
 class _SectionHeader extends StatelessWidget {
@@ -397,7 +397,7 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: _card,
-        border: const Border(bottom: BorderSide(color: _border, width: 2)),
+        border: const Border(bottom: BorderSide(color: _border, width: 1)),
       ),
       child: Row(
         children: [
@@ -492,8 +492,8 @@ class _ResultBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: ptsColor,
-                border: Border.all(color: _border, width: 1.5),
-                boxShadow: const [BoxShadow(color: _shadow, offset: Offset(2, 2), blurRadius: 0)],
+                border: Border.all(color: _border, width: 1),
+                boxShadow: const [BoxShadow(color: _shadow, offset: Offset(1, 1), blurRadius: 0)],
               ),
               child: Text(pts, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white)),
             ),
@@ -511,7 +511,7 @@ class _ResultBar extends StatelessWidget {
           curve: Curves.easeOut,
           builder: (context, v, _) => Container(
             height: 8,
-            decoration: BoxDecoration(border: Border.all(color: _border, width: 1.5)),
+            decoration: BoxDecoration(border: Border.all(color: _border, width: 1)),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
               widthFactor: v,
@@ -572,7 +572,7 @@ class _LeagueRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: const BoxDecoration(
         color: _bg,
-        border: Border(bottom: BorderSide(color: _border, width: 2)),
+        border: Border(bottom: BorderSide(color: _border, width: 1)),
       ),
       child: Row(
         children: [
@@ -581,8 +581,8 @@ class _LeagueRow extends StatelessWidget {
             height: 22,
             decoration: BoxDecoration(
               color: badgeColor,
-              border: Border.all(color: _border, width: 2),
-              boxShadow: const [BoxShadow(color: _shadow, offset: Offset(2, 2), blurRadius: 0)],
+              border: Border.all(color: _border, width: 1),
+              boxShadow: const [BoxShadow(color: _shadow, offset: Offset(1, 1), blurRadius: 0)],
             ),
             alignment: Alignment.center,
             child: Text('$rank',
@@ -701,7 +701,7 @@ class _DayColumn extends StatelessWidget {
                   height: 60 * (v == 0 ? 0.04 : v),
                   decoration: BoxDecoration(
                     color: _accent.withValues(alpha: day.opacity),
-                    border: Border.all(color: _border, width: 1.5),
+                    border: Border.all(color: _border, width: 1),
                   ),
                 ),
               ],
@@ -767,7 +767,7 @@ class _DistRow extends StatelessWidget {
           curve: Curves.easeOut,
           builder: (context, v, _) => Container(
             height: 8,
-            decoration: BoxDecoration(border: Border.all(color: _border, width: 1.5)),
+            decoration: BoxDecoration(border: Border.all(color: _border, width: 1)),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
               widthFactor: v,
@@ -819,8 +819,8 @@ class _ForecastItem extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
         color: _card,
-        border: Border.all(color: _border, width: 2),
-        boxShadow: const [BoxShadow(color: _shadow, offset: Offset(4, 4), blurRadius: 0)],
+        border: Border.all(color: _border, width: 1),
+        boxShadow: const [BoxShadow(color: _shadow, offset: Offset(1, 1), blurRadius: 0)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -847,8 +847,8 @@ class _StreakCard extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       decoration: BoxDecoration(
         color: _gold,
-        border: Border.all(color: _border, width: 3),
-        boxShadow: const [BoxShadow(color: _shadow, offset: Offset(6, 6), blurRadius: 0)],
+        border: Border.all(color: _border, width: 1),
+        boxShadow: const [BoxShadow(color: _shadow, offset: Offset(1, 1), blurRadius: 0)],
       ),
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
       child: Column(
@@ -863,7 +863,7 @@ class _StreakCard extends StatelessWidget {
           const Text('predicciones seguidas correctas',
               style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: _text)),
           const SizedBox(height: 10),
-          Container(height: 2, color: _border),
+          Container(height: 1, color: _border),
           const SizedBox(height: 10),
           Row(
             children: [
@@ -874,8 +874,8 @@ class _StreakCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: _accent,
-                  border: Border.all(color: _border, width: 2),
-                  boxShadow: const [BoxShadow(color: _shadow, offset: Offset(3, 3), blurRadius: 0)],
+                  border: Border.all(color: _border, width: 1),
+                  boxShadow: const [BoxShadow(color: _shadow, offset: Offset(1, 1), blurRadius: 0)],
                 ),
                 child: Text(_fmt(stats.bestStreak),
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white)),

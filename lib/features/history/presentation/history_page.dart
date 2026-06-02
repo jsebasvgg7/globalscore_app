@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/history_providers.dart';
-import 'pages/history_vault_page.dart';
+import 'page/history_vault_page.dart';
 import 'pageCompes/history_competitions_page.dart';
 import 'pageEvents/history_events_page.dart';
 import 'pageTeams/history_teams_page.dart';

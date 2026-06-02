@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../domain/history_models.dart';
+import '../domain/history_models.dart';
 
 const _kAccent = Color(0xFF5B4FD8);
 const _kBg = Color(0xFFF0EDE8);

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../data/ranking_service.dart';
+import '../data/ranking_service.dart';
 
 // ── Paleta Neobrutalismo ───────────────────────────────────────────────────────
 const _bg      = Color(0xFFF0EDE8);
@@ -12,8 +12,8 @@ const _muted   = Color(0xFF6B6580);
 const _gold    = Color(0xFFC9A227);
 const _green   = Color(0xFF1D9E75);
 
-const _shadowColor = Color(0xFF1A1A2E);
-const _shadowSm = BoxShadow(color: _shadowColor, offset: Offset(2, 2), blurRadius: 0);
+const _shadowColor = Color(0x661A1A2E);
+const _shadowSm = BoxShadow(color: _shadowColor, offset: Offset(1, 1), blurRadius: 0);
 
 TextStyle _mono({
   Color color = _text,
@@ -69,7 +69,7 @@ class _RankStats extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: _card,
-        border: Border(bottom: BorderSide(color: _border, width: 2)),
+        border: Border(bottom: BorderSide(color: _border, width: 1)),
       ),
       child: IntrinsicHeight(
         child: Row(
@@ -81,7 +81,7 @@ class _RankStats extends StatelessWidget {
                 accentColor: _accent,
               ),
             ),
-            Container(width: 2, color: _border),
+            Container(width: 1, color: _border),
             Expanded(
               child: _StatCell(
                 value: '$participated',
@@ -90,7 +90,7 @@ class _RankStats extends StatelessWidget {
               ),
             ),
             if (leader != null) ...[
-              Container(width: 2, color: _border),
+              Container(width: 1, color: _border),
               Expanded(
                 child: _LeaderCell(leader: leader, rankingType: rankingType),
               ),
@@ -118,7 +118,7 @@ class _HofStats extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: _card,
-        border: Border(bottom: BorderSide(color: _border, width: 2)),
+        border: Border(bottom: BorderSide(color: _border, width: 1)),
       ),
       child: IntrinsicHeight(
         child: Row(
@@ -130,7 +130,7 @@ class _HofStats extends StatelessWidget {
                 accentColor: _gold,
               ),
             ),
-            Container(width: 2, color: _border),
+            Container(width: 1, color: _border),
             Expanded(
               child: _StatCell(
                 value: '$totalCrowns',
@@ -140,7 +140,7 @@ class _HofStats extends StatelessWidget {
               ),
             ),
             if (leader != null) ...[
-              Container(width: 2, color: _border),
+              Container(width: 1, color: _border),
               Expanded(
                 child: _HofLeaderCell(leader: leader),
               ),

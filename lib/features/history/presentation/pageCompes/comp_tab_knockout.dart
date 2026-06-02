@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../domain/history_models.dart';
-import '../widgets/knockout_bracket_widget.dart';
+import '../../widgets/knockout_bracket_widget.dart';
 import 'history_competitions_shared.dart';
 
 class CompTabKnockout extends StatelessWidget {

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 // ── Paleta Neobrutalismo ───────────────────────────────────────────────────────
 const _border      = Color(0xFF1A1A2E);
 const _accent      = Color(0xFF5B4FD8);
-const _shadowColor = Color(0xFF1A1A2E);
+const _shadowColor = Color(0x661A1A2E);
 
 /// Avatar cuadrado con estilo neobrutalista.
 /// Soporta imagen de red con fallback a inicial del nombre.

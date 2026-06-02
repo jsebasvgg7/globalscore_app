@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../domain/ranking_providers.dart';
-import 'widgets/ranking_podium.dart';
-import 'widgets/ranking_table_row.dart';
-import 'widgets/ranking_stats_row.dart';
-import 'widgets/hof_carousel.dart';
+import '../widgets/ranking_podium.dart';
+import '../widgets/ranking_table_row.dart';
+import '../widgets/ranking_stats_row.dart';
+import '../widgets/hof_carousel.dart';
 import '../data/ranking_service.dart';
 
 // ── Paleta Neobrutalismo ───────────────────────────────────────────────────────
@@ -17,9 +17,9 @@ const _text    = Color(0xFF1A1A2E);
 const _muted   = Color(0xFF6B6580);
 const _gold    = Color(0xFFC9A227);
 
-const _shadowColor = Color(0xFF1A1A2E);
-const _shadow   = BoxShadow(color: _shadowColor, offset: Offset(3, 3), blurRadius: 0);
-const _shadowLg = BoxShadow(color: _shadowColor, offset: Offset(5, 5), blurRadius: 0);
+const _shadowColor = Color(0x661A1A2E);
+const _shadow   = BoxShadow(color: _shadowColor, offset: Offset(1, 1), blurRadius: 0);
+const _shadowLg = BoxShadow(color: _shadowColor, offset: Offset(1, 1), blurRadius: 0);
 
 TextStyle _mono({
   Color color = _text,
@@ -62,7 +62,7 @@ class RankingPage extends ConsumerWidget {
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
                       color: _card,
-                      border: Border.all(color: _border, width: 2),
+                      border: Border.all(color: _border, width: 1),
                       boxShadow: const [_shadowLg],
                     ),
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -127,7 +127,7 @@ class _TabBar extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: _bg,
-        border: Border(bottom: BorderSide(color: _border, width: 2)),
+        border: Border(bottom: BorderSide(color: _border, width: 1)),
       ),
       child: Row(
         children: _tabs.map((t) {
@@ -164,8 +164,7 @@ class _TabBar extends StatelessWidget {
                               color: _accent,
                               boxShadow: const [
                                 BoxShadow(
-                                    color: _shadowColor,
-                                    offset: Offset(2, 2),
+                                    color: _shadowColor, offset: Offset(1, 1),
                                     blurRadius: 0)
                               ],
                             )
@@ -259,7 +258,7 @@ class _RankingContent extends ConsumerWidget {
                 color: _card,
                 border: Border(
                   top:    BorderSide(color: _border.withOpacity(0.5), width: 0.5),
-                  bottom: const BorderSide(color: _border, width: 2),
+                  bottom: const BorderSide(color: _border, width: 1),
                 ),
               ),
               child: Row(
@@ -282,8 +281,7 @@ class _RankingContent extends ConsumerWidget {
                       color: _accent,
                       boxShadow: [
                         BoxShadow(
-                            color: _shadowColor,
-                            offset: Offset(2, 2),
+                            color: _shadowColor, offset: Offset(1, 1),
                             blurRadius: 0)
                       ],
                     ),

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/stats_service.dart';
-import '../domain/stats_model.dart';
+import 'stats_model.dart';
 
 class StatsTimeRangeNotifier extends Notifier<String> {
   @override
@@ -29,12 +29,7 @@ final statsProvider = FutureProvider<StatsModel>((ref) async {
 
   try {
     return await StatsService().fetchStats(userId, timeRange);
-  } catch (e, st) {
-    print('╔══ STATS ERROR ══════════════════════════');
-    print('║ timeRange : $timeRange');
-    print('║ error     : $e');
-    print('║ stack     : ${st.toString().split('\n').take(5).join('\n║            ')}');
-    print('╚════════════════════════════════════════');
-    rethrow;
+  } catch (e) {
+     rethrow;
   }
 });

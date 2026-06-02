@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../services/dashboard_service.dart';
+import '../data/dashboard_service.dart';
 
 // ── Usuario actual ────────────────────────────────────────────
 final currentUserProvider = FutureProvider<Map<String, dynamic>?>((ref) async {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../data/ranking_service.dart';
+import '../data/ranking_service.dart';
 import 'rank_avatar.dart';
 
 // ── Paleta Neobrutalismo ───────────────────────────────────────────────────────
@@ -14,8 +14,8 @@ const _gold    = Color(0xFFC9A227);
 const _silver  = Color(0xFF8A8A8A);
 const _bronze  = Color(0xFFA0652A);
 
-const _shadowColor = Color(0xFF1A1A2E);
-const _shadowSm = BoxShadow(color: _shadowColor, offset: Offset(2, 2), blurRadius: 0);
+const _shadowColor = Color(0x661A1A2E);
+const _shadowSm = BoxShadow(color: _shadowColor, offset: Offset(1, 1), blurRadius: 0);
 
 TextStyle _mono({
   Color color = _text,
@@ -72,7 +72,7 @@ class RankingTableRow extends StatelessWidget {
             bottom: BorderSide(color: _border.withOpacity(0.4), width: 0.5),
             // Barra lateral de color para top3 — igual que LeagueRow del dashboard
             left: _isTop3
-                ? BorderSide(color: color, width: 3)
+                ? BorderSide(color: color, width: 2)
                 : BorderSide(color: _border.withOpacity(0.1), width: 1),
           ),
         ),
@@ -94,7 +94,7 @@ class RankingTableRow extends StatelessWidget {
                       height: 26,
                       decoration: BoxDecoration(
                         color: color,
-                        border: Border.all(color: _border, width: 2),
+                        border: Border.all(color: _border, width: 1),
                         boxShadow: const [_shadowSm],
                       ),
                       alignment: Alignment.center,
@@ -144,7 +144,7 @@ class RankingTableRow extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                           decoration: BoxDecoration(
                             color: _accent,
-                            border: Border.all(color: _border, width: 1.5),
+                            border: Border.all(color: _border, width: 1),
                             boxShadow: const [_shadowSm],
                           ),
                           child: Text(

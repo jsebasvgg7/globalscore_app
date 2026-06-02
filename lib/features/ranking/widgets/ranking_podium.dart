@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../data/ranking_service.dart';
+import '../data/ranking_service.dart';
 import 'rank_avatar.dart';
 
 // ── Paleta Neobrutalismo ───────────────────────────────────────────────────────
@@ -15,10 +15,10 @@ const _gold    = Color(0xFFC9A227);
 const _silver  = Color(0xFF8A8A8A);
 const _bronze  = Color(0xFFA0652A);
 
-const _shadowColor = Color(0xFF1A1A2E);
-const _shadow   = BoxShadow(color: _shadowColor, offset: Offset(3, 3), blurRadius: 0);
-const _shadowSm = BoxShadow(color: _shadowColor, offset: Offset(2, 2), blurRadius: 0);
-const _shadowLg = BoxShadow(color: _shadowColor, offset: Offset(5, 5), blurRadius: 0);
+const _shadowColor = Color(0x661A1A2E);
+const _shadow   = BoxShadow(color: _shadowColor, offset: Offset(1, 1), blurRadius: 0);
+const _shadowSm = BoxShadow(color: _shadowColor, offset: Offset(1, 1), blurRadius: 0);
+const _shadowLg = BoxShadow(color: _shadowColor, offset: Offset(1, 1), blurRadius: 0);
 
 TextStyle _mono({
   Color color = _text,
@@ -65,7 +65,7 @@ class RankingPodium extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: _bg,
-        border: Border(bottom: BorderSide(color: _border, width: 2)),
+        border: Border(bottom: BorderSide(color: _border, width: 1)),
       ),
       padding: const EdgeInsets.only(top: 20, bottom: 0),
       child: Column(
@@ -85,7 +85,7 @@ class RankingPodium extends StatelessWidget {
                   style: _mono(size: 10, weight: FontWeight.w800, letterSpacing: 2.0, color: _text),
                 ),
                 const SizedBox(width: 10),
-                Expanded(child: Container(height: 2, color: _border)),
+                Expanded(child: Container(height: 1, color: _border)),
                 const SizedBox(width: 8),
                 // Badge de ranking type
                 Container(
@@ -147,7 +147,7 @@ class RankingPodium extends StatelessWidget {
                         children: [
                           Container(
                             decoration: BoxDecoration(
-                              border: Border.all(color: _border, width: isGold ? 3 : 2),
+                              border: Border.all(color: _border, width: isGold ? 2 : 1.5),
                               boxShadow: [
                                 BoxShadow(
                                   color: _shadowColor,
@@ -173,7 +173,7 @@ class RankingPodium extends StatelessWidget {
                               height: 24,
                               decoration: BoxDecoration(
                                 color: posColor,
-                                border: Border.all(color: _border, width: 2),
+                                border: Border.all(color: _border, width: 1),
                                 boxShadow: const [_shadowSm],
                               ),
                               alignment: Alignment.center,

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../data/ranking_service.dart';
+import '../data/ranking_service.dart';
 import 'rank_avatar.dart';
 
 // ── Paleta Neobrutalismo ───────────────────────────────────────────────────────
@@ -15,10 +15,10 @@ const _gold   = Color(0xFFC9A227);
 const _silver = Color(0xFF8A8A8A);
 const _bronze = Color(0xFFA0652A);
 
-const _shadowColor = Color(0xFF1A1A2E);
-const _shadowSm    = BoxShadow(color: _shadowColor, offset: Offset(2, 2), blurRadius: 0);
-const _shadow      = BoxShadow(color: _shadowColor, offset: Offset(3, 3), blurRadius: 0);
-const _shadowLg    = BoxShadow(color: _shadowColor, offset: Offset(5, 5), blurRadius: 0);
+const _shadowColor = Color(0x661A1A2E);
+const _shadowSm    = BoxShadow(color: _shadowColor, offset: Offset(1, 1), blurRadius: 0);
+const _shadow      = BoxShadow(color: _shadowColor, offset: Offset(1, 1), blurRadius: 0);
+const _shadowLg    = BoxShadow(color: _shadowColor, offset: Offset(1, 1), blurRadius: 0);
 
 TextStyle _mono({
   Color color = _text,
@@ -134,7 +134,7 @@ class _HofCarouselState extends State<HofCarousel>
               margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: _card,
-                border: Border.all(color: _border, width: 2),
+                border: Border.all(color: _border, width: 1),
                 boxShadow: const [_shadowLg],
               ),
               child: Column(
@@ -184,7 +184,7 @@ class _HofCarouselState extends State<HofCarousel>
                             onTap: () => widget.onSelect?.call(champ.id),
                             child: Container(
                               decoration: BoxDecoration(
-                                border: Border.all(color: _border, width: 2.5),
+                                border: Border.all(color: _border, width: 1),
                                 boxShadow: const [_shadow],
                               ),
                               child: RankAvatar(
@@ -236,7 +236,7 @@ class _HofCarouselState extends State<HofCarousel>
                   Container(
                     decoration: const BoxDecoration(
                       border: Border(
-                          top: BorderSide(color: _border, width: 2)),
+                          top: BorderSide(color: _border, width: 1)),
                     ),
                     child: IntrinsicHeight(
                       child: Row(
@@ -246,7 +246,7 @@ class _HofCarouselState extends State<HofCarousel>
                             label: 'CORONAS',
                             color: medal.color,
                           ),
-                          Container(width: 2, color: _border),
+                          Container(width: 1, color: _border),
                           _StatCell(
                             value: champ.bestPoints > 0
                                 ? _fmt(champ.bestPoints)
@@ -254,7 +254,7 @@ class _HofCarouselState extends State<HofCarousel>
                             label: 'MAX PTS',
                             color: _accent,
                           ),
-                          Container(width: 2, color: _border),
+                          Container(width: 1, color: _border),
                           _StatCell(
                             value: champ.lastMonthYear ?? '—',
                             label: 'ÚLTIMO TÍTULO',
@@ -271,7 +271,7 @@ class _HofCarouselState extends State<HofCarousel>
                     decoration: const BoxDecoration(
                       color: _bg,
                       border:
-                          Border(top: BorderSide(color: _border, width: 2)),
+                          Border(top: BorderSide(color: _border, width: 1)),
                     ),
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),
@@ -328,7 +328,7 @@ class _HofCarouselState extends State<HofCarousel>
             margin: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               color: _card,
-              border: Border.all(color: _border, width: 2),
+              border: Border.all(color: _border, width: 1),
               boxShadow: const [_shadow],
             ),
             child: Column(
@@ -340,7 +340,7 @@ class _HofCarouselState extends State<HofCarousel>
                   decoration: const BoxDecoration(
                     color: _bg,
                     border: Border(
-                        bottom: BorderSide(color: _border, width: 2)),
+                        bottom: BorderSide(color: _border, width: 1)),
                   ),
                   child: Row(
                     children: [
@@ -378,7 +378,7 @@ class _HofCarouselState extends State<HofCarousel>
                               color: _border.withOpacity(0.3), width: 0.5),
                           left: BorderSide(
                             color: isAct ? medal.color : Colors.transparent,
-                            width: 3,
+                            width: 2,
                           ),
                         ),
                       ),
@@ -396,7 +396,7 @@ class _HofCarouselState extends State<HofCarousel>
                             height: 24,
                             decoration: BoxDecoration(
                               color: medal.color,
-                              border: Border.all(color: _border, width: 2),
+                              border: Border.all(color: _border, width: 1),
                               boxShadow: const [_shadowSm],
                             ),
                             alignment: Alignment.center,
@@ -473,7 +473,7 @@ class _HofCarouselState extends State<HofCarousel>
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: _card,
-        border: Border.all(color: _border, width: 2),
+        border: Border.all(color: _border, width: 1),
         boxShadow: const [_shadow],
       ),
       child: Column(
@@ -483,7 +483,7 @@ class _HofCarouselState extends State<HofCarousel>
             height: 56,
             decoration: BoxDecoration(
               color: _bg,
-              border: Border.all(color: _border, width: 2),
+              border: Border.all(color: _border, width: 1),
               boxShadow: const [_shadowSm],
             ),
             child: Center(
@@ -582,7 +582,7 @@ class _CrownRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
             decoration: BoxDecoration(
               color: color,
-              border: Border.all(color: _border, width: 1.5),
+              border: Border.all(color: _border, width: 1),
             ),
             child: Text('+$extra',
                 style: _mono(

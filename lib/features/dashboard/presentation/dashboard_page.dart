@@ -2,7 +2,7 @@
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/dashboard_provider.dart';
+import '../domain/dashboard_provider.dart';
 import '../widgets/match_sub_page.dart';
 
 // ── Paleta ────────────────────────────────────────────────────
@@ -22,11 +22,11 @@ const _gold    = Color(0xFFC9A227);
 const _silver  = Color(0xFF9CA3AF);
 const _bronze  = Color(0xFFCD7C30);
 
-// Sombras duras negras neobrutalistas (sin blur, como stats_page)
+// Sombras suavizadas neobrutalistas
 const _shadowColor = Color(0xFF1A1A2E);
-const _shadow   = BoxShadow(color: _shadowColor, offset: Offset(3, 3), blurRadius: 0);
-const _shadowSm = BoxShadow(color: _shadowColor, offset: Offset(2, 2), blurRadius: 0);
-const _shadowLg = BoxShadow(color: _shadowColor, offset: Offset(5, 5), blurRadius: 0);
+const _shadow   = BoxShadow(color: Color(0x661A1A2E), offset: Offset(2, 2), blurRadius: 0);
+const _shadowSm = BoxShadow(color: Color(0x4D1A1A2E), offset: Offset(1, 1), blurRadius: 0);
+const _shadowLg = BoxShadow(color: Color(0x661A1A2E), offset: Offset(3, 3), blurRadius: 0);
 
 TextStyle _mono({Color color = _text, double size = 12, FontWeight weight = FontWeight.normal, double letterSpacing = 0}) =>
     GoogleFonts.dmMono(color: color, fontSize: size, fontWeight: weight, letterSpacing: letterSpacing);
@@ -401,7 +401,7 @@ class _ErrorPanel extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: Container(
         padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(color: _card, border: Border.all(color: _border, width: 2), boxShadow: const [_shadowLg]),
+        decoration: BoxDecoration(color: _card, border: Border.all(color: _border, width: 1), boxShadow: const [_shadowLg]),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Text('ERROR', style: _mono(color: _red, size: 10, weight: FontWeight.w800, letterSpacing: 2)),
           const SizedBox(height: 10),
@@ -442,7 +442,7 @@ class _ProgressBarState extends State<_ProgressBar> {
       margin: const EdgeInsets.fromLTRB(18, 14, 18, 0),
       decoration: BoxDecoration(
         color: _card,
-        border: Border.all(color: _border, width: 2),
+        border: Border.all(color: _border, width: 1),
         boxShadow: const [_shadow],
       ),
       child: Padding(
@@ -537,9 +537,9 @@ class _NextMatchBanner extends StatelessWidget {
       color: _card,
       border: const Border(
         top: BorderSide(color: _accent, width: 3),
-        left: BorderSide(color: _border, width: 2),
-        right: BorderSide(color: _border, width: 2),
-        bottom: BorderSide(color: _border, width: 2),
+        left: BorderSide(color: _border, width: 1),
+        right: BorderSide(color: _border, width: 1),
+        bottom: BorderSide(color: _border, width: 1),
       ),
       boxShadow: const [_shadowLg],
     ),
@@ -547,7 +547,7 @@ class _NextMatchBanner extends StatelessWidget {
       Container(
         width: 78,
         padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: const BoxDecoration(color: _bg, border: Border(right: BorderSide(color: _border, width: 2))),
+        decoration: const BoxDecoration(color: _bg, border: Border(right: BorderSide(color: _border, width: 1))),
         child: Column(children: [
           Text('0', style: _mono(color: _borderH, size: 44, weight: FontWeight.w700, letterSpacing: -3)),
           const SizedBox(height: 6),
@@ -581,9 +581,9 @@ class _NextMatchBanner extends StatelessWidget {
       color: _card,
       border: const Border(
         top: BorderSide(color: _accent, width: 3),
-        left: BorderSide(color: _border, width: 2),
-        right: BorderSide(color: _border, width: 2),
-        bottom: BorderSide(color: _border, width: 2),
+        left: BorderSide(color: _border, width: 1),
+        right: BorderSide(color: _border, width: 1),
+        bottom: BorderSide(color: _border, width: 1),
       ),
       boxShadow: const [_shadowLg],
     ),
@@ -593,7 +593,7 @@ class _NextMatchBanner extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: const BoxDecoration(
           color: _bg,
-          border: Border(bottom: BorderSide(color: _border, width: 1.5)),
+          border: Border(bottom: BorderSide(color: _border, width: 1)),
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Row(children: [
@@ -657,7 +657,7 @@ class _NmTeam extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: _bg,
-        border: Border.all(color: _border, width: 2),
+        border: Border.all(color: _border, width: 1),
         boxShadow: const [_shadowSm],
       ),
       clipBehavior: Clip.antiAlias,
@@ -693,7 +693,7 @@ class _TabBar extends StatelessWidget {
     ];
     return Container(
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: _border, width: 2)),
+        border: Border(bottom: BorderSide(color: _border, width: 1)),
       ),
       child: Row(
         children: tabs.map((t) {
@@ -773,7 +773,7 @@ class _MiniMatchCard extends StatelessWidget {
       width: 164,
       decoration: BoxDecoration(
         color: _card,
-        border: Border.all(color: _border, width: 2),
+        border: Border.all(color: _border, width: 1),
         boxShadow: const [_shadow],
       ),
       child: Column(
@@ -796,7 +796,7 @@ class _MiniMatchCard extends StatelessWidget {
                     width: 20, height: 20,
                     decoration: BoxDecoration(
                       color: _bg,
-                      border: Border.all(color: _border, width: 1.5),
+                      border: Border.all(color: _border, width: 1),
                       boxShadow: const [_shadowSm],
                     ),
                     child: m['league_logo_url'] != null
@@ -874,7 +874,7 @@ class _MiniTeamRow extends StatelessWidget {
         width: 24, height: 24,
         decoration: BoxDecoration(
           color: hasPred ? ac : _bg,
-          border: Border.all(color: hasPred ? ac : _border, width: 2),
+          border: Border.all(color: hasPred ? ac : _border, width: 1.5),
           boxShadow: hasPred ? const [_shadowSm] : null,
         ),
         alignment: Alignment.center,
@@ -912,7 +912,7 @@ class _MiniLeagueCard extends StatelessWidget {
     final l = league; final pred = _pred; final champion = pred?['predicted_champion'] as String?; final ac = _ac;
     return Container(
       width: 236,
-      decoration: BoxDecoration(color: _card, border: Border.all(color: _border, width: 2), boxShadow: const [_shadow]),
+      decoration: BoxDecoration(color: _card, border: Border.all(color: _border, width: 1), boxShadow: const [_shadow]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -922,7 +922,7 @@ class _MiniLeagueCard extends StatelessWidget {
             Row(children: [
               Container(
                 width: 20, height: 20,
-                decoration: BoxDecoration(color: _bg, border: Border.all(color: _border, width: 1.5), boxShadow: const [_shadowSm]),
+                decoration: BoxDecoration(color: _bg, border: Border.all(color: _border, width: 1), boxShadow: const [_shadowSm]),
                 child: l['logo_url'] != null
                     ? Image.network(l['logo_url'], fit: BoxFit.contain, errorBuilder: (_, _, _) => Center(child: Text(l['logo'] ?? '🏆', style: const TextStyle(fontSize: 9))))
                     : Center(child: Text(l['logo'] ?? '🏆', style: const TextStyle(fontSize: 9))),
@@ -937,7 +937,7 @@ class _MiniLeagueCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: ac,
-                  border: Border.all(color: _border, width: 1.5),
+                  border: Border.all(color: _border, width: 1),
                   boxShadow: const [_shadowSm],
                 ),
                 child: Text(
@@ -946,7 +946,7 @@ class _MiniLeagueCard extends StatelessWidget {
                 ),
               ),
             ]),
-            Container(height: 1.5, color: _border, margin: const EdgeInsets.symmetric(vertical: 10)),
+            Container(height: 1, color: _border, margin: const EdgeInsets.symmetric(vertical: 10)),
             Text('CAMPEÓN', style: _mono(color: _muted, size: 6, weight: FontWeight.w700, letterSpacing: 2)),
             const SizedBox(height: 6),
             AnimatedContainer(
@@ -956,9 +956,9 @@ class _MiniLeagueCard extends StatelessWidget {
                 color: champion != null ? ac.withOpacity(0.08) : _bg,
                 border: Border(
                   left: BorderSide(color: champion != null ? ac : _border, width: champion != null ? 3 : 2),
-                  top: BorderSide(color: _border, width: 1.5),
-                  right: BorderSide(color: _border, width: 1.5),
-                  bottom: BorderSide(color: _border, width: 1.5),
+                  top: BorderSide(color: _border, width: 1),
+                  right: BorderSide(color: _border, width: 1),
+                  bottom: BorderSide(color: _border, width: 1),
                 ),
               ),
               child: Text(
@@ -999,14 +999,14 @@ class _MiniAwardCard extends StatelessWidget {
     final a = award; final pred = _pred; final winner = pred?['predicted_winner'] as String?; final ac = _ac;
     return Container(
       width: 216,
-      decoration: BoxDecoration(color: _card, border: Border.all(color: _border, width: 2), boxShadow: const [_shadow]),
+      decoration: BoxDecoration(color: _card, border: Border.all(color: _border, width: 1), boxShadow: const [_shadow]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(height: 3, color: ac),
         Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Container(
               width: 20, height: 20,
-              decoration: BoxDecoration(color: _bg, border: Border.all(color: _border, width: 1.5), boxShadow: const [_shadowSm]),
+              decoration: BoxDecoration(color: _bg, border: Border.all(color: _border, width: 1), boxShadow: const [_shadowSm]),
               child: a['logo_url'] != null
                   ? Image.network(a['logo_url'], fit: BoxFit.contain, errorBuilder: (_, _, _) => Center(child: Text(a['logo'] ?? '🏅', style: const TextStyle(fontSize: 9))))
                   : Center(child: Text(a['logo'] ?? '🏅', style: const TextStyle(fontSize: 9))),
@@ -1020,7 +1020,7 @@ class _MiniAwardCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: ac,
-                border: Border.all(color: _border, width: 1.5),
+                border: Border.all(color: _border, width: 1),
                 boxShadow: const [_shadowSm],
               ),
               child: Text(
@@ -1029,7 +1029,7 @@ class _MiniAwardCard extends StatelessWidget {
               ),
             ),
           ]),
-          Container(height: 1.5, color: _border, margin: const EdgeInsets.symmetric(vertical: 10)),
+          Container(height: 1, color: _border, margin: const EdgeInsets.symmetric(vertical: 10)),
           Text('TU PREDICCIÓN', style: _mono(color: _muted, size: 6, weight: FontWeight.w700, letterSpacing: 2)),
           const SizedBox(height: 6),
           AnimatedContainer(
@@ -1039,9 +1039,9 @@ class _MiniAwardCard extends StatelessWidget {
               color: winner != null ? ac.withOpacity(0.08) : _bg,
               border: Border(
                 left: BorderSide(color: winner != null ? ac : _border, width: winner != null ? 3 : 2),
-                top: BorderSide(color: _border, width: 1.5),
-                right: BorderSide(color: _border, width: 1.5),
-                bottom: BorderSide(color: _border, width: 1.5),
+                top: BorderSide(color: _border, width: 1),
+                right: BorderSide(color: _border, width: 1),
+                bottom: BorderSide(color: _border, width: 1),
               ),
             ),
             child: Text(
@@ -1072,9 +1072,9 @@ class _MoreCard extends StatelessWidget {
         color: _card,
         border: const Border(
           top: BorderSide(color: _accent, width: 3),
-          left: BorderSide(color: _border, width: 2),
-          right: BorderSide(color: _border, width: 2),
-          bottom: BorderSide(color: _border, width: 2),
+          left: BorderSide(color: _border, width: 1),
+          right: BorderSide(color: _border, width: 1),
+          bottom: BorderSide(color: _border, width: 1),
         ),
         boxShadow: const [_shadow],
       ),
@@ -1097,7 +1097,7 @@ class _EmptyMatchCard extends StatelessWidget {
     height: 55,
     decoration: BoxDecoration(
       color: _card,
-      border: const Border(top: BorderSide(color: _accent, width: 3), left: BorderSide(color: _border, width: 2), right: BorderSide(color: _border, width: 2), bottom: BorderSide(color: _border, width: 2)),
+      border: const Border(top: BorderSide(color: _accent, width: 3), left: BorderSide(color: _border, width: 1), right: BorderSide(color: _border, width: 1), bottom: BorderSide(color: _border, width: 1)),
       boxShadow: const [_shadow],
     ),
     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -1114,7 +1114,7 @@ class _EmptyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     width: 138,
-    decoration: BoxDecoration(color: _card, border: Border.all(color: _border, width: 2), boxShadow: const [_shadow]),
+    decoration: BoxDecoration(color: _card, border: Border.all(color: _border, width: 1), boxShadow: const [_shadow]),
     child: Center(child: Text(label, textAlign: TextAlign.center, style: _mono(color: _muted, size: 7, weight: FontWeight.w700, letterSpacing: 1.4))),
   );
 }
@@ -1131,7 +1131,7 @@ class _BottomTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final tabs = [{'id': 'ranking', 'label': 'Ranking', 'count': '3 items'}, {'id': 'stats', 'label': 'Stats', 'count': '4 items'}];
     return Container(
-      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: _border, width: 2))),
+      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: _border, width: 1))),
       child: Row(children: tabs.map((t) {
         final id = t['id']!; final isActive = activeTab == id;
         return GestureDetector(
@@ -1194,7 +1194,7 @@ class _PodiumPanelState extends State<_PodiumPanel> with SingleTickerProviderSta
   Widget build(BuildContext context) {
     if (widget.topUsers.length < 3) return Container(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: _card, border: Border.all(color: _border, width: 2), boxShadow: const [_shadow]),
+      decoration: BoxDecoration(color: _card, border: Border.all(color: _border, width: 1), boxShadow: const [_shadow]),
       child: Center(child: Text('SIN DATOS DE RANKING', style: _mono(color: _muted, size: 9, weight: FontWeight.w700, letterSpacing: 2))),
     );
 
@@ -1214,7 +1214,7 @@ class _PodiumPanelState extends State<_PodiumPanel> with SingleTickerProviderSta
       padding: const EdgeInsets.fromLTRB(12, 14, 12, 0),
       decoration: BoxDecoration(
         color: _card,
-        border: Border.all(color: _borderH, width: 1.5),
+        border: Border.all(color: _borderH, width: 1),
         boxShadow: const [_shadowLg],
       ),
       child: Column(children: [
@@ -1254,7 +1254,7 @@ class _PodiumPanelState extends State<_PodiumPanel> with SingleTickerProviderSta
                     height: 22,
                     decoration: BoxDecoration(
                       color: posBgCs[i],
-                      border: Border.all(color: _border, width: 2),
+                      border: Border.all(color: _border, width: 1),
                       boxShadow: const [_shadowSm],
                     ),
                     alignment: Alignment.center,
@@ -1269,7 +1269,7 @@ class _PodiumPanelState extends State<_PodiumPanel> with SingleTickerProviderSta
                     width: sz, height: sz,
                     decoration: BoxDecoration(
                       color: avColors[i],
-                      border: Border.all(color: _border, width: i == 1 ? 3 : 2),
+                      border: Border.all(color: _border, width: i == 1 ? 2 : 1.5),
                       boxShadow: [BoxShadow(color: _shadowColor, offset: Offset(i == 1 ? 4 : 3, i == 1 ? 4 : 3), blurRadius: 0)],
                     ),
                     child: av != null
@@ -1284,7 +1284,7 @@ class _PodiumPanelState extends State<_PodiumPanel> with SingleTickerProviderSta
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                     decoration: BoxDecoration(
                       color: _accent,
-                      border: Border.all(color: _border, width: 1.5),
+                      border: Border.all(color: _border, width: 1),
                       boxShadow: const [_shadowSm],
                     ),
                     child: Text('TÚ', style: _mono(color: Colors.white, size: 6, weight: FontWeight.w800, letterSpacing: 1)),
@@ -1297,7 +1297,7 @@ class _PodiumPanelState extends State<_PodiumPanel> with SingleTickerProviderSta
                     decoration: BoxDecoration(
                       color: stepCs[i],
                       border: Border(
-                        top: BorderSide(color: borderCs[i], width: 2),
+                        top: BorderSide(color: borderCs[i], width: 1.5),
                         left: BorderSide(color: borderCs[i].withOpacity(0.3), width: 1),
                         right: BorderSide(color: borderCs[i].withOpacity(0.3), width: 1),
                       ),
@@ -1331,7 +1331,7 @@ class _StatsPanel extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: _card,
-        border: Border.all(color: _border, width: 2),
+        border: Border.all(color: _border, width: 1),
         boxShadow: const [_shadowLg],
       ),
       child: Column(children: [
@@ -1340,15 +1340,15 @@ class _StatsPanel extends StatelessWidget {
         IntrinsicHeight(
           child: Row(children: [
             Expanded(child: _StatCell(value: '$points', unit: 'pts', label: 'PUNTOS', accent: true)),
-            Container(width: 2, color: _border),
+            Container(width: 1, color: _border),
             Expanded(child: _StatCell(value: '$correct', label: 'ACIERTOS')),
           ]),
         ),
-        Container(height: 2, color: _border),
+        Container(height: 1, color: _border),
         IntrinsicHeight(
           child: Row(children: [
             Expanded(child: _StatCellBar(value: '$accuracy', unit: '%', label: 'PRECISIÓN', pct: accuracy / 100)),
-            Container(width: 2, color: _border),
+            Container(width: 1, color: _border),
             Expanded(child: _StatCell(value: '$predictions', label: 'PREDICCIONES')),
           ]),
         ),
@@ -1498,7 +1498,7 @@ class _AppSplashState extends State<_AppSplash> with SingleTickerProviderStateMi
                 height: 72,
                 decoration: BoxDecoration(
                   color: _accent,
-                  border: Border.all(color: _text, width: 2),
+                  border: Border.all(color: _text, width: 1.5),
                   boxShadow: [
                     BoxShadow(
                       color: _text.withOpacity(0.25 + _pulse.value * 0.15),
@@ -1599,7 +1599,7 @@ class _SkBox extends StatelessWidget {
     height: height,
     decoration: BoxDecoration(
       color: Color.lerp(_card, _surface, alpha),
-      border: Border.all(color: _border, width: 1.5),
+      border: Border.all(color: _border, width: 1),
       boxShadow: const [_shadow],
     ),
   );
