@@ -13,19 +13,28 @@ class StatsTimeRangeNotifier extends Notifier<String> {
 final statsTimeRangeProvider =
     NotifierProvider<StatsTimeRangeNotifier, String>(StatsTimeRangeNotifier.new);
 
-final statsProvider = FutureProvider<StatsModel>((ref) async {
-  final timeRange = ref.watch(statsTimeRangeProvider);
-
-  // auth.currentUser.id = auth_id, NO es el users.id que usan las FK
+final userIdProvider = FutureProvider<String>((ref) async {
   final authId = Supabase.instance.client.auth.currentUser!.id;
-
-  final userData = await Supabase.instance.client
+  final data = await Supabase.instance.client
       .from('users')
       .select('id')
       .eq('auth_id', authId)
       .single();
+  return data['id'] as String;
+});
 
-  final userId = userData['id'] as String;
+final statsProvider = FutureProvider<StatsModel>((ref) async {
+  final timeRange = ref.watch(statsTimeRangeProvider);
+  final userId = await ref.watch(userIdProvider.future);
 
-  return StatsService().fetchStats(userId, timeRange);
+  try {
+    return await StatsService().fetchStats(userId, timeRange);
+  } catch (e, st) {
+    print('╔══ STATS ERROR ══════════════════════════');
+    print('║ timeRange : $timeRange');
+    print('║ error     : $e');
+    print('║ stack     : ${st.toString().split('\n').take(5).join('\n║            ')}');
+    print('╚════════════════════════════════════════');
+    rethrow;
+  }
 });

@@ -7,19 +7,45 @@ class StatsService {
   Future<StatsModel> fetchStats(String userId, String timeRange) async {
     final from = _rangeStart(timeRange);
 
-    final results = await Future.wait<dynamic>([
-      _queryFinished(userId, from),
-      _queryPending(userId, from),
-      _queryLeagues(userId, from),
-      _queryAwards(userId, from),
-    ]);
+    print('╔══ STATS FETCH ══════════════════════════');
+    print('║ timeRange : $timeRange');
+    print('║ from (UTC): $from');
 
-    // ── DEBUG TEMPORAL ──────────────────────────────
-    final r0 = results[0] as List;
-    final r1 = results[1] as List;
-    final r2 = results[2] as List;
-    final r3 = results[3] as List;
-    // ────────────────────────────────────────────────
+    // Ejecutar queries una por una para aislar cuál falla
+    List r0 = [], r1 = [], r2 = [], r3 = [];
+
+    try {
+      r0 = await _queryFinished(userId, from);
+      print('║ [OK] predictions finished: ${r0.length}');
+    } catch (e) {
+      print('║ [ERR] predictions finished: $e');
+    }
+
+    try {
+      r1 = await _queryPending(userId, from);
+      print('║ [OK] predictions pending: ${r1.length}');
+    } catch (e) {
+      print('║ [ERR] predictions pending: $e');
+    }
+
+    try {
+      r2 = await _queryLeagues(userId, from);
+      print('║ [OK] league_predictions: ${r2.length}');
+    } catch (e) {
+      print('║ [ERR] league_predictions: $e');
+    }
+
+    try {
+      r3 = await _queryAwards(userId, from);
+      print('║ [OK] award_predictions: ${r3.length}');
+    } catch (e) {
+      print('║ [ERR] award_predictions: $e');
+    }
+
+    if (r0.isNotEmpty) {
+      print('║ muestra[0]: ${r0.first}');
+    }
+    print('╚════════════════════════════════════════');
 
     return _compute(
       rows:         r0,
@@ -28,42 +54,54 @@ class StatsService {
       awardRows:    r3,
     );
   }
-  
-  // ── Queries ────────────────────────────────────────────────────────────
 
   DateTime? _rangeStart(String timeRange) {
-    final now = DateTime.now();
+    final now = DateTime.now().toUtc();
     return switch (timeRange) {
-      'week'  => now.subtract(const Duration(days: 7)),
-      'month' => DateTime(now.year, now.month, 1),
+      'week'  => DateTime.utc(now.year, now.month, now.day)
+                   .subtract(const Duration(days: 6)),
+      'month' => DateTime.utc(now.year, now.month, 1),
       _       => null,
     };
   }
 
   Future<List> _queryFinished(String userId, DateTime? from) {
-    var q = _db
+    if (from == null) {
+      return _db
+          .from('predictions')
+          .select('points_earned, result_type, created_at')
+          .eq('user_id', userId)
+          .filter('result_type', 'not.is', 'null');
+    }
+    // Con rango: join con matches para filtrar por fecha del partido
+    return _db
         .from('predictions')
-        .select('points_earned, result_type, created_at')
+        .select('points_earned, result_type, created_at, matches!inner(deadline)')
         .eq('user_id', userId)
-        .filter('result_type', 'not.is', 'null');
-    if (from != null) q = q.gte('created_at', from.toIso8601String());
-    return q;
+        .filter('result_type', 'not.is', 'null')
+        .gte('matches.deadline', from.toIso8601String());
   }
 
   Future<List> _queryPending(String userId, DateTime? from) {
-    var q = _db
+    if (from == null) {
+      return _db
+          .from('predictions')
+          .select('id')
+          .eq('user_id', userId)
+          .filter('result_type', 'is', 'null');
+    }
+    return _db
         .from('predictions')
-        .select('id')
+        .select('id, matches!inner(deadline)')
         .eq('user_id', userId)
-        .filter('result_type', 'is', 'null');
-    if (from != null) q = q.gte('created_at', from.toIso8601String());
-    return q;
+        .filter('result_type', 'is', 'null')
+        .gte('matches.deadline', from.toIso8601String());
   }
 
   Future<List> _queryLeagues(String userId, DateTime? from) {
     var q = _db
         .from('league_predictions')
-        .select('points_earned')
+        .select('points_earned, created_at')
         .eq('user_id', userId);
     if (from != null) q = q.gte('created_at', from.toIso8601String());
     return q;
@@ -72,13 +110,11 @@ class StatsService {
   Future<List> _queryAwards(String userId, DateTime? from) {
     var q = _db
         .from('award_predictions')
-        .select('points_earned')
+        .select('points_earned, created_at')
         .eq('user_id', userId);
     if (from != null) q = q.gte('created_at', from.toIso8601String());
     return q;
   }
-
-  // ── Compute ────────────────────────────────────────────────────────────
 
   StatsModel _compute({
     required List rows,
@@ -89,72 +125,46 @@ class StatsService {
     int exact = 0, correct = 0, wrong = 0, ptsMatches = 0;
     final Map<int, Map<String, int>> dayMap = {};
 
-    // Ordenar DESC para calcular racha desde la predicción más reciente
     final sorted = [...rows]..sort((a, b) {
         final da = DateTime.tryParse(a['created_at'] ?? '') ?? DateTime(2000);
         final db = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime(2000);
         return db.compareTo(da);
       });
 
-    // ── Racha: recorre desde la más reciente hacia atrás ──
-    // currentStreak = cuántas seguidas correctas HASTA HOY (se corta al primer fallo)
-    // bestStreak    = la racha más larga de toda la historia
-    int currentStreak = 0;
-    int bestStreak = 0;
-    bool currentStreakBroken = false;
-    int tempStreak = 0;
+    int currentStreak = 0, bestStreak = 0, tempStreak = 0;
+    bool streakBroken = false;
 
-    for (int i = 0; i < sorted.length; i++) {
-      final r      = sorted[i];
-      final type   = r['result_type'] as String? ?? '';
-      final pts    = (r['points_earned'] as num?)?.toInt() ?? 0;
-      final isHit  = type == 'exact' || type == 'correct';
+    for (final r in sorted) {
+      final type  = r['result_type'] as String? ?? '';
+      final pts   = (r['points_earned'] as num?)?.toInt() ?? 0;
+      final isHit = type == 'exact' || type == 'correct';
 
-      // Contadores de resultados
-      if (type == 'exact') {
-        exact++;
-      } else if (type == 'correct') {
-        correct++;
-      } else {
-        wrong++;
-      }
+      if (type == 'exact')        { exact++; }
+      else if (type == 'correct') { correct++; }
+      else                        { wrong++; }
       ptsMatches += pts;
 
-      // Racha actual: solo incrementa mientras no haya habido un fallo previo
-      if (!currentStreakBroken) {
-        if (isHit) {
-          currentStreak++;
-        } else {
-          currentStreakBroken = true;
-        }
+      if (!streakBroken) {
+        if (isHit) { currentStreak++; } else { streakBroken = true; }
       }
+      if (isHit) { tempStreak++; if (tempStreak > bestStreak) bestStreak = tempStreak; }
+      else       { tempStreak = 0; }
 
-      // Mejor racha histórica
-      if (isHit) {
-        tempStreak++;
-        if (tempStreak > bestStreak) bestStreak = tempStreak;
-      } else {
-        tempStreak = 0;
-      }
-
-      // Estadísticas por día de la semana
       final date = DateTime.tryParse(r['created_at'] ?? '');
       if (date != null) {
-        final dow = date.weekday; // 1=Lun … 7=Dom
+        final dow = date.weekday;
         dayMap.putIfAbsent(dow, () => {'correct': 0, 'total': 0});
         dayMap[dow]!['total'] = dayMap[dow]!['total']! + 1;
         if (isHit) dayMap[dow]!['correct'] = dayMap[dow]!['correct']! + 1;
       }
     }
 
-    final total        = rows.length;
-    final accuracy     = total > 0 ? (((exact + correct) / total) * 100).round() : 0;
+    final total         = rows.length;
+    final accuracy      = total > 0 ? (((exact + correct) / total) * 100).round() : 0;
     final exactAccuracy = total > 0 ? ((exact / total) * 100).round() : 0;
 
-    final ptsLeagues = leagueRows.fold<int>(
-      0, (sum, r) => sum + ((r['points_earned'] as num?)?.toInt() ?? 0));
-    final ptsAwards  = awardRows.fold<int>(
-      0, (sum, r) => sum + ((r['points_earned'] as num?)?.toInt() ?? 0));
+    final ptsLeagues = leagueRows.fold<int>(0, (s, r) => s + ((r['points_earned'] as num?)?.toInt() ?? 0));
+    final ptsAwards  = awardRows.fold<int>(0,  (s, r) => s + ((r['points_earned'] as num?)?.toInt() ?? 0));
 
     const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
     final dayStats = List.generate(7, (i) {

@@ -3,18 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/stats_provider.dart';
 import '../domain/stats_model.dart';
 
-// ── Paleta (equivalente a las CSS vars --mst-*)
-const _accent = Color(0xFF5B4FD8);
-const _accentL = Color(0xFF8B7FC7);
-const _exact = Color(0xFF7C6FE8);
-const _correct = Color(0xFFA599D9);
-const _wrong = Color(0xFFC9C0F0);
-const _gold = Color(0xFF9D8FE6);
-const _bg = Color(0xFFF0EDE8);
-const _card = Color(0xFFE8E4DE);
-const _border = Color(0xFFD4CFC8);
-const _text = Color(0xFF1A1A2E);
-const _muted = Color(0xFF888780);
+// ── Paleta Neobrutalismo Retro
+const _accent    = Color(0xFF2D0CFF);   // azul eléctrico
+const _accentL   = Color(0xFF7B61FF);   // lavanda
+const _exact     = Color(0xFFFF3C00);   // naranja quemado retro
+const _correct   = Color(0xFF00C48C);   // verde menta
+const _wrong     = Color(0xFFFF9500);   // ámbar
+const _gold      = Color(0xFFFFD600);   // amarillo neón
+const _bg        = Color(0xFFF5F0E8);   // crema off-white
+const _card      = Color(0xFFEDE7DA);   // crema oscura
+const _border    = Color(0xFF1A1A2E);   // negro profundo (bordes duros)
+const _text      = Color(0xFF1A1A2E);
+const _muted     = Color(0xFF555550);
+// sombra dura neobrut
+const _shadow    = Color(0xFF1A1A2E);
 
 String _fmt(int n) {
   // Equivalente a toLocaleString('es-ES')
@@ -54,7 +56,9 @@ class StatsPage extends ConsumerWidget {
                   ),
                 ),
               ),
-              data: (stats) => _StatsBody(stats: stats),
+              data: (stats) => stats.totalPredictions == 0
+                  ? _EmptyState(timeRange: timeRange)
+                  : _StatsBody(stats: stats),
             ),
           ),
         ],
@@ -72,20 +76,23 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 48,
-      color: _card,
+      height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: const BoxDecoration(
+        color: _bg,
+        border: Border(bottom: BorderSide(color: _border, width: 2)),
+      ),
       child: Row(
         children: [
-          Container(width: 5, height: 5, color: _accent),
+          Container(width: 6, height: 22, color: _accent),
           const SizedBox(width: 8),
           const Text(
             'ESTADÍSTICAS',
             style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.4,
-              color: _muted,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 2,
+              color: _text,
             ),
           ),
           const Spacer(),
@@ -121,23 +128,76 @@ class _RangePill extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
-        margin: const EdgeInsets.only(left: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        margin: const EdgeInsets.only(left: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: active ? _accent : Colors.transparent,
-          border: Border.all(
-            color: active ? _accent : _border,
-            width: 0.5,
-          ),
+          color: active ? _accent : _bg,
+          border: Border.all(color: _border, width: 2),
+          boxShadow: active
+              ? [const BoxShadow(color: _shadow, offset: Offset(3, 3), blurRadius: 0)]
+              : [],
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 10,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.8,
-            color: active ? Colors.white : _muted,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1,
+            color: active ? Colors.white : _text,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ══ EMPTY STATE ══════════════════════════════════════════════════════════
+class _EmptyState extends StatelessWidget {
+  final String timeRange;
+  const _EmptyState({required this.timeRange});
+
+  String get _label => switch (timeRange) {
+    'month' => 'este mes',
+    'week'  => 'esta semana',
+    _       => 'este período',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: _bg,
+                border: Border.all(color: _border, width: 3),
+                boxShadow: const [BoxShadow(color: _shadow, offset: Offset(5, 5), blurRadius: 0)],
+              ),
+              child: const Icon(Icons.sports_soccer, size: 36, color: _accent),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'SIN PARTIDOS $_label'.toUpperCase(),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.5,
+                color: _text,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Los partidos de este período aún no han sido jugados o no tienes predicciones finalizadas.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12, color: _muted, height: 1.5),
+            ),
+          ],
         ),
       ),
     );
@@ -190,13 +250,14 @@ class _HeroGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: _border, width: 0.5)),
+        border: Border(bottom: BorderSide(color: _border, width: 2)),
       ),
       child: GridView.count(
         crossAxisCount: 2,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         childAspectRatio: 1.4,
+        padding: EdgeInsets.zero,
         children: [
           _HeroBlock(
             icon: Icons.adjust,
@@ -268,12 +329,12 @@ class _HeroBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
       decoration: BoxDecoration(
         color: _bg,
         border: Border(
-          right: borderRight ? const BorderSide(color: _border, width: 0.5) : BorderSide.none,
-          bottom: borderBottom ? const BorderSide(color: _border, width: 0.5) : BorderSide.none,
+          right: borderRight ? const BorderSide(color: _border, width: 2) : BorderSide.none,
+          bottom: borderBottom ? const BorderSide(color: _border, width: 2) : BorderSide.none,
         ),
       ),
       child: Stack(
@@ -283,27 +344,31 @@ class _HeroBlock extends StatelessWidget {
             children: [
               Text(label,
                   style: const TextStyle(
-                      fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: _muted)),
+                      fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 2, color: _muted)),
               const SizedBox(height: 4),
               Text(value,
                   style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 38,
+                      fontWeight: FontWeight.w900,
                       letterSpacing: -2,
                       height: 1,
                       color: valueColor)),
               const SizedBox(height: 4),
               Text(sub,
-                  style: const TextStyle(fontSize: 10, color: _muted)),
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: _muted)),
             ],
           ),
           Positioned(
             top: 0,
             right: 0,
             child: Container(
-              width: 26,
-              height: 26,
-              color: iconColor,
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: iconColor,
+                border: Border.all(color: _border, width: 2),
+                boxShadow: const [BoxShadow(color: _shadow, offset: Offset(3, 3), blurRadius: 0)],
+              ),
               child: Icon(icon, size: 13, color: Colors.white),
             ),
           ),
@@ -317,7 +382,7 @@ class _HeroBlock extends StatelessWidget {
 class _SectionDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
-      const Divider(height: 0.5, thickness: 0.5, color: _border);
+      const Divider(height: 2, thickness: 2, color: _border);
 }
 
 class _SectionHeader extends StatelessWidget {
@@ -328,16 +393,19 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 38,
-      color: _card,
+      height: 40,
       padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: _card,
+        border: const Border(bottom: BorderSide(color: _border, width: 2)),
+      ),
       child: Row(
         children: [
-          Container(width: 5, height: 5, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          Container(width: 4, height: 16, color: color),
           const SizedBox(width: 8),
           Text(label,
               style: const TextStyle(
-                  fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: _muted)),
+                  fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2, color: _text)),
         ],
       ),
     );
@@ -418,26 +486,37 @@ class _ResultBar extends StatelessWidget {
         Row(
           children: [
             Text(_fmt(count),
-                style: TextStyle(fontSize: 36, fontWeight: FontWeight.w800, letterSpacing: -1, height: 1, color: barColor)),
+                style: TextStyle(fontSize: 38, fontWeight: FontWeight.w900, letterSpacing: -1, height: 1, color: barColor)),
             const SizedBox(width: 10),
-            Text(pts, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: ptsColor)),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: ptsColor,
+                border: Border.all(color: _border, width: 1.5),
+                boxShadow: const [BoxShadow(color: _shadow, offset: Offset(2, 2), blurRadius: 0)],
+              ),
+              child: Text(pts, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white)),
+            ),
             const Spacer(),
-            Text('$pct%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _muted)),
+            Text('$pct%', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: _text)),
           ],
         ),
         const SizedBox(height: 4),
         Text(label,
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1, color: _muted)),
-        const SizedBox(height: 6),
+            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 2, color: _muted)),
+        const SizedBox(height: 8),
         TweenAnimationBuilder<double>(
           tween: Tween(begin: 0, end: pct / 100),
           duration: const Duration(milliseconds: 600),
           curve: Curves.easeOut,
-          builder: (context, v, _) => LinearProgressIndicator(
-            value: v,
-            backgroundColor: _border,
-            valueColor: AlwaysStoppedAnimation(barColor),
-            minHeight: 4,
+          builder: (context, v, _) => Container(
+            height: 8,
+            decoration: BoxDecoration(border: Border.all(color: _border, width: 1.5)),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: v,
+              child: Container(color: barColor),
+            ),
           ),
         ),
       ],
@@ -493,17 +572,21 @@ class _LeagueRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: const BoxDecoration(
         color: _bg,
-        border: Border(bottom: BorderSide(color: _border, width: 0.5)),
+        border: Border(bottom: BorderSide(color: _border, width: 2)),
       ),
       child: Row(
         children: [
           Container(
-            width: 20,
-            height: 20,
-            color: badgeColor,
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              color: badgeColor,
+              border: Border.all(color: _border, width: 2),
+              boxShadow: const [BoxShadow(color: _shadow, offset: Offset(2, 2), blurRadius: 0)],
+            ),
             alignment: Alignment.center,
             child: Text('$rank',
-                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white)),
+                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white)),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -552,53 +635,85 @@ class _DayBars extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: days
-            .map((d) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: _DayColumn(day: d),
-                ))
-            .toList(),
-      ),
+    if (days.isEmpty) return const SizedBox(height: 60);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const hPadding = 32.0;
+        final available = constraints.maxWidth - hPadding;
+        final naturalColWidth = available / days.length;
+        final colWidth = naturalColWidth.clamp(36.0, 80.0);
+        final needsScroll = colWidth * days.length > available;
+
+        final row = Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: days
+              .map((d) => SizedBox(
+                    width: colWidth,
+                    child: _DayColumn(day: d, colWidth: colWidth),
+                  ))
+              .toList(),
+        );
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: needsScroll
+              ? SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: row,
+                )
+              : Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: row,
+                ),
+        );
+      },
     );
   }
 }
 
 class _DayColumn extends StatelessWidget {
   final DayStat day;
-  const _DayColumn({required this.day});
+  final double colWidth;
+  const _DayColumn({required this.day, required this.colWidth});
 
   @override
   Widget build(BuildContext context) {
+    final barWidth = (colWidth - 12).clamp(20.0, 56.0);
     return Column(
       children: [
         Text('${day.accuracy}%',
             style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: _muted)),
         const SizedBox(height: 4),
         SizedBox(
-          width: 44,
+          width: barWidth,
           height: 60,
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: day.accuracy / 100),
-              duration: const Duration(milliseconds: 700),
-              curve: Curves.easeOut,
-              builder: (_, v, __) => FractionallySizedBox(
-                heightFactor: v == 0 ? 0.04 : v,
-                 child: Container(color: _accent.withValues(alpha: day.opacity)),
-              ),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: day.accuracy / 100),
+            duration: const Duration(milliseconds: 700),
+            curve: Curves.easeOut,
+            builder: (_, v, __) => Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Container(
+                  width: barWidth,
+                  height: 60 * (v == 0 ? 0.04 : v),
+                  decoration: BoxDecoration(
+                    color: _accent.withValues(alpha: day.opacity),
+                    border: Border.all(color: _border, width: 1.5),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
         const SizedBox(height: 4),
         Text(day.name,
+            textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5, color: _muted)),
         Text('${day.correct}/${day.total}',
+            textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 8, color: _muted)),
       ],
     );
@@ -650,11 +765,14 @@ class _DistRow extends StatelessWidget {
           tween: Tween(begin: 0, end: pct / 100),
           duration: const Duration(milliseconds: 600),
           curve: Curves.easeOut,
-          builder: (context, v, _) => LinearProgressIndicator(
-            value: v,
-            backgroundColor: _border,
-            valueColor: AlwaysStoppedAnimation(color),
-            minHeight: 4,
+          builder: (context, v, _) => Container(
+            height: 8,
+            decoration: BoxDecoration(border: Border.all(color: _border, width: 1.5)),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: v,
+              child: Container(color: color),
+            ),
           ),
         ),
       ],
@@ -701,7 +819,8 @@ class _ForecastItem extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
         color: _card,
-        border: Border.all(color: _border, width: 0.5),
+        border: Border.all(color: _border, width: 2),
+        boxShadow: const [BoxShadow(color: _shadow, offset: Offset(4, 4), blurRadius: 0)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -725,30 +844,42 @@ class _StreakCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: _accent,
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      decoration: BoxDecoration(
+        color: _gold,
+        border: Border.all(color: _border, width: 3),
+        boxShadow: const [BoxShadow(color: _shadow, offset: Offset(6, 6), blurRadius: 0)],
+      ),
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('RACHA ACTUAL',
-              style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 1.4, color: Color(0x73FFFFFF))),
+              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 2, color: _text)),
           const SizedBox(height: 4),
           Text(_fmt(stats.currentStreak),
-              style: const TextStyle(fontSize: 52, fontWeight: FontWeight.w800, letterSpacing: -3, height: 1, color: Colors.white)),
+              style: const TextStyle(fontSize: 54, fontWeight: FontWeight.w900, letterSpacing: -3, height: 1, color: _text)),
           const SizedBox(height: 4),
           const Text('predicciones seguidas correctas',
-              style: TextStyle(fontSize: 9, color: Color(0x73FFFFFF))),
+              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: _text)),
           const SizedBox(height: 10),
-          const Divider(color: Color(0x26FFFFFF), thickness: 0.5, height: 0.5),
+          Container(height: 2, color: _border),
           const SizedBox(height: 10),
           Row(
             children: [
               const Text('Récord personal',
-                  style: TextStyle(fontSize: 9, color: Color(0x80FFFFFF))),
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: _text)),
               const Spacer(),
-              Text(_fmt(stats.bestStreak),
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFFF0C040))),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: _accent,
+                  border: Border.all(color: _border, width: 2),
+                  boxShadow: const [BoxShadow(color: _shadow, offset: Offset(3, 3), blurRadius: 0)],
+                ),
+                child: Text(_fmt(stats.bestStreak),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white)),
+              ),
             ],
           ),
         ],
