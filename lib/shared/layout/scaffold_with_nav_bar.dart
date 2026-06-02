@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// ── Provider global: las sub-páginas lo activan para ocultar el top bar ──
+// ── Providers ─────────────────────────────────────────────────
 final hideTopBarProvider =
     NotifierProvider<HideTopBarNotifier, bool>(HideTopBarNotifier.new);
 
@@ -25,13 +25,17 @@ class HideBottomNavNotifier extends Notifier<bool> {
   void hide() => state = true;
 }
 
+// ═══════════════════════════════════════════════════════════
+//  SCAFFOLD
+// ═══════════════════════════════════════════════════════════
+
 class ScaffoldWithNavBar extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
-
   const ScaffoldWithNavBar({super.key, required this.navigationShell});
 
   @override
-  ConsumerState<ScaffoldWithNavBar> createState() => _ScaffoldWithNavBarState();
+  ConsumerState<ScaffoldWithNavBar> createState() =>
+      _ScaffoldWithNavBarState();
 }
 
 class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
@@ -69,7 +73,6 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
     } catch (_) {}
   }
 
-  // ✅ Navega al branch 5 (perfil) y sincroniza el bottom nav
   void _goToProfile() {
     widget.navigationShell.goBranch(
       5,
@@ -96,13 +99,13 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
             child: hideTopBar
                 ? const SizedBox.shrink()
                 : _GsTopBar(
-                    firstName:  _firstName,
-                    initials:   _initials,
-                    avatarUrl:  _avatarUrl,
-                    isAdmin:    _isAdmin,
-                    onWorld:    () => context.push('/worldcup'),
-                    onNotif:    () => context.push('/notifications'),
-                    onProfile:  _goToProfile,
+                    firstName: _firstName,
+                    initials:  _initials,
+                    avatarUrl: _avatarUrl,
+                    isAdmin:   _isAdmin,
+                    onWorld:   () => context.push('/worldcup'),
+                    onNotif:   () => context.push('/notifications'),
+                    onProfile: _goToProfile,
                   ),
           ),
           Expanded(child: widget.navigationShell),
@@ -113,10 +116,10 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
           : _GsBottomNav(
               currentIndex: widget.navigationShell.currentIndex,
               isAdmin:      _isAdmin,
-              onTap: (branchIndex) {
+              onTap: (i) {
                 widget.navigationShell.goBranch(
-                  branchIndex,
-                  initialLocation: branchIndex == widget.navigationShell.currentIndex,
+                  i,
+                  initialLocation: i == widget.navigationShell.currentIndex,
                 );
               },
               onTrophy: () {
@@ -131,7 +134,7 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  TOP BAR
+//  TOP BAR — neo-brutalista
 // ═══════════════════════════════════════════════════════════
 
 class _GsTopBar extends StatefulWidget {
@@ -181,30 +184,71 @@ class _GsTopBarState extends State<_GsTopBar> {
 
   @override
   Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
+
     return Container(
-      height: 60 + MediaQuery.of(context).padding.top,
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top,
-        left: 18, right: 18,
-      ),
+      padding: EdgeInsets.fromLTRB(16, topPad + 10, 16, 10),
       decoration: const BoxDecoration(
         color: _GsColors.cream,
-        border: Border(bottom: BorderSide(color: _GsColors.border, width: 1.5)),
+        border: Border(
+          bottom: BorderSide(color: _GsColors.dark, width: 1.5),
+        ),
+        // Sombra offset neo-brutalista
+        boxShadow: [
+          BoxShadow(
+            color: _GsColors.dark,
+            offset: Offset(0, 3),
+            blurRadius: 0,
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            widget.firstName,
-            style: const TextStyle(
-              fontFamily: _GsColors.fontMono,
-              fontSize: 19,
-              fontWeight: FontWeight.w700,
-              color: _GsColors.dark,
-              letterSpacing: -0.4,
-            ),
+          // ── Logo / nombre con acento ──────────────────────
+          Row(
+            children: [
+              // Bloque de acento morado a la izquierda
+              Container(
+                width: 4,
+                height: 26,
+                color: _GsColors.accent,
+              ),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'GlobalScore',
+                    style: const TextStyle(
+                      fontFamily: _GsColors.fontMono,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: _GsColors.dark,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  // Reloj mono pequeño
+                  if (_clock.isNotEmpty)
+                    Text(
+                      _clock,
+                      style: const TextStyle(
+                        fontFamily: _GsColors.fontMono,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: _GsColors.muted,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                ],
+              ),
+            ],
           ),
+
           const Spacer(),
+
+          // ── Botones con relieve ───────────────────────────
           _TopBtn(icon: Icons.language_outlined, onTap: widget.onWorld),
           const SizedBox(width: 8),
           _TopBtn(
@@ -224,12 +268,13 @@ class _GsTopBarState extends State<_GsTopBar> {
   }
 }
 
+// ── Top button con sombra offset ─────────────────────────────
 class _TopBtn extends StatefulWidget {
   final IconData icon;
   final bool     hasDot;
   final VoidCallback onTap;
-
-  const _TopBtn({required this.icon, this.hasDot = false, required this.onTap});
+  const _TopBtn(
+      {required this.icon, this.hasDot = false, required this.onTap});
 
   @override
   State<_TopBtn> createState() => _TopBtnState();
@@ -246,26 +291,40 @@ class _TopBtnState extends State<_TopBtn> {
       onTapCancel: ()  => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 80),
-        width: 36, height: 36,
+        width: 36,
+        height: 36,
         transform: _pressed
-            ? (Matrix4.identity()..translate(1.0, 1.0))
+            ? (Matrix4.identity()..translate(2.0, 2.0))
             : Matrix4.identity(),
         decoration: BoxDecoration(
           color: _GsColors.cream,
-          border: Border.all(color: _GsColors.border, width: 1.5),
+          border: Border.all(color: _GsColors.dark, width: 1.5),
+          boxShadow: _pressed
+              ? []
+              : const [
+                  BoxShadow(
+                    color: _GsColors.dark,
+                    offset: Offset(2, 2),
+                    blurRadius: 0,
+                  ),
+                ],
         ),
         child: Stack(
           alignment: Alignment.center,
           children: [
-            Icon(widget.icon, size: 15, color: _GsColors.muted),
+            Icon(widget.icon, size: 16, color: _GsColors.dark),
             if (widget.hasDot)
               Positioned(
-                top: 7, right: 7,
+                top: 6,
+                right: 6,
                 child: Container(
-                  width: 6, height: 6,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFEF4444),
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444),
                     shape: BoxShape.circle,
+                    border: Border.all(
+                        color: _GsColors.cream, width: 1),
                   ),
                 ),
               ),
@@ -276,12 +335,15 @@ class _TopBtnState extends State<_TopBtn> {
   }
 }
 
+// ── Avatar con borde + sombra ─────────────────────────────────
 class _AvatarBtn extends StatefulWidget {
   final String   initials;
   final String?  avatarUrl;
   final VoidCallback onTap;
-
-  const _AvatarBtn({required this.initials, this.avatarUrl, required this.onTap});
+  const _AvatarBtn(
+      {required this.initials,
+      required this.avatarUrl,
+      required this.onTap});
 
   @override
   State<_AvatarBtn> createState() => _AvatarBtnState();
@@ -298,18 +360,33 @@ class _AvatarBtnState extends State<_AvatarBtn> {
       onTapCancel: ()  => setState(() => _pressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 80),
-        width: 36, height: 36,
+        width: 36,
+        height: 36,
         transform: _pressed
-            ? (Matrix4.identity()..translate(1.0, 1.0))
+            ? (Matrix4.identity()..translate(2.0, 2.0))
             : Matrix4.identity(),
         decoration: BoxDecoration(
           color: _GsColors.accent,
-          border: Border.all(color: _GsColors.border, width: 1.5),
+          border: Border.all(color: _GsColors.dark, width: 1.5),
+          boxShadow: _pressed
+              ? []
+              : const [
+                  BoxShadow(
+                    color: _GsColors.dark,
+                    offset: Offset(2, 2),
+                    blurRadius: 0,
+                  ),
+                ],
         ),
-        child: widget.avatarUrl != null
-            ? Image.network(widget.avatarUrl!, fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _Initials(widget.initials))
-            : _Initials(widget.initials),
+        child: ClipRect(
+          child: widget.avatarUrl != null
+              ? Image.network(
+                  widget.avatarUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _Initials(widget.initials),
+                )
+              : _Initials(widget.initials),
+        ),
       ),
     );
   }
@@ -320,23 +397,21 @@ class _Initials extends StatelessWidget {
   const _Initials(this.text);
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontFamily: _GsColors.fontMono,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
+  Widget build(BuildContext context) => Center(
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontFamily: _GsColors.fontMono,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
         ),
-      ),
-    );
-  }
+      );
 }
 
 // ═══════════════════════════════════════════════════════════
-//  BOTTOM NAV
+//  BOTTOM NAV — neo-brutalista
 // ═══════════════════════════════════════════════════════════
 
 class _GsBottomNav extends StatelessWidget {
@@ -354,27 +429,25 @@ class _GsBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // branchIndex: 0=dashboard, 1=ranking, 2=albums, 3=stats, 4=history, 5=profile
-    // Nota: Perfil se accede desde el avatar del top bar (goBranch 5)
     final leftItems = [
       if (isAdmin)
         const _NavItem(
           icon: Icons.shield_outlined,
           activeIcon: Icons.shield,
-          label: 'Admin',
+          label: 'ADMIN',
           branchIndex: 2,
         )
       else
         const _NavItem(
           icon: Icons.museum_outlined,
           activeIcon: Icons.museum,
-          label: 'Álbums',
+          label: 'ÁLBUMS',
           branchIndex: 2,
         ),
       const _NavItem(
         icon: Icons.emoji_events_outlined,
         activeIcon: Icons.emoji_events,
-        label: 'Ranking',
+        label: 'RANK',
         branchIndex: 1,
       ),
     ];
@@ -383,13 +456,13 @@ class _GsBottomNav extends StatelessWidget {
       const _NavItem(
         icon: Icons.bar_chart_outlined,
         activeIcon: Icons.bar_chart,
-        label: 'Stats',
+        label: 'STATS',
         branchIndex: 3,
       ),
       const _NavItem(
         icon: Icons.history_edu_outlined,
         activeIcon: Icons.history_edu,
-        label: 'Historia',
+        label: 'HIST.',
         branchIndex: 4,
       ),
     ];
@@ -397,21 +470,32 @@ class _GsBottomNav extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: _GsColors.cream,
-        border: Border(top: BorderSide(color: _GsColors.border, width: 1.5)),
+        border: Border(
+          top: BorderSide(color: _GsColors.dark, width: 0.5),
+        ),
+        // Sombra hacia arriba
+        boxShadow: [
+          BoxShadow(
+            color: _GsColors.dark,
+            offset: Offset(0, -3),
+            blurRadius: 0,
+          ),
+        ],
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 56,
+          height: 58,
           child: Row(
             children: [
               ...leftItems.map((item) => Expanded(
-                child: _BottomNavButton(
-                  item: item,
-                  isActive: currentIndex == item.branchIndex,
-                  onTap: () => onTap(item.branchIndex),
-                ),
-              )),
+                    child: _BottomNavButton(
+                      item: item,
+                      isActive: currentIndex == item.branchIndex,
+                      onTap: () => onTap(item.branchIndex),
+                    ),
+                  )),
+              // Botón central trofeo elevado
               Expanded(
                 child: _TrophyButton(
                   isActive: currentIndex == 0,
@@ -419,12 +503,12 @@ class _GsBottomNav extends StatelessWidget {
                 ),
               ),
               ...rightItems.map((item) => Expanded(
-                child: _BottomNavButton(
-                  item: item,
-                  isActive: currentIndex == item.branchIndex,
-                  onTap: () => onTap(item.branchIndex),
-                ),
-              )),
+                    child: _BottomNavButton(
+                      item: item,
+                      isActive: currentIndex == item.branchIndex,
+                      onTap: () => onTap(item.branchIndex),
+                    ),
+                  )),
             ],
           ),
         ),
@@ -435,7 +519,7 @@ class _GsBottomNav extends StatelessWidget {
 
 class _BottomNavButton extends StatefulWidget {
   final _NavItem item;
-  final bool isActive;
+  final bool     isActive;
   final VoidCallback onTap;
 
   const _BottomNavButton({
@@ -453,23 +537,42 @@ class _BottomNavButtonState extends State<_BottomNavButton> {
 
   @override
   Widget build(BuildContext context) {
+    final active = widget.isActive;
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTapDown:   (_) => setState(() => _pressed = true),
       onTapUp:     (_) { setState(() => _pressed = false); widget.onTap(); },
       onTapCancel: ()  => setState(() => _pressed = false),
-      child: AnimatedOpacity(
-        opacity: _pressed ? 0.6 : 1.0,
+      child: AnimatedContainer(
         duration: const Duration(milliseconds: 80),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              widget.isActive ? widget.item.activeIcon : widget.item.icon,
-              size: 19,
-              color: widget.isActive ? _GsColors.dark : _GsColors.muted,
-            ),
-          ],
+        decoration: const BoxDecoration(
+          color: Colors.transparent,
+        ),
+        child: Opacity(
+          opacity: _pressed ? 0.6 : 1.0,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                active ? widget.item.activeIcon : widget.item.icon,
+                size: 18,
+                color: active ? _GsColors.accent : _GsColors.muted,
+              ),
+              const SizedBox(height: 3),
+              Text(
+                widget.item.label,
+                style: TextStyle(
+                  fontFamily: _GsColors.fontMono,
+                  fontSize: 7,
+                  fontWeight:
+                      active ? FontWeight.w800 : FontWeight.w500,
+                  color: active ? _GsColors.accent : _GsColors.muted,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -479,7 +582,6 @@ class _BottomNavButtonState extends State<_BottomNavButton> {
 class _TrophyButton extends StatefulWidget {
   final bool isActive;
   final VoidCallback onTap;
-
   const _TrophyButton({required this.isActive, required this.onTap});
 
   @override
@@ -497,31 +599,38 @@ class _TrophyButtonState extends State<_TrophyButton> {
       onTapUp:     (_) { setState(() => _pressed = false); widget.onTap(); },
       onTapCancel: ()  => setState(() => _pressed = false),
       child: SizedBox(
-        height: 56,
+        height: 58,
         child: Stack(
           alignment: Alignment.center,
           clipBehavior: Clip.none,
           children: [
             Positioned(
-              top: -11,
+              top: -14,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 100),
                 transform: _pressed
-                    ? (Matrix4.identity()..translate(2.0, 2.0))
+                    ? (Matrix4.identity()..translate(3.0, 3.0))
                     : Matrix4.identity(),
-                width: 46, height: 46,
+                width: 50,
+                height: 50,
                 decoration: BoxDecoration(
                   color: _GsColors.accent,
+                  border: Border.all(
+                      color: _GsColors.dark, width: 2),
                   boxShadow: _pressed
-                      ? const [BoxShadow(color: Color(0x661B14A0), offset: Offset(1, 1), blurRadius: 0)]
-                      : const [BoxShadow(color: Color(0x661B14A0), offset: Offset(3, 3), blurRadius: 0)],
+                      ? []
+                      : const [
+                          BoxShadow(
+                            color: _GsColors.dark,
+                            offset: Offset(3, 3),
+                            blurRadius: 0,
+                          ),
+                        ],
                 ),
                 child: Icon(
                   Icons.emoji_events,
-                  size: 22,
-                  color: widget.isActive
-                      ? Colors.white
-                      : Colors.white.withValues(alpha: 0.75),
+                  size: 24,
+                  color: Colors.white,
                 ),
               ),
             ),

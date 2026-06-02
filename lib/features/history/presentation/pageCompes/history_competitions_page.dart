@@ -201,22 +201,22 @@ class _CounterRow extends StatelessWidget {
 // ══════════════════════════════════════════════════════════════
 //  HEADER — igual al de players
 // ══════════════════════════════════════════════════════════════
-
+const Color _kPurple = Color(0xFF5B4FD8);
+ 
 class _CompHeader extends StatelessWidget {
   final VoidCallback onBack;
   final AsyncValue<List<HistoricalCompetition>> allAsync;
   const _CompHeader({required this.onBack, required this.allAsync});
-
+ 
   @override
   Widget build(BuildContext context) {
     final topPad = MediaQuery.of(context).padding.top;
-
+ 
     return Container(
       padding: EdgeInsets.fromLTRB(16, topPad + 12, 16, 18),
       decoration: const BoxDecoration(
         color: kHistBg,
-        border:
-            Border(bottom: BorderSide(color: kHistBorder, width: 1.5)),
+        border: Border(bottom: BorderSide(color: kHistBorder, width: 1.5)),
       ),
       child: Stack(
         children: [
@@ -249,10 +249,20 @@ class _CompHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
+                // FIX: badge morado igual que players
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 5),
-                  color: kHistAccent,
+                  decoration: BoxDecoration(
+                    color: _kPurple,
+                    boxShadow: const [
+                      BoxShadow(
+                        color: kHistDark,
+                        offset: Offset(2, 2),
+                        blurRadius: 0,
+                      ),
+                    ],
+                  ),
                   child: Text('COMPETICIONES',
                       style: monoStyle(
                           color: Colors.white,
@@ -265,7 +275,8 @@ class _CompHeader extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Container(width: 4, height: 40, color: kHistAccent),
+                  // FIX: barra lateral morada igual que players
+                  Container(width: 4, height: 40, color: _kPurple),
                   const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,8 +287,7 @@ class _CompHeader extends StatelessWidget {
                               weight: FontWeight.w900,
                               letterSpacing: -0.5)),
                       Text('Torneos que definieron una era.',
-                          style:
-                              monoStyle(size: 11, color: kHistMuted)),
+                          style: monoStyle(size: 11, color: kHistMuted)),
                     ],
                   ),
                 ],
@@ -289,35 +299,29 @@ class _CompHeader extends StatelessWidget {
     );
   }
 }
-
-// ══════════════════════════════════════════════════════════════
-//  STATS STRIP
-// ══════════════════════════════════════════════════════════════
-
+ 
 class _StatsStrip extends StatelessWidget {
   final int total;
   final int intl;
   final int continental;
-  const _StatsStrip(
-      {required this.total,
-      required this.intl,
-      required this.continental});
-
+  const _StatsStrip({
+    required this.total,
+    required this.intl,
+    required this.continental,
+  });
+ 
   @override
   Widget build(BuildContext context) {
     final items = [
-      (Icons.emoji_events_outlined, '$total', 'TORNEOS',
-          kHistAccent),
-      (Icons.public_outlined, '$intl', 'INTER\'L',
-          const Color(0xFFE8A020)),
-      (Icons.language_outlined, '$continental', 'CONTIN.',
-          const Color(0xFF3DAA80)),
+      (Icons.emoji_events_outlined, '$total', 'TORNEOS',   _kPurple),
+      (Icons.public_outlined,       '$intl',  'INTER\'L',  const Color(0xFFE8A020)),
+      (Icons.language_outlined,     '$continental', 'CONTIN.', const Color(0xFF3DAA80)),
     ];
-
+ 
     return Container(
       decoration: const BoxDecoration(
-        border:
-            Border(bottom: BorderSide(color: kHistBorder, width: 1.5)),
+        color: kHistBg,
+        border: Border(bottom: BorderSide(color: kHistBorder, width: 1.5)),
       ),
       child: IntrinsicHeight(
         child: Row(
@@ -326,39 +330,54 @@ class _StatsStrip extends StatelessWidget {
             final (icon, val, label, color) = entry.value;
             return Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
                   border: i < items.length - 1
                       ? const Border(
-                          right: BorderSide(
-                              color: kHistBorderL, width: 1))
+                          right: BorderSide(color: kHistBorderL, width: 1))
                       : null,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // FIX: relieve neo-brutalista igual que players
                     Container(
-                      width: 28,
-                      height: 28,
-                      color: color,
-                      child: Icon(icon,
-                          size: 14, color: Colors.white),
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: color,
+                        border: Border.all(color: kHistBorder, width: 1.5),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: kHistDark,
+                            offset: Offset(2, 2),
+                            blurRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: Icon(icon, size: 15, color: Colors.white),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(val,
-                            style: monoStyle(
-                                size: 16,
-                                weight: FontWeight.w900,
-                                color: color)),
-                        Text(label,
-                            style: monoStyle(
-                                size: 7,
-                                color: kHistMuted,
-                                letterSpacing: 0.8)),
+                        Text(
+                          val,
+                          style: monoStyle(
+                            size: 18,
+                            weight: FontWeight.w900,
+                            color: color,
+                          ),
+                        ),
+                        Text(
+                          label,
+                          style: monoStyle(
+                            size: 7,
+                            color: kHistMuted,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -371,7 +390,6 @@ class _StatsStrip extends StatelessWidget {
     );
   }
 }
-
 // ══════════════════════════════════════════════════════════════
 //  SEARCH BAR con botón aleatorio (modal)
 // ══════════════════════════════════════════════════════════════
@@ -683,14 +701,14 @@ class _RandomSlot extends StatelessWidget {
       child: Row(children: [
         // Logo
         Container(
-          width: 44,
-          height: 44,
+          width: 64,
+          height: 64,
           color: const Color(0xFFE8E4DE),
           child: imgUrl != null
               ? Padding(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(4),
                   child: Image.network(imgUrl, fit: BoxFit.contain))
-              : Icon(Icons.emoji_events, size: 22, color: tc),
+              : Icon(Icons.emoji_events, size: 32, color: tc),
         ),
         const SizedBox(width: 12),
         Expanded(

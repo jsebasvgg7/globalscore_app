@@ -174,7 +174,7 @@ Con este contexto, por favor:
 
 ### 🗣️ ESTADO ACTUAL DEL APRENDIZAJE
 
-[Fase 7 - Historia. Actualmente termine 3/4 secciones solo me queda el competencias, Lo que haremos es lo mismo que hicimos con los otros 3 pages dividimos en tabs/shared/details, Revisa el componente HistoricalCompetitions y sus agregados. Revisaa el diseño que estamos llevando en las demas pages y no olvides el modo aleatorio + su modal te dejare los archivos de player para que te guies en diseño/tabs/detalles/navbar.]
+[Fase 7 - Historia. Actualmente ya se crearon los nuevos archivos de la page competiciones hay que solucionar errores yrevisar que todo funcione ]
 ---
 
 **Listo. Con este contexto, guíame en el siguiente paso de la migración.**
