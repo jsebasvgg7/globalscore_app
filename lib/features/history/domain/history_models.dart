@@ -13,8 +13,8 @@ class HistoricalPlayer {
   final String? description;
   final String? impactSummary;
   final String? legacyType;
-  final int? ballonDorCount;      // ← corregido: ballon_dor_count
-  final int? significanceLevel;   // ← nuevo: significance_level
+  final int? ballonDorCount;
+  final int? significanceLevel;
   final bool isPublished;
 
   const HistoricalPlayer({
@@ -44,8 +44,8 @@ class HistoricalPlayer {
         description: m['description'] as String?,
         impactSummary: m['impact_summary'] as String?,
         legacyType: m['legacy_type'] as String?,
-        ballonDorCount: m['ballon_dor_count'] as int?,   // ← corregido
-        significanceLevel: m['significance_level'] as int?, // ← nuevo
+        ballonDorCount: m['ballon_dor_count'] as int?,
+        significanceLevel: m['significance_level'] as int?,
         isPublished: m['is_published'] as bool? ?? true,
       );
 }
@@ -261,6 +261,8 @@ class KnockoutMatch {
   final String? winner;
   final String? notes;
   final int sortOrder;
+  // ── NUEVO ────────────────────────────────────────────────
+  final bool isDecisive;
 
   const KnockoutMatch({
     required this.id,
@@ -277,6 +279,7 @@ class KnockoutMatch {
     this.winner,
     this.notes,
     this.sortOrder = 0,
+    this.isDecisive = false,
   });
 
   factory KnockoutMatch.fromMap(Map<String, dynamic> m) => KnockoutMatch(
@@ -294,6 +297,7 @@ class KnockoutMatch {
         winner: m['winner'] as String?,
         notes: m['notes'] as String?,
         sortOrder: m['sort_order'] as int? ?? 0,
+        isDecisive: m['is_decisive'] as bool? ?? false,
       );
 
   bool get winnerIsA => winner == 'team_a';
@@ -483,7 +487,7 @@ class PlayerCareerEntry {
         roleNote: m['role_note'] as String?,
       );
 }
-// Relación jugador ↔ HistoricalTeam (tabla historical_player_teams)
+
 class PlayerTeamLink {
   final String startYear;
   final String endYear;
@@ -554,6 +558,7 @@ class PlayerEventLink {
     );
   }
 }
+
 class PlayerNationalEntry {
   final String country;
   final int? startYear;
@@ -586,7 +591,7 @@ class PlayerNationalEntry {
 
 class PlayerTitleEntry {
   final String titleName;
-  final String titleCategory; // club | national | individual
+  final String titleCategory;
   final String? year;
   final String? teamName;
   final int quantity;
@@ -613,8 +618,8 @@ class PlayerDetail {
   final List<PlayerCareerEntry> career;
   final List<PlayerNationalEntry> national;
   final List<PlayerTitleEntry> titles;
-  final List<PlayerTeamLink> teamLinks;    
-  final List<PlayerEventLink> eventLinks;   
+  final List<PlayerTeamLink> teamLinks;
+  final List<PlayerEventLink> eventLinks;
 
   const PlayerDetail({
     required this.player,
@@ -626,25 +631,20 @@ class PlayerDetail {
   });
 }
 
- 
 // Alineación histórica del equipo (historical_team_lineup)
 class TeamLineup {
   final String id;
   final int? shirtNumber;
   final String playerName;
   final String? positionRole;
-  final String? teamSide;   // si hay sub-equipos (ej: once ideal A/B)
+  final String? teamSide;
   final String? notes;
   final int sortOrder;
- 
-  // Coordenadas en el campo (0-100), mapeadas desde pos_x / pos_y
   final double? posX;
   final double? posY;
-
-  // Enlace opcional al jugador histórico
   final String? historicalPlayerId;
   final String? historicalPlayerImagePath;
- 
+
   const TeamLineup({
     required this.id,
     this.shirtNumber,
@@ -658,7 +658,7 @@ class TeamLineup {
     this.historicalPlayerId,
     this.historicalPlayerImagePath,
   });
- 
+
   factory TeamLineup.fromMap(Map<String, dynamic> m) {
     final player = m['historical_players'];
     return TeamLineup(
@@ -666,9 +666,9 @@ class TeamLineup {
       shirtNumber: m['shirt_number'] as int?,
       playerName: m['player_name'] as String? ?? '—',
       positionRole: m['position_role'] as String?,
-      teamSide: null,   // no existe en DB
-      notes: null,      // no existe en DB
-      sortOrder: 0,     // no existe en DB
+      teamSide: null,
+      notes: null,
+      sortOrder: 0,
       posX: (m['pos_x'] as num?)?.toDouble(),
       posY: (m['pos_y'] as num?)?.toDouble(),
       historicalPlayerId: player != null ? (player['id'] as String?) : null,
@@ -677,15 +677,15 @@ class TeamLineup {
     );
   }
 }
-// Título ganado por el equipo (historical_team_titles)
+
 class TeamTitle {
   final String id;
   final String? titleName;
-  final String? category;   // Liga | Copa | Europa | etc.
+  final String? category;
   final String? year;
   final String? notes;
   final int sortOrder;
- 
+
   const TeamTitle({
     required this.id,
     this.titleName,
@@ -694,23 +694,22 @@ class TeamTitle {
     this.notes,
     this.sortOrder = 0,
   });
- 
-factory TeamTitle.fromMap(Map<String, dynamic> m) => TeamTitle(
-      id: m['id'] as String,
-      titleName: m['title_name'] as String?,
-      category: null,   // no existe en DB
-      year: m['year']?.toString(),
-      notes: null,
-      sortOrder: 0, 
-    );
+
+  factory TeamTitle.fromMap(Map<String, dynamic> m) => TeamTitle(
+        id: m['id'] as String,
+        titleName: m['title_name'] as String?,
+        category: null,
+        year: m['year']?.toString(),
+        notes: null,
+        sortOrder: 0,
+      );
 }
- 
-// Detalle completo del equipo
+
 class TeamDetail {
   final HistoricalTeam team;
   final List<TeamLineup> lineup;
   final List<TeamTitle> titles;
- 
+
   const TeamDetail({
     required this.team,
     required this.lineup,

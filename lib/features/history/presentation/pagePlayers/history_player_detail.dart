@@ -115,9 +115,10 @@ class _DetailTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final sig = player.significanceLevel ?? 0;
     final isGoat = sig == 5;
+    final topPad = MediaQuery.of(context).padding.top;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: EdgeInsets.fromLTRB(12, topPad + 10, 12, 10),
       decoration: BoxDecoration(
         color: kHistBg,
         border: Border(bottom: BorderSide(color: kHistBorder, width: 1.5)),

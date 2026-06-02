@@ -6,7 +6,6 @@ class EventTabHistoria extends StatelessWidget {
   final EventDetail detail;
   const EventTabHistoria({super.key, required this.detail});
 
-  // Orden canónico de rondas knockout
   static const _koOrder = [
     'Octavos', 'Cuartos', 'Semifinal', 'Tercero', 'Final'
   ];
@@ -14,13 +13,11 @@ class EventTabHistoria extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final knockout = detail.knockout;
-    final isEmpty = knockout.isEmpty;
 
-    if (isEmpty) {
+    if (knockout.isEmpty) {
       return const Center(child: EvEmpty(message: 'Sin datos de historia registrados'));
     }
 
-    // Agrupar por ronda
     final Map<String, List<KnockoutMatch>> byRound = {};
     for (final m in knockout) {
       byRound.putIfAbsent(m.round, () => []).add(m);
@@ -60,10 +57,10 @@ class _KoRoundBlock extends StatelessWidget {
 
   Color _roundColor() {
     switch (round) {
-      case 'Final': return kEvGold;
+      case 'Final':     return kEvGold;
       case 'Semifinal': return kEvPurple;
-      case 'Tercero': return kEvBlue;
-      default: return kEvMuted;
+      case 'Tercero':   return kEvBlue;
+      default:          return kEvMuted;
     }
   }
 
@@ -74,7 +71,6 @@ class _KoRoundBlock extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Label de ronda
         Container(
           margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -97,14 +93,13 @@ class _KoRoundBlock extends StatelessWidget {
             ],
           ),
         ),
-        // Partidos
         Container(
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
           decoration: BoxDecoration(
             border: Border.all(color: kEvBorder, width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: kEvDark.withOpacity(0.35),
+                color: kEvDark.withValues(alpha: 0.35),
                 offset: const Offset(3, 3),
                 blurRadius: 0,
               ),
@@ -144,15 +139,16 @@ class _KoMatchRow extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: match.is_decisive ? roundColor.withOpacity(0.06) : kEvBg,
+        // ── usa isDecisive (camelCase Dart) ──────────────────
+        color: match.isDecisive
+            ? roundColor.withValues(alpha: 0.06)
+            : kEvBg,
         border: showBorder
             ? Border(bottom: BorderSide(color: kEvBorderL, width: 0.5))
             : null,
-        // Franja izquierda si es decisivo
       ),
       child: Column(
         children: [
-          // Fila principal
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(
@@ -204,12 +200,12 @@ class _KoMatchRow extends StatelessWidget {
             ),
           ),
 
-          // Chip "Decisivo" si aplica
-          if (match.is_decisive)
+          // Chip "Decisivo"
+          if (match.isDecisive)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 4),
-              color: roundColor.withOpacity(0.12),
+              color: roundColor.withValues(alpha: 0.12),
               child: Center(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,

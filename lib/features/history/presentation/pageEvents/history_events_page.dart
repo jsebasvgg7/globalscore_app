@@ -99,6 +99,9 @@ class _EventListView extends ConsumerWidget {
           // ── Category filter tabs ─────────────────────────
           _CategoryTabs(active: catFilter),
 
+          // ── Event type filter chips ───────────────────────
+          _EventTypeFilter(),
+
           // ── Counter row ──────────────────────────────────
           eventsAsync.whenOrNull(data: (list) => _CounterRow(count: list.length))
               ?? const SizedBox.shrink(),
@@ -118,6 +121,7 @@ class _EventListView extends ConsumerWidget {
                 }
                 return ListView.builder(
                   physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 24),
                   itemCount: events.length,
                   itemBuilder: (_, i) => _EventCard(
                     event: events[i],
@@ -170,7 +174,7 @@ class _EventsHeader extends StatelessWidget {
                         border: Border.all(color: kEvBorder, width: 1.5),
                         boxShadow: [
                           BoxShadow(
-                            color: kEvDark.withOpacity(0.45),
+                            color: Color.fromRGBO(26, 26, 46, 0.45),
                             offset: const Offset(2, 2),
                             blurRadius: 0,
                           ),
@@ -346,40 +350,87 @@ class _SearchBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: kEvBorder, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color.fromRGBO(26, 26, 46, 0.3),
+                    offset: const Offset(2, 2),
+                    blurRadius: 0,
+                  ),
+                ],
+              ),
+              child: TextField(
+                controller: controller,
+                style: evMono(size: 12),
+                decoration: InputDecoration(
+                  hintText: 'Buscar evento...',
+                  hintStyle: evMono(size: 12, color: kEvMuted),
+                  prefixIcon:
+                      const Icon(Icons.search, size: 16, color: kEvMuted),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  suffixIcon: controller.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 13),
+                          onPressed: () {
+                            controller.clear();
+                            ref.read(eventSearchProvider.notifier).set('');
+                          },
+                        )
+                      : null,
+                ),
+                onChanged: (v) =>
+                    ref.read(eventSearchProvider.notifier).set(v),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Botón modo aleatorio
+          _RandomEventButtonWidget(ref: ref),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Random event button ───────────────────────────────────────
+class _RandomEventButtonWidget extends StatelessWidget {
+  final WidgetRef ref;
+  const _RandomEventButtonWidget({required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final eventsAsync = ref.watch(historyEventsProvider);
+    return GestureDetector(
+      onTap: () {
+        eventsAsync.whenData((events) {
+          if (events.isEmpty) return;
+          final random = events[DateTime.now().millisecondsSinceEpoch % events.length];
+          ref.read(selectedEventProvider.notifier).select(random);
+        });
+      },
       child: Container(
+        width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: kEvDark,
           border: Border.all(color: kEvBorder, width: 1.5),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
-              color: kEvDark.withOpacity(0.3),
-              offset: const Offset(2, 2),
+              color: Color(0x885B4FD8),
+              offset: Offset(3, 3),
               blurRadius: 0,
             ),
           ],
         ),
-        child: TextField(
-          controller: controller,
-          style: evMono(size: 12),
-          decoration: InputDecoration(
-            hintText: 'Buscar evento...',
-            hintStyle: evMono(size: 12, color: kEvMuted),
-            prefixIcon: const Icon(Icons.search, size: 16, color: kEvMuted),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(vertical: 10),
-            suffixIcon: controller.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear, size: 13),
-                    onPressed: () {
-                      controller.clear();
-                      ref.read(eventSearchProvider.notifier).set('');
-                    },
-                  )
-                : null,
-          ),
-          onChanged: (v) => ref.read(eventSearchProvider.notifier).set(v),
-        ),
+        child: const Icon(Icons.shuffle_rounded, size: 17, color: Colors.white),
       ),
     );
   }
@@ -394,14 +445,19 @@ class _CategoryTabs extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     const cats   = ['',       'player',     'team'];
     const labels = ['TODOS',  'JUGADORES',  'EQUIPOS'];
+    const icons  = [Icons.apps_rounded, Icons.person_outline, Icons.shield_outlined];
 
     return Container(
-      height: 36,
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       decoration: BoxDecoration(
-        border: Border(
-          top:    BorderSide(color: kEvBorderL, width: 0.5),
-          bottom: BorderSide(color: kEvBorder, width: 1.5),
-        ),
+        border: Border.all(color: kEvBorder, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Color.fromRGBO(26, 26, 46, 0.35),
+            offset: const Offset(3, 3),
+            blurRadius: 0,
+          ),
+        ],
       ),
       child: Row(
         children: List.generate(cats.length, (i) {
@@ -410,27 +466,99 @@ class _CategoryTabs extends ConsumerWidget {
             child: GestureDetector(
               onTap: () =>
                   ref.read(eventCategoryFilterProvider.notifier).set(cats[i]),
-              child: Container(
-                alignment: Alignment.center,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   color: isActive ? kEvAccent : Colors.transparent,
                   border: i < cats.length - 1
                       ? Border(
-                          right: BorderSide(color: kEvBorderL, width: 0.5))
+                          right: BorderSide(color: kEvBorder, width: 1.5))
                       : null,
                 ),
-                child: Text(
-                  labels[i],
-                  style: evMono(
-                    size: 9, weight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                    color: isActive ? Colors.white : kEvMuted,
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icons[i],
+                      size: 13,
+                      color: isActive ? Colors.white : kEvMuted,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      labels[i],
+                      style: evMono(
+                        size: 8,
+                        weight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                        color: isActive ? Colors.white : kEvMuted,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           );
         }),
+      ),
+    );
+  }
+}
+
+// ── Event type filter chips ────────────────────────────────────
+class _EventTypeFilter extends ConsumerWidget {
+  const _EventTypeFilter();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final active = ref.watch(eventTypeFilterProvider);
+    const types = [
+      ('', 'TODOS'),
+      ('Championship', 'CAMPEÓN'),
+      ('Historic Match', 'PARTIDO'),
+      ('Legendary Performance', 'LEYENDA'),
+      ('Era Defining', 'ERA'),
+      ('Record', 'RÉCORD'),
+    ];
+
+    return SizedBox(
+      height: 38,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        scrollDirection: Axis.horizontal,
+        itemCount: types.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 6),
+        itemBuilder: (_, i) {
+          final (value, label) = types[i];
+          final isActive = active == value;
+          final chipColor = value.isEmpty ? kEvAccent : (kEventTypeColor[value] ?? kEvAccent);
+          return GestureDetector(
+            onTap: () => ref.read(eventTypeFilterProvider.notifier).set(value),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 100),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isActive ? chipColor : kEvBg,
+                border: Border.all(
+                  color: isActive ? chipColor : kEvBorder,
+                  width: 1.5,
+                ),
+                boxShadow: isActive
+                    ? [BoxShadow(color: chipColor.withValues(alpha: 0.4), offset: const Offset(2, 2), blurRadius: 0)]
+                    : [const BoxShadow(color: Color(0x331A1A2E), offset: Offset(1, 1), blurRadius: 0)],
+              ),
+              child: Text(
+                label,
+                style: evMono(
+                  size: 8,
+                  weight: FontWeight.w800,
+                  letterSpacing: 0.6,
+                  color: isActive ? Colors.white : kEvMuted,
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -444,7 +572,7 @@ class _CounterRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: kEvBorder, width: 1.5)),
       ),
@@ -462,6 +590,13 @@ class _CounterRow extends StatelessWidget {
             decoration: BoxDecoration(
               color: kEvAccent,
               border: Border.all(color: kEvBorder, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Color.fromRGBO(26, 26, 46, 0.3),
+                  offset: const Offset(2, 2),
+                  blurRadius: 0,
+                ),
+              ],
             ),
             child: Text('$count ENCONTRADOS',
                 style: evMono(
@@ -474,7 +609,7 @@ class _CounterRow extends StatelessWidget {
   }
 }
 
-// ── Event card (lista) ────────────────────────────────────────
+// ── Event card (neobrutal épica) ──────────────────────────────
 class _EventCard extends StatelessWidget {
   final HistoricalEvent event;
   final VoidCallback onTap;
@@ -483,92 +618,218 @@ class _EventCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cc     = catColor(event.eventCategory);
-    final tc     = typeColor(event.eventType);
     final imgUrl = getHistoricalImageUrl(event.imagePath);
+    final hasScore = event.scoreA != null && event.scoreB != null;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: kEvBorderL, width: 0.5),
-            left:   BorderSide(color: cc, width: 4),
-          ),
+          color: kEvBg,
+          border: Border.all(color: kEvBorder, width: 2),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0xFF1A1A2E),
+              offset: Offset(5, 5),
+              blurRadius: 0,
+            ),
+          ],
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Thumbnail
-            if (imgUrl != null)
-              Container(
-                width: 60, height: 60,
-                margin: const EdgeInsets.only(right: 12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: kEvBorderL, width: 0.5),
-                ),
-                child: Image.network(imgUrl, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                          color: kEvDark,
-                          child: const Icon(Icons.bolt, size: 22, color: kEvAccent),
-                        )),
-              )
-            else
-              Container(
-                width: 60, height: 60,
-                margin: const EdgeInsets.only(right: 12),
-                color: kEvDark.withOpacity(0.08),
-                child: const Icon(Icons.bolt_outlined, size: 22, color: kEvMuted),
-              ),
-
-            // Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // ── Top accent bar with year ────────────────────
+            Container(
+              height: 36,
+              color: cc,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
                 children: [
-                  // Badges
-                  Wrap(
-                    spacing: 4, runSpacing: 2,
-                    children: [
-                      if (event.eventCategory != null)
-                        EvCatBadge(category: event.eventCategory!),
-                      if (event.eventType != null)
-                        EvTypeBadge(type: event.eventType!),
-                    ],
+                  Container(
+                    width: 4, height: 18,
+                    color: Colors.white.withValues(alpha: 0.45),
                   ),
-                  const SizedBox(height: 5),
-
-                  // Título
-                  Text(event.title,
-                      style: evMono(size: 12, weight: FontWeight.w800)),
-                  const SizedBox(height: 4),
-
-                  // Año + score inline
-                  Row(
-                    children: [
-                      if (event.year != null)
-                        Text('${event.year}',
-                            style: evMono(size: 10, color: kEvMuted)),
-                      if (event.scoreA != null && event.scoreB != null) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 5, vertical: 1),
-                          color: kEvDark,
-                          child: Text(
-                            '${event.teamAName ?? '?'}  ${event.scoreA}–${event.scoreB}  ${event.teamBName ?? '?'}',
-                            style: evMono(
-                                color: Colors.white, size: 8,
-                                weight: FontWeight.w700),
-                          ),
+                  const SizedBox(width: 8),
+                  if (event.year != null)
+                    Text(
+                      '${event.year}',
+                      style: evMono(
+                        size: 18, weight: FontWeight.w900,
+                        color: Colors.white, letterSpacing: -0.5,
+                      ),
+                    ),
+                  const SizedBox(width: 10),
+                  if (event.eventType != null)
+                    Expanded(
+                      child: Text(
+                        (kEventTypeLabel[event.eventType] ?? event.eventType!).toUpperCase(),
+                        style: evMono(
+                          size: 8, weight: FontWeight.w700,
+                          color: Colors.white.withValues(alpha: 0.85),
+                          letterSpacing: 0.8,
                         ),
-                      ],
-                    ],
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  const Spacer(),
+                  // cat badge blanco
+                  if (event.eventCategory != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1),
+                      ),
+                      child: Text(
+                        (kCatLabel[event.eventCategory] ?? event.eventCategory!).toUpperCase(),
+                        style: evMono(size: 7, weight: FontWeight.w800, color: Colors.white),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+            // ── Body ────────────────────────────────────────
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Thumbnail
+                  Container(
+                    width: 90,
+                    constraints: const BoxConstraints(minHeight: 90),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8E4DF),
+                      border: Border(
+                        right: BorderSide(color: kEvBorder, width: 2),
+                      ),
+                    ),
+                    child: imgUrl != null
+                        ? Image.network(
+                            imgUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, _) => Container(
+                              color: const Color(0xFFE8E4DF),
+                              child: const Icon(Icons.bolt, size: 32, color: kEvMuted),
+                            ),
+                          )
+                        : const Icon(Icons.bolt_outlined, size: 32, color: kEvMuted),
+                  ),
+
+                  // Info content
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Título
+                          Text(
+                            event.title.toUpperCase(),
+                            style: evMono(
+                              size: 13,
+                              weight: FontWeight.w900,
+                              letterSpacing: -0.2,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Score block neobrutal
+                          if (hasScore) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: kEvDark,
+                                border: Border.all(color: cc, width: 1.5),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: cc.withValues(alpha: 0.45),
+                                    offset: const Offset(2, 2),
+                                    blurRadius: 0,
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      event.teamAName ?? '?',
+                                      style: evMono(size: 9, weight: FontWeight.w700, color: Colors.white),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                                    child: Text(
+                                      '${event.scoreA}–${event.scoreB}',
+                                      style: evMono(size: 13, weight: FontWeight.w900, color: cc),
+                                    ),
+                                  ),
+                                  Flexible(
+                                    child: Text(
+                                      event.teamBName ?? '?',
+                                      style: evMono(size: 9, weight: FontWeight.w700, color: Colors.white),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+
+                          // Footer row
+                          Row(
+                            children: [
+                              // Protagonist name if any
+                              if (event.player?.name != null || event.team?.name != null)
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        event.eventCategory == 'player'
+                                            ? Icons.person_outline
+                                            : Icons.shield_outlined,
+                                        size: 10,
+                                        color: kEvMuted,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          event.player?.name ?? event.team?.name ?? '',
+                                          style: evMono(size: 9, color: kEvMuted),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              else
+                                const Spacer(),
+
+                              // Arrow button
+                              Container(
+                                width: 26, height: 26,
+                                decoration: BoxDecoration(
+                                  color: cc,
+                                  border: Border.all(color: kEvBorder, width: 1.5),
+                                ),
+                                child: const Icon(Icons.arrow_forward,
+                                    size: 12, color: Colors.white),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, size: 16, color: kEvMuted),
           ],
         ),
       ),
