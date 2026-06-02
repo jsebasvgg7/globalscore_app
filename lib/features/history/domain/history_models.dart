@@ -483,7 +483,77 @@ class PlayerCareerEntry {
         roleNote: m['role_note'] as String?,
       );
 }
+// Relación jugador ↔ HistoricalTeam (tabla historical_player_teams)
+class PlayerTeamLink {
+  final String startYear;
+  final String endYear;
+  final String? roles;
+  final String teamId;
+  final String teamName;
+  final String? teamCountry;
+  final String? teamImagePath;
+  final String? primaryColor;
 
+  const PlayerTeamLink({
+    required this.startYear,
+    required this.endYear,
+    this.roles,
+    required this.teamId,
+    required this.teamName,
+    this.teamCountry,
+    this.teamImagePath,
+    this.primaryColor,
+  });
+
+  factory PlayerTeamLink.fromMap(Map<String, dynamic> m) {
+    final team = m['historical_teams'] as Map<String, dynamic>? ?? {};
+    return PlayerTeamLink(
+      startYear: m['start_year']?.toString() ?? '?',
+      endYear: m['end_year']?.toString() ?? '?',
+      roles: m['roles'],
+      teamId: team['id']?.toString() ?? '',
+      teamName: team['name'] ?? '—',
+      teamCountry: team['country'],
+      teamImagePath: team['image_path'],
+      primaryColor: team['primary_color'],
+    );
+  }
+}
+
+class PlayerEventLink {
+  final String? roleNote;
+  final String eventId;
+  final String eventTitle;
+  final String? eventType;
+  final String? eventDate;
+  final String? imagePath;
+
+  const PlayerEventLink({
+    this.roleNote,
+    required this.eventId,
+    required this.eventTitle,
+    this.eventType,
+    this.eventDate,
+    this.imagePath,
+  });
+
+  int? get year {
+    if (eventDate == null) return null;
+    try { return DateTime.parse(eventDate!).year; } catch (_) { return null; }
+  }
+
+  factory PlayerEventLink.fromMap(Map<String, dynamic> m) {
+    final ev = m['historical_events'] as Map<String, dynamic>? ?? {};
+    return PlayerEventLink(
+      roleNote: m['role_note'],
+      eventId: ev['id']?.toString() ?? '',
+      eventTitle: ev['title'] ?? '—',
+      eventType: ev['event_type'],
+      eventDate: ev['event_date'],
+      imagePath: ev['image_path'],
+    );
+  }
+}
 class PlayerNationalEntry {
   final String country;
   final int? startYear;
@@ -543,11 +613,15 @@ class PlayerDetail {
   final List<PlayerCareerEntry> career;
   final List<PlayerNationalEntry> national;
   final List<PlayerTitleEntry> titles;
+  final List<PlayerTeamLink> teamLinks;    
+  final List<PlayerEventLink> eventLinks;   
 
   const PlayerDetail({
     required this.player,
     required this.career,
     required this.national,
     required this.titles,
+    this.teamLinks = const [],
+    this.eventLinks = const [],
   });
 }

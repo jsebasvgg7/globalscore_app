@@ -238,7 +238,7 @@ class _DetailTabBar extends StatelessWidget {
   static const _tabs = [
     (PlayerDetailTab.resumen,     Icons.home_outlined,          'RESUMEN'),
     (PlayerDetailTab.trayectoria, Icons.timeline_outlined,       'TRAYECTO'),
-    (PlayerDetailTab.equipos,     Icons.shield_outlined,         'EQUIPOS'),
+    (PlayerDetailTab.equipos,     Icons.shield_outlined,         'EQUI & MOM'),
     (PlayerDetailTab.palmares,    Icons.emoji_events_outlined,   'PALMARÉS'),
     (PlayerDetailTab.historia,    Icons.auto_stories_outlined,   'HISTORIA'),
   ];

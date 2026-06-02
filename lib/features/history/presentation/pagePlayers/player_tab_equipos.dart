@@ -1,6 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../domain/history_models.dart';
 import 'history_players_shared.dart';
+import '../../data/history_service.dart';
+
+// Mapeo de event_type igual que en React
+const _eventTypeLabel = {
+  'Championship': 'Campeonato',
+  'Historic Match': 'Partido Histórico',
+  'Legendary Performance': 'Actuación Legendaria',
+  'Era Defining': 'Definió una Era',
+  'Record': 'Récord',
+};
 
 class PlayerTabEquipos extends StatelessWidget {
   final PlayerDetail detail;
@@ -8,252 +18,263 @@ class PlayerTabEquipos extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final career = detail.career;
-    final titles = detail.titles
-        .where((t) => t.titleCategory == 'club')
-        .toList();
+    final teamLinks = detail.teamLinks;
+    final eventLinks = detail.eventLinks;
 
-      return SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            minHeight: MediaQuery.of(context).size.height,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-          // ── Header ──────────────────────────────────────────
-          _TabHeader(
-            icon: Icons.shield_outlined,
-            title: 'EQUIPOS',
-            subtitle: '${career.length} clubes en su carrera',
-          ),
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header ─────────────────────────────────────
+            _TabHeader(
+              icon: Icons.shield_outlined,
+              title: 'EQUIPOS & MOMENTOS',
+              subtitle: teamLinks.isEmpty
+                  ? 'Sin registros'
+                  : '${teamLinks.length} equipo${teamLinks.length != 1 ? 's' : ''} histórico${teamLinks.length != 1 ? 's' : ''}',
+            ),
 
-          if (career.isEmpty)
-            const _Empty(message: 'Sin datos de equipos')
-          else ...[
-            // ── Grid de equipos ──────────────────────────────
-            _SectionLabel(label: 'CLUBES'),
-            _TeamsGrid(entries: career),
+            if (teamLinks.isEmpty && eventLinks.isEmpty)
+              const _Empty(message: 'Sin datos de equipos ni momentos')
+            else ...[
 
-            // ── Momentos históricos (títulos de club) ────────
-            if (titles.isNotEmpty) ...[
-              _SectionLabel(label: 'MOMENTOS HISTÓRICOS', color: kHistGold),
-              _MomentsList(titles: titles),
+              // ── Equipos históricos ──────────────────────
+              if (teamLinks.isNotEmpty) ...[
+                _SectionLabel(label: 'EQUIPOS HISTÓRICOS'),
+                _TeamLinksList(links: teamLinks),
+              ],
+
+              // ── Momentos históricos ─────────────────────
+              if (eventLinks.isNotEmpty) ...[
+                _SectionLabel(label: 'MOMENTOS HISTÓRICOS', color: kHistGold),
+                _EventLinksList(links: eventLinks),
+              ],
             ],
-          ],
 
-          const SizedBox(height: 24),
-        ],
+            const SizedBox(height: 24),
+          ],
         ),
       ),
     );
   }
 }
 
-// ── Teams grid 2 col ──────────────────────────────────────────
-class _TeamsGrid extends StatelessWidget {
-  final List<PlayerCareerEntry> entries;
-  const _TeamsGrid({required this.entries});
+// ── Lista de equipos históricos (tipo row, con imagen) ─────────
+class _TeamLinksList extends StatelessWidget {
+  final List<PlayerTeamLink> links;
+  const _TeamLinksList({required this.links});
 
   @override
   Widget build(BuildContext context) {
-    // Pares de items para grid 2x cols
-    final rows = <List<PlayerCareerEntry>>[];
-    for (int i = 0; i < entries.length; i += 2) {
-      rows.add([
-        entries[i],
-        if (i + 1 < entries.length) entries[i + 1],
-      ]);
-    }
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
-        children: rows.map((row) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(
-              children: [
-                Expanded(child: _TeamCard(entry: row[0])),
-                const SizedBox(width: 10),
-                row.length > 1
-                    ? Expanded(child: _TeamCard(entry: row[1]))
-                    : const Expanded(child: SizedBox()),
-              ],
-            ),
-          );
-        }).toList(),
+        children: links.map((link) => _TeamLinkRow(link: link)).toList(),
       ),
     );
   }
 }
 
-class _TeamCard extends StatelessWidget {
-  final PlayerCareerEntry entry;
-  const _TeamCard({required this.entry});
+class _TeamLinkRow extends StatelessWidget {
+  final PlayerTeamLink link;
+  const _TeamLinkRow({required this.link});
+
+  Color get _teamColor {
+    if (link.primaryColor == null) return kHistAccent;
+    try {
+      final hex = link.primaryColor!.replaceAll('#', '');
+      return Color(int.parse('FF$hex', radix: 16));
+    } catch (_) {
+      return kHistAccent;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final imgUrl = getHistoricalImageUrl(link.teamImagePath);
+
     return Container(
+      margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: neoBox(shadowX: 3, shadowY: 3),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          // Ícono de escudo placeholder
+          // Logo del equipo
           Container(
-            width: 36,
-            height: 36,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: kHistAccent.withOpacity(0.1),
+              color: _teamColor.withOpacity(0.08),
               border: Border.all(color: kHistBorderL, width: 1),
-              shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.shield_outlined,
-              size: 18,
-              color: kHistAccent,
-            ),
+            child: imgUrl != null
+                ? Image.network(imgUrl, fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) =>
+                        Icon(Icons.shield, size: 24, color: _teamColor))
+                : Icon(Icons.shield, size: 24, color: _teamColor),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(width: 12),
 
-          Text(
-            entry.teamName.toUpperCase(),
-            style: monoStyle(
-                size: 11, weight: FontWeight.w900, letterSpacing: -0.2),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 3),
-
-          Text(
-            '${entry.startYear ?? '?'} – ${entry.endYear ?? '?'}',
-            style: monoStyle(
-                size: 9, color: kHistAccent, weight: FontWeight.w700),
-          ),
-
-          if (entry.roleNote != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              entry.roleNote!,
-              style: monoStyle(size: 8, color: kHistMuted),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-
-          // Mini stats si existen
-          if (entry.goals > 0 || entry.appearances > 0) ...[
-            const SizedBox(height: 6),
-            Row(
+          // Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (entry.appearances > 0) ...[
+                Text(
+                  link.teamName.toUpperCase(),
+                  style: monoStyle(
+                      size: 12, weight: FontWeight.w800, letterSpacing: -0.2),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (link.teamCountry != null) ...[
+                  const SizedBox(height: 2),
                   Text(
-                    '${entry.appearances}',
-                    style: monoStyle(
-                        size: 11, weight: FontWeight.w900, color: kHistDark),
+                    link.teamCountry!,
+                    style: monoStyle(size: 9, color: kHistMuted),
                   ),
-                  const SizedBox(width: 2),
-                  Text('PJ',
-                      style: monoStyle(size: 7, color: kHistMuted)),
-                  const SizedBox(width: 8),
                 ],
-                if (entry.goals > 0) ...[
+                if (link.roles != null) ...[
+                  const SizedBox(height: 2),
                   Text(
-                    '${entry.goals}',
-                    style: monoStyle(
-                        size: 11, weight: FontWeight.w900, color: kHistAccent),
+                    link.roles!,
+                    style: monoStyle(size: 9, color: kHistMuted),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(width: 2),
-                  Text('G',
-                      style: monoStyle(size: 7, color: kHistMuted)),
                 ],
               ],
             ),
-          ],
+          ),
+
+          // Período
+          Text(
+            '${link.startYear} – ${link.endYear}',
+            style: monoStyle(
+                size: 10, color: kHistAccent, weight: FontWeight.w700),
+          ),
         ],
       ),
     );
   }
 }
 
-// ── Momentos históricos (títulos de club en cards horizontales) ──
-class _MomentsList extends StatelessWidget {
-  final List<PlayerTitleEntry> titles;
-  const _MomentsList({required this.titles});
+// ── Lista de momentos históricos (eventos) ─────────────────────
+class _EventLinksList extends StatelessWidget {
+  final List<PlayerEventLink> links;
+  const _EventLinksList({required this.links});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Scroll horizontal con las 3 primeras
-        SizedBox(
-          height: 110,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: titles.take(6).length,
-            itemBuilder: (_, i) => _MomentCard(title: titles[i]),
-            ),
-          ),
-        const SizedBox(height: 12),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: links.map((link) => _EventLinkRow(link: link)).toList(),
+      ),
     );
   }
 }
 
-class _MomentCard extends StatelessWidget {
-  final PlayerTitleEntry title;
-  const _MomentCard({required this.title});
+class _EventLinkRow extends StatelessWidget {
+  final PlayerEventLink link;
+  const _EventLinkRow({required this.link});
 
   @override
   Widget build(BuildContext context) {
+    final imgUrl = getHistoricalImageUrl(link.imagePath);
+    final typeLabel = _eventTypeLabel[link.eventType] ?? link.eventType;
+
     return Container(
-      width: 110,
-      margin: const EdgeInsets.only(right: 10),
-      decoration: neoBox(bg: kHistDark, shadowX: 3, shadowY: 3),
-      padding: const EdgeInsets.all(10),
-      child: Column(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: neoBox(shadowX: 3, shadowY: 3),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Year badge
-          if (title.year != null)
+          // Thumbnail del evento
+          if (imgUrl != null)
+            SizedBox(
+              width: 64,
+              height: 64,
+              child: Image.network(imgUrl, fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                        color: kHistDark,
+                        child: const Icon(Icons.bolt, size: 24, color: kHistAccent),
+                      )),
+            )
+          else
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-              color: kHistAccent,
-              child: Text(
-                title.year!,
-                style: monoStyle(
-                    size: 8, weight: FontWeight.w900, color: Colors.white),
+              width: 64,
+              height: 64,
+              color: kHistDark,
+              child: const Icon(Icons.bolt, size: 24, color: kHistAccent),
+            ),
+
+          // Info
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Type badge + year
+                  Row(
+                    children: [
+                      if (typeLabel != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 2),
+                          color: kHistAccent,
+                          child: Text(
+                            typeLabel.toUpperCase(),
+                            style: monoStyle(
+                                size: 7,
+                                color: Colors.white,
+                                weight: FontWeight.w800,
+                                letterSpacing: 0.6),
+                          ),
+                        ),
+                      if (link.year != null) ...[
+                        const SizedBox(width: 6),
+                        Text('${link.year}',
+                            style: monoStyle(size: 9, color: kHistMuted)),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+
+                  // Título del evento
+                  Text(
+                    link.eventTitle,
+                    style: monoStyle(size: 11, weight: FontWeight.w700),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+
+                  // Role note si existe
+                  if (link.roleNote != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      link.roleNote!,
+                      style: monoStyle(
+                          size: 9, color: kHistMuted, letterSpacing: 0),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
               ),
             ),
-          const Spacer(),
-
-          Text(
-            title.titleName.toUpperCase(),
-            style: monoStyle(
-              size: 9, weight: FontWeight.w900,
-              color: Colors.white, letterSpacing: -0.2,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 2),
-          if (title.teamName != null)
-            Text(
-              title.teamName!,
-              style: monoStyle(size: 8, color: Colors.white60),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
         ],
       ),
     );
   }
 }
 
-// ── Helpers ───────────────────────────────────────────────────
+// ── Helpers compartidos ─────────────────────────────────────────
 class _TabHeader extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -308,7 +329,8 @@ class _SectionLabel extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 8, height: 8,
+            width: 8,
+            height: 8,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: color,
@@ -319,8 +341,10 @@ class _SectionLabel extends StatelessWidget {
           Text(
             label,
             style: monoStyle(
-              size: 9, weight: FontWeight.w800,
-              letterSpacing: 1.2, color: color,
+              size: 9,
+              weight: FontWeight.w800,
+              letterSpacing: 1.2,
+              color: color,
             ),
           ),
         ],
