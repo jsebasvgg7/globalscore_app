@@ -261,7 +261,6 @@ class KnockoutMatch {
   final String? winner;
   final String? notes;
   final int sortOrder;
-  // ── NUEVO ────────────────────────────────────────────────
   final bool isDecisive;
 
   const KnockoutMatch({
@@ -437,16 +436,94 @@ class EventLineup {
       );
 }
 
+// ── Plantel del evento (historical_event_squad) ───────────────
+// Usado por eventos de tipo 'team' — un solo equipo protagonista.
+class EventSquad {
+  final String id;
+  final String playerName;
+  final int? shirtNumber;
+  final String? positionRole;
+  final bool isKeyPlayer;
+  final int sortOrder;
+
+  const EventSquad({
+    required this.id,
+    required this.playerName,
+    this.shirtNumber,
+    this.positionRole,
+    this.isKeyPlayer = false,
+    this.sortOrder = 0,
+  });
+
+  factory EventSquad.fromMap(Map<String, dynamic> m) => EventSquad(
+        id: m['id'] as String,
+        playerName: m['player_name'] as String? ?? '—',
+        shirtNumber: m['shirt_number'] as int?,
+        positionRole: m['position_role'] as String?,
+        isKeyPlayer: m['is_key_player'] as bool? ?? false,
+        sortOrder: m['sort_order'] as int? ?? 0,
+      );
+}
+
+// ── Tabla de posiciones del evento ───────────────────────────
+// Usado por eventos de tipo 'team' que tienen standings.
+class EventStanding {
+  final int position;
+  final String teamName;
+  final int points;
+  final int wins;
+  final int draws;
+  final int losses;
+  final int goalsFor;
+  final int goalsAgainst;
+  final bool isChampion;
+
+  const EventStanding({
+    required this.position,
+    required this.teamName,
+    this.points = 0,
+    this.wins = 0,
+    this.draws = 0,
+    this.losses = 0,
+    this.goalsFor = 0,
+    this.goalsAgainst = 0,
+    this.isChampion = false,
+  });
+
+  factory EventStanding.fromMap(Map<String, dynamic> m) => EventStanding(
+        position: m['position'] as int? ?? 0,
+        teamName: m['team_name'] as String? ?? '—',
+        points: m['points'] as int? ?? 0,
+        wins: m['wins'] as int? ?? 0,
+        draws: m['draws'] as int? ?? 0,
+        losses: m['losses'] as int? ?? 0,
+        goalsFor: m['goals_for'] as int? ?? 0,
+        goalsAgainst: m['goals_against'] as int? ?? 0,
+        isChampion: m['is_champion'] as bool? ?? false,
+      );
+
+  int get played => wins + draws + losses;
+  int get goalDiff => goalsFor - goalsAgainst;
+}
+
 class EventDetail {
   final HistoricalEvent event;
+  // Eventos 'player': lineups contiene ambos equipos (team_a y team_b)
   final List<EventLineup> lineupA;
   final List<EventLineup> lineupB;
+  // Eventos 'team': squad es el plantel del equipo protagonista
+  final List<EventSquad> squad;
+  // Eventos 'team' con fase de grupos: standings
+  final List<EventStanding> standings;
+  // Ambos tipos pueden tener knockout
   final List<KnockoutMatch> knockout;
 
   const EventDetail({
     required this.event,
     required this.lineupA,
     required this.lineupB,
+    this.squad = const [],
+    this.standings = const [],
     required this.knockout,
   });
 }
