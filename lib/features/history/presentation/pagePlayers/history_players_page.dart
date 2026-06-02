@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/history_models.dart';
 import '../../domain/history_providers.dart';
 import '../../../../../shared/layout/scaffold_with_nav_bar.dart'
-    show hideTopBarProvider;
+    show hideTopBarProvider, hideBottomNavProvider;
+import '../../data/history_service.dart';
 import 'history_players_shared.dart';
 import 'history_player_detail.dart';
 
@@ -44,6 +45,7 @@ class _HistoryPlayersPageState extends ConsumerState<HistoryPlayersPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(hideTopBarProvider.notifier).hide();
+      ref.read(hideBottomNavProvider.notifier).hide();
       // Reset tab al entrar
       ref.read(playerDetailTabProvider.notifier).set(PlayerDetailTab.resumen);
     });
@@ -57,6 +59,7 @@ class _HistoryPlayersPageState extends ConsumerState<HistoryPlayersPage> {
 
   void _handleBack() {
     ref.read(hideTopBarProvider.notifier).show();
+    ref.read(hideBottomNavProvider.notifier).show();
     ref.read(historySectionProvider.notifier).goBack();
   }
 
@@ -489,12 +492,12 @@ class _SearchBar extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 8),
+          // Botón filtros 1:1 (sin texto)
           GestureDetector(
-            onTap: () => _showFilterSheet(
-                context, ref, legacyFilter, sigFilter),
+            onTap: () => _showFilterSheet(context, ref, legacyFilter, sigFilter),
             child: Container(
+              width: 40,
               height: 40,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
                 color: hasFilters ? kHistAccent : kHistBg,
                 border: Border.all(
@@ -509,42 +512,29 @@ class _SearchBar extends ConsumerWidget {
                   ),
                 ],
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  Icon(Icons.tune_rounded, size: 14,
+                  Icon(Icons.tune_rounded, size: 16,
                       color: hasFilters ? Colors.white : kHistDark),
-                  const SizedBox(width: 6),
-                  Text(
-                    'FILTROS',
-                    style: monoStyle(
-                      size: 9, weight: FontWeight.w700,
-                      letterSpacing: 0.8,
-                      color: hasFilters ? Colors.white : kHistDark,
-                    ),
-                  ),
-                  if (hasFilters) ...[
-                    const SizedBox(width: 4),
-                    Container(
-                      width: 14, height: 14,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${(legacyFilter.isNotEmpty ? 1 : 0) + (sigFilter > 0 ? 1 : 0)}',
-                          style: monoStyle(
-                              size: 8, weight: FontWeight.w900,
-                              color: kHistAccent),
+                  if (hasFilters)
+                    Positioned(
+                      top: 7, right: 7,
+                      child: Container(
+                        width: 7, height: 7,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
                         ),
                       ),
                     ),
-                  ],
                 ],
               ),
             ),
           ),
+          const SizedBox(width: 8),
+          // Botón modo aleatorio 1:1
+          _RandomButton(ref: ref),
         ],
       ),
     );
@@ -571,6 +561,385 @@ class _SearchBar extends ConsumerWidget {
           ref.read(playerLegacyFilterProvider.notifier).set('');
           ref.read(playerSigFilterProvider.notifier).set(0);
         },
+      ),
+    );
+  }
+}
+
+// ── Random button ─────────────────────────────────────────────
+class _RandomButton extends StatelessWidget {
+  final WidgetRef ref;
+  const _RandomButton({required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        final players = ref
+            .read(filteredPlayersProvider)
+            .whenOrNull(data: (l) => l);
+        if (players == null || players.isEmpty) return;
+        showDialog(
+          context: context,
+          barrierColor: kHistDark.withOpacity(0.7),
+          builder: (_) => _RandomPlayerModal(
+            players: players,
+            onSelect: (player) {
+              ref.read(selectedPlayerProvider.notifier).select(player);
+              ref
+                  .read(playerDetailTabProvider.notifier)
+                  .set(PlayerDetailTab.resumen);
+            },
+          ),
+        );
+      },
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: kHistDark,
+          border: Border.all(color: kHistBorder, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: kHistAccent.withOpacity(0.5),
+              offset: const Offset(2, 2),
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        child: const Icon(
+          Icons.person_search_outlined,
+          size: 16,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Random player modal ───────────────────────────────────────
+class _RandomPlayerModal extends StatefulWidget {
+  final List<HistoricalPlayer> players;
+  final void Function(HistoricalPlayer) onSelect;
+  const _RandomPlayerModal({
+    required this.players,
+    required this.onSelect,
+  });
+
+  @override
+  State<_RandomPlayerModal> createState() => _RandomPlayerModalState();
+}
+
+class _RandomPlayerModalState extends State<_RandomPlayerModal> {
+  HistoricalPlayer? _displayed;
+  HistoricalPlayer? _winner;
+  bool _spinning = false;
+  bool _revealed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _spin();
+  }
+
+  void _spin() {
+    if (widget.players.isEmpty) return;
+    final rng = DateTime.now().millisecondsSinceEpoch;
+    final picked = widget.players[rng % widget.players.length];
+    setState(() {
+      _winner = picked;
+      _spinning = true;
+      _revealed = false;
+      _displayed = null;
+    });
+
+    int i = 0;
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(milliseconds: 80));
+      if (!mounted) return false;
+      setState(() => _displayed = widget.players[i % widget.players.length]);
+      i++;
+      return i < 35; // ~2.8s
+    }).then((_) {
+      if (!mounted) return;
+      setState(() {
+        _displayed = _winner;
+        _spinning = false;
+        _revealed = true;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 28),
+          decoration: BoxDecoration(
+            color: kHistBg,
+            border: Border.all(color: kHistBorder, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: kHistDark.withOpacity(0.6),
+                offset: const Offset(6, 6),
+                blurRadius: 0,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── Header ──────────────────────────────────────
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                    vertical: 12, horizontal: 16),
+                color: kHistDark,
+                child: Row(
+                  children: [
+                    const Icon(Icons.person_search_outlined,
+                        size: 14, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Text(
+                      'MODO ALEATORIO',
+                      style: monoStyle(
+                        size: 11,
+                        weight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Icon(Icons.close,
+                          size: 14, color: Colors.white54),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Ruleta ──────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    // Slot animado
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 60),
+                      child: _displayed == null
+                          ? Container(
+                              key: const ValueKey('empty'),
+                              width: double.infinity,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: kHistAccent.withOpacity(0.08),
+                                border: Border.all(
+                                    color: kHistBorderL, width: 1.5),
+                              ),
+                              child: const Icon(Icons.person_outline,
+                                  size: 36, color: kHistBorderL),
+                            )
+                          : _PlayerSlot(
+                              key: ValueKey(_displayed!.id),
+                              player: _displayed!,
+                              revealed: _revealed,
+                            ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Estado / botones
+                    if (_spinning)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                              width: 6, height: 6, color: kHistAccent),
+                          const SizedBox(width: 6),
+                          Text(
+                            'BUSCANDO...',
+                            style: monoStyle(
+                              size: 9,
+                              weight: FontWeight.w700,
+                              letterSpacing: 1.5,
+                              color: kHistAccent,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                              width: 6, height: 6, color: kHistAccent),
+                        ],
+                      )
+                    else if (_revealed && _winner != null) ...[
+                      // Botón VER JUGADOR
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context);
+                          widget.onSelect(_winner!);
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: kHistAccent,
+                            border: Border.all(
+                                color: kHistBorder, width: 1.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: kHistDark.withOpacity(0.4),
+                                offset: const Offset(3, 3),
+                                blurRadius: 0,
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              'VER JUGADOR →',
+                              style: monoStyle(
+                                size: 11,
+                                weight: FontWeight.w900,
+                                letterSpacing: 1,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Botón OTRO
+                      GestureDetector(
+                        onTap: _spin,
+                        child: Container(
+                          width: double.infinity,
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                                color: kHistBorder, width: 1.5),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'OTRO →',
+                              style: monoStyle(
+                                size: 10,
+                                weight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                                color: kHistDark,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Player slot (ruleta item) ─────────────────────────────────
+class _PlayerSlot extends StatelessWidget {
+  final HistoricalPlayer player;
+  final bool revealed;
+  const _PlayerSlot({
+    super.key,
+    required this.player,
+    required this.revealed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final imgUrl = getHistoricalImageUrl(player.imagePath);
+    final sig = player.significanceLevel ?? 0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: revealed ? kHistCard : kHistBg,
+        border: Border(
+          left: BorderSide(
+            color: revealed ? kHistAccent : kHistBorderL,
+            width: revealed ? 4 : 1,
+          ),
+          top: BorderSide(color: kHistBorderL, width: 0.5),
+          right: BorderSide(color: kHistBorderL, width: 0.5),
+          bottom: BorderSide(color: kHistBorderL, width: 0.5),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Foto
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: kHistAccent.withOpacity(0.1),
+              border: Border.all(color: kHistBorderL, width: 1),
+            ),
+            clipBehavior: Clip.hardEdge,
+            child: imgUrl != null
+                ? Image.network(
+                    imgUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        CardInitials(name: player.name),
+                  )
+                : CardInitials(name: player.name),
+          ),
+          const SizedBox(width: 12),
+          // Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  player.name.toUpperCase(),
+                  style: monoStyle(
+                    size: 12,
+                    weight: FontWeight.w900,
+                    letterSpacing: -0.3,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (player.country != null)
+                  Text(
+                    player.country!,
+                    style: monoStyle(
+                      size: 9,
+                      color: kHistAccent,
+                      weight: FontWeight.w700,
+                    ),
+                  ),
+                if (sig == 5)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 2),
+                    color: kHistGold,
+                    child: Text(
+                      'GOAT',
+                      style: monoStyle(
+                        size: 7,
+                        weight: FontWeight.w900,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

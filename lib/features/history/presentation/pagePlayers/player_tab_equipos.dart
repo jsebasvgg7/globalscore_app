@@ -13,11 +13,15 @@ class PlayerTabEquipos extends StatelessWidget {
         .where((t) => t.titleCategory == 'club')
         .toList();
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      return SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: MediaQuery.of(context).size.height,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           // ── Header ──────────────────────────────────────────
           _TabHeader(
             icon: Icons.shield_outlined,
@@ -41,6 +45,7 @@ class PlayerTabEquipos extends StatelessWidget {
 
           const SizedBox(height: 24),
         ],
+        ),
       ),
     );
   }
@@ -190,33 +195,9 @@ class _MomentsList extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: titles.take(6).length,
             itemBuilder: (_, i) => _MomentCard(title: titles[i]),
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // Ver todos btn
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: neoBox(shadowX: 3, shadowY: 3),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'VER TODOS LOS MOMENTOS',
-                  style: monoStyle(
-                    size: 10, weight: FontWeight.w800,
-                    letterSpacing: 0.8, color: kHistDark,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                const Icon(Icons.arrow_forward, size: 14, color: kHistAccent),
-              ],
             ),
           ),
-        ),
+        const SizedBox(height: 12),
       ],
     );
   }

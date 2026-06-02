@@ -155,7 +155,7 @@ class _HeroSection extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+             crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Foto
                 _PlayerPhoto(

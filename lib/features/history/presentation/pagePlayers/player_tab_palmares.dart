@@ -75,33 +75,7 @@ class PlayerTabPalmares extends StatelessWidget {
               ),
               _TitlesColumn(groups: individualTitles, accentColor: kHistGold),
             ],
-
-            // Ver todos btn
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: neoBox(shadowX: 3, shadowY: 3),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'VER TODOS LOS TÍTULOS',
-                      style: monoStyle(
-                        size: 10, weight: FontWeight.w800,
-                        letterSpacing: 0.8, color: kHistDark,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    const Icon(Icons.arrow_forward,
-                        size: 14, color: kHistAccent),
-                  ],
-                ),
-              ),
-            ),
           ],
-
           const SizedBox(height: 24),
         ],
       ),

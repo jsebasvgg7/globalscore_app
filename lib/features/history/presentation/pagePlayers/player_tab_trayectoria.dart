@@ -11,11 +11,15 @@ class PlayerTabTrayectoria extends StatelessWidget {
     final career = detail.career;
     final national = detail.national;
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+return SingleChildScrollView(
+  physics: const BouncingScrollPhysics(),
+  child: ConstrainedBox(
+    constraints: BoxConstraints(
+      minHeight: MediaQuery.of(context).size.height,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
           // ── Header ──────────────────────────────────────────
           _TabHeader(
             icon: Icons.timeline_outlined,
@@ -41,6 +45,7 @@ class PlayerTabTrayectoria extends StatelessWidget {
 
           const SizedBox(height: 24),
         ],
+        ),
       ),
     );
   }

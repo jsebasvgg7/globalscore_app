@@ -81,12 +81,16 @@ class PlayerTabHistoria extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final events = _buildHistoria(detail);
-
+        
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minHeight: MediaQuery.of(context).size.height,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // ── Header ──────────────────────────────────────────
           _HistoriaHeader(detail: detail),
 
@@ -96,32 +100,8 @@ class PlayerTabHistoria extends StatelessWidget {
             const SizedBox(height: 8),
             _HistoriaTimeline(events: events),
           ],
-
-          // Ver toda la historia btn
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: neoBox(shadowX: 3, shadowY: 3),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'VER TODA LA HISTORIA',
-                    style: monoStyle(
-                      size: 10, weight: FontWeight.w800,
-                      letterSpacing: 0.8, color: kHistDark,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  const Icon(Icons.arrow_forward,
-                      size: 14, color: kHistAccent),
-                ],
-              ),
-            ),
-          ),
-        ],
+         ],
+       ),
       ),
     );
   }

@@ -15,6 +15,16 @@ class HideTopBarNotifier extends Notifier<bool> {
   void hide() => state = true;
 }
 
+final hideBottomNavProvider =
+    NotifierProvider<HideBottomNavNotifier, bool>(HideBottomNavNotifier.new);
+
+class HideBottomNavNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+  void show() => state = false;
+  void hide() => state = true;
+}
+
 class ScaffoldWithNavBar extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
 
@@ -98,22 +108,24 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
           Expanded(child: widget.navigationShell),
         ],
       ),
-      bottomNavigationBar: _GsBottomNav(
-        currentIndex: widget.navigationShell.currentIndex,
-        isAdmin:      _isAdmin,
-        onTap: (branchIndex) {
-          widget.navigationShell.goBranch(
-            branchIndex,
-            initialLocation: branchIndex == widget.navigationShell.currentIndex,
-          );
-        },
-        onTrophy: () {
-          widget.navigationShell.goBranch(
-            0,
-            initialLocation: 0 == widget.navigationShell.currentIndex,
-          );
-        },
-      ),
+      bottomNavigationBar: ref.watch(hideBottomNavProvider)
+          ? null
+          : _GsBottomNav(
+              currentIndex: widget.navigationShell.currentIndex,
+              isAdmin:      _isAdmin,
+              onTap: (branchIndex) {
+                widget.navigationShell.goBranch(
+                  branchIndex,
+                  initialLocation: branchIndex == widget.navigationShell.currentIndex,
+                );
+              },
+              onTrophy: () {
+                widget.navigationShell.goBranch(
+                  0,
+                  initialLocation: 0 == widget.navigationShell.currentIndex,
+                );
+              },
+            ),
     );
   }
 }
