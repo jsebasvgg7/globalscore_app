@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../data/history_service.dart';
 import '../../domain/history_models.dart';
 import 'history_events_shared.dart';
 
@@ -7,9 +8,11 @@ class EventTabPlantel extends StatelessWidget {
   const EventTabPlantel({super.key, required this.detail});
 
   static const _posLabel = {
-    'GK': 'POR', 'CB': 'DEF', 'LB': 'DEF', 'RB': 'DEF',
+    'GK': 'POR',
+    'CB': 'DEF', 'LB': 'DEF', 'RB': 'DEF',
     'CDM': 'MED', 'CM': 'MED', 'CAM': 'MED',
-    'LM': 'MED', 'RM': 'MED', 'LW': 'EXT', 'RW': 'EXT',
+    'LM': 'MED', 'RM': 'MED',
+    'LW': 'EXT', 'RW': 'EXT',
     'ST': 'DEL', 'SS': 'DEL',
   };
 
@@ -32,19 +35,21 @@ class EventTabPlantel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           EvTabHeader(
-            icon: Icons.groups_outlined,
+            icon: Icons.people_outline,
             title: 'PLANTEL',
             subtitle: 'Jugadores estelares del evento',
           ),
 
           if (keyPlayers.isNotEmpty) ...[
             EvSectionLabel(label: 'JUGADORES CLAVE', color: kEvGold),
-            ...keyPlayers.map((p) => _PlayerRow(player: p, highlight: true)),
+            ...keyPlayers
+                .map((p) => _PlayerRow(player: p, highlight: true)),
           ],
 
           if (rest.isNotEmpty) ...[
             EvSectionLabel(
-              label: keyPlayers.isNotEmpty ? 'RESTO DEL PLANTEL' : 'PLANTEL',
+              label:
+                  keyPlayers.isNotEmpty ? 'RESTO DEL PLANTEL' : 'PLANTEL',
               color: kEvAccent,
             ),
             ...rest.map((p) => _PlayerRow(player: p, highlight: false)),
@@ -60,18 +65,22 @@ class EventTabPlantel extends StatelessWidget {
 class _PlayerRow extends StatelessWidget {
   final EventLineup player;
   final bool highlight;
+
   const _PlayerRow({required this.player, required this.highlight});
 
   static const _posLabel = {
-    'GK': 'POR', 'CB': 'DEF', 'LB': 'DEF', 'RB': 'DEF',
+    'GK': 'POR',
+    'CB': 'DEF', 'LB': 'DEF', 'RB': 'DEF',
     'CDM': 'MED', 'CM': 'MED', 'CAM': 'MED',
-    'LM': 'MED', 'RM': 'MED', 'LW': 'EXT', 'RW': 'EXT',
+    'LM': 'MED', 'RM': 'MED',
+    'LW': 'EXT', 'RW': 'EXT',
     'ST': 'DEL', 'SS': 'DEL',
   };
 
   @override
   Widget build(BuildContext context) {
     final pos = _posLabel[player.positionRole] ?? player.positionRole;
+
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       decoration: BoxDecoration(
@@ -108,6 +117,25 @@ class _PlayerRow extends StatelessWidget {
             ),
             const SizedBox(width: 8),
           ],
+          // Equipo mini-badge
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+            color: highlight
+                ? kEvGold.withOpacity(0.2)
+                : kEvBorderL.withOpacity(0.4),
+            child: Text(
+              player.teamName.length > 10
+                  ? '${player.teamName.substring(0, 9)}…'
+                  : player.teamName,
+              style: evMono(
+                size: 7,
+                weight: FontWeight.w700,
+                color: highlight ? kEvGold : kEvMuted,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               player.playerName,
@@ -120,7 +148,8 @@ class _PlayerRow extends StatelessWidget {
           ),
           if (pos != null)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
               color: highlight
                   ? kEvGold.withOpacity(0.15)
                   : kEvBorderL.withOpacity(0.5),

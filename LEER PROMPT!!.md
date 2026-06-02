@@ -174,20 +174,13 @@ Con este contexto, por favor:
 
 ### 🗣️ ESTADO ACTUAL DEL APRENDIZAJE
 
-[Fase 7 historia. Le toca a eventos dividirse y recontruirse para poder seguir con la migracion de las secciones Revisa como esta diseñado las pages anteriores y imprime ese estilo estructura a la page eventos. Te dejo el archivo, el componente react a dividir y trasformar a flutter y el estilo que imprimiras en la page, ajustalo a lo que tenemos repito no uses los datos de las imagenes mira el estilo y diseño y aplicalo a eventos a sus tabs y componentes. Dime si necesitas saber algo mas 
-pageEvents/
-
-├── history_events_page.dart       ← shell (lista + nav a detalle) (listo)
-
-├── history_event_detail.dart      ← shell del detalle con tabs
-
-├── event_tab_info.dart            ← Info general (descripción, contexto, impacto, score)
-
-├── event_tab_alineaciones.dart    ← Alineaciones
-
-├── event_tab_historia.dart        ← Knockout si existe / timeline
-
-└── history_events_shared.dart     ← constantes, helpers, widgets compartidos (listo)
+["Fase 7 historia Ya completamos la pagina principal de eventos ahora resolvamos el problema de los tabs
+- EL evento de mbappe por ejemplo sale un error rarisimo, me dices si necesitas ver la base datos
+- En el tab plantel solo debe mostrar el equipo del jugador no el del rival
+- El tab de alineaciones los numeros de los jugadores deben salir simetricas modo espejo a las del equipo a
+- El detalle de equipo no muestra el plantel dice sin plantel registrado 
+- Hay equipos que no tienen ningun registro en sus historia plantel ni tabla.
+Revisa los archivos y los react para determinar los errores. Si notas que hay cosas que se dupean o que no deberian mostrarte por que en el react no lo amerita como historia dale otro campo o intenta que se vea diferente. Lo importante es resolver el problema. Te dejo la base de datos de las tablas de history_event
 ]
 
 ---

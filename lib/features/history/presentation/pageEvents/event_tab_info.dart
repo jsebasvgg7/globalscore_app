@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../data/history_service.dart';
 import '../../domain/history_models.dart';
 import 'history_events_shared.dart';
 
@@ -66,9 +67,10 @@ class _EventHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ FIX: usa getHistoricalImageUrl para resolver paths relativos del storage
     final heroUrl = event.bannerImagePath != null
-        ? _imgUrl(event.bannerImagePath)
-        : _imgUrl(event.imagePath);
+        ? getHistoricalImageUrl(event.bannerImagePath)
+        : getHistoricalImageUrl(event.imagePath);
 
     return Container(
       height: 200,
@@ -82,28 +84,30 @@ class _EventHero extends StatelessWidget {
         children: [
           // Imagen
           if (heroUrl != null)
-            Image.network(heroUrl, fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _placeholder(accentColor))
+            Image.network(
+              heroUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _placeholder(accentColor),
+            )
           else
             _placeholder(accentColor),
 
           // Gradiente
-          DecoratedBox(
+          const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  kEvDark.withOpacity(0.85),
-                ],
+                colors: [Colors.transparent, Color(0xD91A1A2E)],
               ),
             ),
           ),
 
           // Badges + fecha abajo izquierda
           Positioned(
-            left: 16, bottom: 14, right: 16,
+            left: 16,
+            bottom: 14,
+            right: 16,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -141,22 +145,18 @@ class _EventHero extends StatelessWidget {
   Widget _placeholder(Color color) => Container(
         color: kEvDark,
         child: Center(
-          child: Icon(Icons.bolt_outlined, size: 48, color: color.withOpacity(0.3)),
+          child: Icon(Icons.bolt_outlined,
+              size: 48, color: color.withOpacity(0.3)),
         ),
       );
-
-  String? _imgUrl(String? path) {
-    if (path == null) return null;
-    if (path.startsWith('http')) return path;
-    return null; // getHistoricalImageUrl está en history_service
-  }
 
   String _formatDate(String date) {
     try {
       final d = DateTime.parse('${date}T12:00:00');
       const months = [
-        '', 'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-        'jul', 'ago', 'sep', 'oct', 'nov', 'dic'
+        '',
+        'ene', 'feb', 'mar', 'abr', 'may', 'jun',
+        'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
       ];
       return '${d.day} ${months[d.month]} ${d.year}';
     } catch (_) {
@@ -183,7 +183,8 @@ class _NarrativeBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final paragraphs = text.split('\n').where((p) => p.trim().isNotEmpty).toList();
+    final paragraphs =
+        text.split('\n').where((p) => p.trim().isNotEmpty).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
