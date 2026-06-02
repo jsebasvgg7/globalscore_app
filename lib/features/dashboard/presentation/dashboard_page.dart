@@ -9,12 +9,12 @@ import '../widgets/match_sub_page.dart';
 const _bg      = Color(0xFFF0EDE8);
 const _card    = Color(0xFFEAE7E1);
 const _surface = Color(0xFFF5F2EC);
-const _border  = Color(0xFFC8C3B8);
-const _borderH = Color(0xFFA8A49A);
+const _border  = Color(0xFF1A1A2E);   // negro duro neobrut
+const _borderH = Color(0xFF1A1A2E);   // negro duro neobrut
 const _accent  = Color(0xFF5B4FD8);
 const _accentL = Color(0xFF8B7FC7);
-const _text    = Color(0xFF2A2535);
-const _muted   = Color(0xFF9B95A8);
+const _text    = Color(0xFF1A1A2E);
+const _muted   = Color(0xFF6B6580);
 const _green   = Color(0xFF1D9E75);
 const _red     = Color(0xFFE24B4A);
 const _amber   = Color(0xFFF59E0B);
@@ -22,9 +22,11 @@ const _gold    = Color(0xFFC9A227);
 const _silver  = Color(0xFF9CA3AF);
 const _bronze  = Color(0xFFCD7C30);
 
-const _shadow   = BoxShadow(color: Color(0x55A8A49A), offset: Offset(3, 3), blurRadius: 0);
-const _shadowSm = BoxShadow(color: Color(0x55A8A49A), offset: Offset(2, 2), blurRadius: 0);
-const _shadowLg = BoxShadow(color: Color(0x55A8A49A), offset: Offset(4, 4), blurRadius: 0);
+// Sombras duras negras neobrutalistas (sin blur, como stats_page)
+const _shadowColor = Color(0xFF1A1A2E);
+const _shadow   = BoxShadow(color: _shadowColor, offset: Offset(3, 3), blurRadius: 0);
+const _shadowSm = BoxShadow(color: _shadowColor, offset: Offset(2, 2), blurRadius: 0);
+const _shadowLg = BoxShadow(color: _shadowColor, offset: Offset(5, 5), blurRadius: 0);
 
 TextStyle _mono({Color color = _text, double size = 12, FontWeight weight = FontWeight.normal, double letterSpacing = 0}) =>
     GoogleFonts.dmMono(color: color, fontSize: size, fontWeight: weight, letterSpacing: letterSpacing);
@@ -49,14 +51,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
   String _activeTab   = 'matches';
   String _bottomTab   = 'ranking';
 
-  // ── Controladores de animación de entrada ─────────────────
   late final AnimationController _entryCtrl;
-  late final List<Animation<double>> _fadeSlide; // 5 secciones
+  late final List<Animation<double>> _fadeSlide;
 
-  // ── Controlador para el tab switch (cross-fade) ───────────
   late final AnimationController _tabCtrl;
 
-  // ── Controlador para progress bar fill ───────────────────
   late final AnimationController _barCtrl;
   double _barTarget = 0;
 
@@ -64,7 +63,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
   void initState() {
     super.initState();
 
-    // Entrada escalonada — 5 secciones
     _entryCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
     _fadeSlide = List.generate(5, (i) {
       final start = (i * 0.14).clamp(0.0, 0.6);
@@ -75,13 +73,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
       );
     });
 
-    // Tab cross-fade
     _tabCtrl = AnimationController(vsync: this, duration: _tMed, value: 1);
 
-    // Progress bar
     _barCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
 
-    _entryCtrl.value = 1; // evita frame vacío inicial
+    _entryCtrl.value = 1;
   }
 
   @override
@@ -116,7 +112,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
 
   Future<void> _refresh() async => ref.invalidate(dashboardDataProvider);
 
-  // ── Sección animada con entrada ───────────────────────────
   Widget _enter(int idx, Widget child) => AnimatedBuilder(
     animation: _fadeSlide[idx],
     builder: (_, __) => Opacity(
@@ -165,7 +160,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
             final totalCount = pendingMatches.length;
             final barPct = totalCount > 0 ? savedCount / totalCount : 0.0;
 
-            // Disparar animación de barra cuando cambian los datos
             WidgetsBinding.instance.addPostFrameCallback((_) => _animateBar(barPct));
 
             final previewMatches = pendingMatches.take(4).toList();
@@ -184,10 +178,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
                   children: [
                     // ── 0: Progress bar ──────────────────────
                     _enter(0, _ProgressBar(
-                    saved: savedCount,
-                    total: totalCount,
-                    target: barPct,
-                  )),
+                      saved: savedCount,
+                      total: totalCount,
+                      target: barPct,
+                    )),
 
                     // ── 1: Next match banner ─────────────────
                     _enter(1, GestureDetector(
@@ -216,67 +210,67 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
 
                     const SizedBox(height: 8),
 
-                 // ── 3: Mini cards (con cross-fade de tab) ─
-                  _enter(3, FadeTransition(
-                    opacity: _tabCtrl,
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      clipBehavior: Clip.none,
-                      padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
-                      child: IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (_activeTab == 'matches') ...[
-                              if (previewMatches.isEmpty) ...[
-                                _EmptyMatchCard(),
-                                const SizedBox(width: 10),
-                                _MoreCard(onTap: () => showMatchSubPage(context, ref)),
-                              ] else ...[
-                                ...previewMatches.asMap().entries.map((e) => Padding(
-                                  padding: const EdgeInsets.only(right: 10),
-                                  child: _AnimatedCard(
-                                    delay: Duration(milliseconds: e.key * 60),
-                                    child: _MiniMatchCard(match: e.value as Map<String, dynamic>, userId: userId),
-                                  ),
-                                )),
-                                _MoreCard(onTap: () => showMatchSubPage(context, ref)),
+                    // ── 3: Mini cards ────────────────────────
+                    _enter(3, FadeTransition(
+                      opacity: _tabCtrl,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        clipBehavior: Clip.none,
+                        padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
+                        child: IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (_activeTab == 'matches') ...[
+                                if (previewMatches.isEmpty) ...[
+                                  _EmptyMatchCard(),
+                                  const SizedBox(width: 10),
+                                  _MoreCard(onTap: () => showMatchSubPage(context, ref)),
+                                ] else ...[
+                                  ...previewMatches.asMap().entries.map((e) => Padding(
+                                    padding: const EdgeInsets.only(right: 10),
+                                    child: _AnimatedCard(
+                                      delay: Duration(milliseconds: e.key * 60),
+                                      child: _MiniMatchCard(match: e.value as Map<String, dynamic>, userId: userId),
+                                    ),
+                                  )),
+                                  _MoreCard(onTap: () => showMatchSubPage(context, ref)),
+                                ],
+                              ],
+                              if (_activeTab == 'leagues') ...[
+                                if (previewLeagues.isEmpty)
+                                  _EmptyCard(label: 'SIN\nLIGAS\nACTIVAS')
+                                else ...[
+                                  ...previewLeagues.asMap().entries.map((e) => Padding(
+                                    padding: const EdgeInsets.only(right: 10),
+                                    child: _AnimatedCard(
+                                      delay: Duration(milliseconds: e.key * 60),
+                                      child: _MiniLeagueCard(league: e.value as Map<String, dynamic>, userId: userId),
+                                    ),
+                                  )),
+                                  _MoreCard(onTap: () => showLeagueSubPage(context, ref)),
+                                ],
+                              ],
+                              if (_activeTab == 'awards') ...[
+                                if (previewAwards.isEmpty)
+                                  _EmptyCard(label: 'SIN\nPREMIOS\nACTIVOS')
+                                else ...[
+                                  ...previewAwards.asMap().entries.map((e) => Padding(
+                                    padding: const EdgeInsets.only(right: 10),
+                                    child: _AnimatedCard(
+                                      delay: Duration(milliseconds: e.key * 60),
+                                      child: _MiniAwardCard(award: e.value as Map<String, dynamic>, userId: userId),
+                                    ),
+                                  )),
+                                  _MoreCard(onTap: () => showAwardSubPage(context, ref)),
+                                ],
                               ],
                             ],
-                            if (_activeTab == 'leagues') ...[
-                              if (previewLeagues.isEmpty)
-                                _EmptyCard(label: 'SIN\nLIGAS\nACTIVAS')
-                              else ...[
-                                ...previewLeagues.asMap().entries.map((e) => Padding(
-                                  padding: const EdgeInsets.only(right: 10),
-                                  child: _AnimatedCard(
-                                    delay: Duration(milliseconds: e.key * 60),
-                                    child: _MiniLeagueCard(league: e.value as Map<String, dynamic>, userId: userId),
-                                  ),
-                                )),
-                                _MoreCard(onTap: () => showLeagueSubPage(context, ref)),
-                              ],
-                            ],
-                            if (_activeTab == 'awards') ...[
-                              if (previewAwards.isEmpty)
-                                _EmptyCard(label: 'SIN\nPREMIOS\nACTIVOS')
-                              else ...[
-                                ...previewAwards.asMap().entries.map((e) => Padding(
-                                  padding: const EdgeInsets.only(right: 10),
-                                  child: _AnimatedCard(
-                                    delay: Duration(milliseconds: e.key * 60),
-                                    child: _MiniAwardCard(award: e.value as Map<String, dynamic>, userId: userId),
-                                  ),
-                                )),
-                                _MoreCard(onTap: () => showAwardSubPage(context, ref)),
-                              ],
-                            ],
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                  )),
+                    )),
 
                     // ── 4: Bottom panel ──────────────────────
                     _enter(4, Padding(
@@ -316,7 +310,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
 }
 
 // ─────────────────────────────────────────────────────────────
-//  ANIMATED CARD — stagger de entrada en la lista horizontal
+//  ANIMATED CARD
 // ─────────────────────────────────────────────────────────────
 class _AnimatedCard extends StatefulWidget {
   final Widget child;
@@ -353,7 +347,7 @@ class _AnimatedCardState extends State<_AnimatedCard> with SingleTickerProviderS
 }
 
 // ─────────────────────────────────────────────────────────────
-//  PRESSABLE — efecto de hundimiento neobrutalista
+//  PRESSABLE
 // ─────────────────────────────────────────────────────────────
 class _Pressable extends StatefulWidget {
   final Widget child;
@@ -407,7 +401,7 @@ class _ErrorPanel extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: Container(
         padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(color: _card, border: Border.all(color: _borderH, width: 1.5), boxShadow: const [_shadowLg]),
+        decoration: BoxDecoration(color: _card, border: Border.all(color: _border, width: 2), boxShadow: const [_shadowLg]),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Text('ERROR', style: _mono(color: _red, size: 10, weight: FontWeight.w800, letterSpacing: 2)),
           const SizedBox(height: 10),
@@ -428,7 +422,7 @@ class _ErrorPanel extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  PROGRESS BAR — fill animado
+//  PROGRESS BAR — con decoraciones neobrutalistas mejoradas
 // ─────────────────────────────────────────────────────────────
 class _ProgressBar extends StatefulWidget {
   final int saved;
@@ -443,63 +437,110 @@ class _ProgressBar extends StatefulWidget {
 class _ProgressBarState extends State<_ProgressBar> {
   @override
   Widget build(BuildContext context) {
+    final isComplete = widget.saved == widget.total && widget.total > 0;
     return Container(
       margin: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _card,
-        border: Border.all(color: _borderH, width: 1.5),
+        color: isComplete ? _accent.withOpacity(0.06) : _card,
+        border: Border.all(color: _border, width: 2),
         boxShadow: const [_shadow],
       ),
       child: Column(children: [
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Row(children: [
-            Text('PREDIC.', style: _mono(color: _muted, size: 10, weight: FontWeight.w700, letterSpacing: 2)),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                border: Border.all(color: _accent, width: 1.5),
-                color: _card,
-                boxShadow: const [_shadowSm],
+        // ── Top stripe neobrutalista ──
+        Container(
+          height: 3,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [_accent, _accentL, _accent],
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+          child: Column(children: [
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              Row(children: [
+                // Bloque decorativo izquierdo
+                Container(
+                  width: 4,
+                  height: 26,
+                  color: _accent,
+                  margin: const EdgeInsets.only(right: 10),
+                ),
+                Text('PREDIC.', style: _mono(color: _muted, size: 10, weight: FontWeight.w700, letterSpacing: 2)),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _accent,
+                    boxShadow: const [_shadowSm],
+                  ),
+                  child: Text('[${widget.saved}/${widget.total}]',
+                      style: _mono(color: Colors.white, size: 11, weight: FontWeight.w700)),
+                ),
+              ]),
+              Row(children: [
+                if (isComplete) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: _green.withOpacity(0.1),
+                      border: Border.all(color: _green, width: 1.5),
+                    ),
+                    child: Text('✓ COMPLETO', style: _mono(color: _green, size: 7, weight: FontWeight.w800, letterSpacing: 1)),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Container(
+                  width: 30, height: 30,
+                  decoration: BoxDecoration(
+                    color: _surface,
+                    border: Border.all(color: _border, width: 2),
+                    boxShadow: const [_shadowSm],
+                  ),
+                  child: const Icon(Icons.book_outlined, color: _accent, size: 16),
+                ),
+              ]),
+            ]),
+            const SizedBox(height: 10),
+            // Track con marcadores de tick
+            Stack(children: [
+              Container(height: 8, color: _border),
+              TweenAnimationBuilder<double>(
+                key: ValueKey(widget.target),
+                tween: Tween(begin: 0, end: widget.target.clamp(0.0, 1.0)),
+                duration: const Duration(milliseconds: 900),
+                curve: Curves.easeOutCubic,
+                builder: (_, v, __) => FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: v,
+                  child: Container(
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: _accent,
+                      boxShadow: [BoxShadow(color: _accent.withOpacity(0.4), offset: const Offset(0, 2), blurRadius: 4)],
+                    ),
+                  ),
+                ),
               ),
-              child: Text('[${widget.saved}/${widget.total}]',
-                  style: _mono(color: _accent, size: 11, weight: FontWeight.w700)),
-            ),
+              // Marcadores de cuartos
+              ...List.generate(3, (i) {
+                final pos = (i + 1) / 4;
+                return Align(
+                  alignment: Alignment(pos * 2 - 1, 0),
+                  child: Container(width: 1.5, height: 8, color: _bg.withOpacity(0.6)),
+                );
+              }),
+            ]),
           ]),
-          Container(
-            width: 30, height: 30,
-            decoration: BoxDecoration(
-                color: _surface,
-                border: Border.all(color: _borderH, width: 1.5),
-                boxShadow: const [_shadowSm]),
-            child: const Icon(Icons.book_outlined, color: _accent, size: 16),
-          ),
-        ]),
-        const SizedBox(height: 10),
-        // Track siempre visible
-        Stack(children: [
-          // Fondo completo
-          Container(height: 6, color: _border),
-          // Fill animado
-          TweenAnimationBuilder<double>(
-            key: ValueKey(widget.target),
-            tween: Tween(begin: 0, end: widget.target.clamp(0.0, 1.0)),
-            duration: const Duration(milliseconds: 900),
-            curve: Curves.easeOutCubic,
-            builder: (_, v, __) => FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: v,
-              child: Container(height: 6, color: _accent),
-            ),
-          ),
-        ]),
+        ),
       ]),
     );
   }
 }
+
 // ─────────────────────────────────────────────────────────────
-//  NEXT MATCH BANNER
+//  NEXT MATCH BANNER — con más decoración neobrutalista
 // ─────────────────────────────────────────────────────────────
 class _NextMatchBanner extends StatelessWidget {
   final Map<String, dynamic>? match;
@@ -517,9 +558,9 @@ class _NextMatchBanner extends StatelessWidget {
       color: _card,
       border: const Border(
         top: BorderSide(color: _accent, width: 3),
-        left: BorderSide(color: _borderH, width: 1.5),
-        right: BorderSide(color: _borderH, width: 1.5),
-        bottom: BorderSide(color: _borderH, width: 1.5),
+        left: BorderSide(color: _border, width: 2),
+        right: BorderSide(color: _border, width: 2),
+        bottom: BorderSide(color: _border, width: 2),
       ),
       boxShadow: const [_shadowLg],
     ),
@@ -527,7 +568,7 @@ class _NextMatchBanner extends StatelessWidget {
       Container(
         width: 78,
         padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: const BoxDecoration(color: _bg, border: Border(right: BorderSide(color: _borderH, width: 1.5))),
+        decoration: const BoxDecoration(color: _bg, border: Border(right: BorderSide(color: _border, width: 2))),
         child: Column(children: [
           Text('0', style: _mono(color: _borderH, size: 44, weight: FontWeight.w700, letterSpacing: -3)),
           const SizedBox(height: 6),
@@ -561,23 +602,38 @@ class _NextMatchBanner extends StatelessWidget {
       color: _card,
       border: const Border(
         top: BorderSide(color: _accent, width: 3),
-        left: BorderSide(color: _borderH, width: 1.5),
-        right: BorderSide(color: _borderH, width: 1.5),
-        bottom: BorderSide(color: _borderH, width: 1.5),
+        left: BorderSide(color: _border, width: 2),
+        right: BorderSide(color: _border, width: 2),
+        bottom: BorderSide(color: _border, width: 2),
       ),
       boxShadow: const [_shadowLg],
     ),
     child: Column(children: [
+      // Header con más detalles
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: const BoxDecoration(color: _bg, border: Border(bottom: BorderSide(color: _borderH, width: 1.5))),
+        decoration: const BoxDecoration(
+          color: _bg,
+          border: Border(bottom: BorderSide(color: _border, width: 1.5)),
+        ),
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text('PRÓXIMO PARTIDO · ${(m['league'] ?? '').toString().toUpperCase()}',
-              style: _mono(color: _muted, size: 7, letterSpacing: 1.8)),
+          Row(children: [
+            // Dot indicator
+            Container(width: 6, height: 6, color: _accent, margin: const EdgeInsets.only(right: 6)),
+            Text('PRÓXIMO PARTIDO · ${(m['league'] ?? '').toString().toUpperCase()}',
+                style: _mono(color: _muted, size: 7, letterSpacing: 1.8)),
+          ]),
           Row(children: [
             Text(m['date'] ?? '—', style: _mono(color: _muted, size: 7, letterSpacing: 1.2)),
             const SizedBox(width: 8),
-            const Icon(Icons.arrow_forward_ios, size: 9, color: _accent),
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: _accent.withOpacity(0.1),
+                border: Border.all(color: _accent, width: 1),
+              ),
+              child: const Icon(Icons.arrow_forward_ios, size: 8, color: _accent),
+            ),
           ]),
         ]),
       ),
@@ -585,10 +641,24 @@ class _NextMatchBanner extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 14),
         child: Row(children: [
           Expanded(child: _NmTeam(name: m['home_team'] ?? '—', logoUrl: m['home_team_logo_url'])),
-          SizedBox(width: 80, child: Column(children: [
+          SizedBox(width: 90, child: Column(children: [
             Text('VS', style: _mono(color: _muted, size: 7, letterSpacing: 3.2)),
             const SizedBox(height: 2),
             Text(m['time'] ?? '—', style: _mono(color: _text, size: 24, weight: FontWeight.w700, letterSpacing: -0.5)),
+            const SizedBox(height: 6),
+            // Badge de liga con borde neobrutalista
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: _accent,
+                boxShadow: const [_shadowSm],
+              ),
+              child: Text(
+                (m['league'] ?? 'LIGA').toString().toUpperCase().substring(
+                    0, ((m['league'] ?? 'LIGA').toString().length).clamp(0, 8)),
+                style: _mono(color: Colors.white, size: 7, weight: FontWeight.w800, letterSpacing: 1.2),
+              ),
+            ),
           ])),
           Expanded(child: _NmTeam(name: m['away_team'] ?? '—', logoUrl: m['away_team_logo_url'])),
         ]),
@@ -603,11 +673,20 @@ class _NmTeam extends StatelessWidget {
   const _NmTeam({required this.name, this.logoUrl});
   @override
   Widget build(BuildContext context) => Column(children: [
-    SizedBox(width: 36, height: 36,
-        child: logoUrl != null
-            ? Image.network(logoUrl!, fit: BoxFit.contain,
-                errorBuilder: (_, _, _) => const Text('⚽', style: TextStyle(fontSize: 28)))
-            : const Text('⚽', style: TextStyle(fontSize: 28))),
+    Container(
+      width: 40, height: 40,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: _bg,
+        border: Border.all(color: _border, width: 2),
+        boxShadow: const [_shadowSm],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: logoUrl != null
+          ? Image.network(logoUrl!, fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => const Center(child: Text('⚽', style: TextStyle(fontSize: 22))))
+          : const Center(child: Text('⚽', style: TextStyle(fontSize: 22))),
+    ),
     const SizedBox(height: 6),
     Text(
       (name.length > 8 ? name.substring(0, 8) : name).toUpperCase(),
@@ -618,7 +697,7 @@ class _NmTeam extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  TAB BAR — con indicador animado
+//  TAB BAR — con indicador animado mejorado
 // ─────────────────────────────────────────────────────────────
 class _TabBar extends StatelessWidget {
   final String activeTab;
@@ -634,7 +713,9 @@ class _TabBar extends StatelessWidget {
       {'id': 'awards',  'label': 'Premios'},
     ];
     return Container(
-      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: _borderH, width: 1.5))),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: _border, width: 2)),
+      ),
       child: Row(
         children: tabs.map((t) {
           final id = t['id']!;
@@ -678,7 +759,7 @@ class _TabBar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  MINI MATCH CARD
+//  MINI MATCH CARD — con detalles neobrutalistas extra
 // ─────────────────────────────────────────────────────────────
 class _MiniMatchCard extends StatelessWidget {
   final Map<String, dynamic> match;
@@ -711,65 +792,89 @@ class _MiniMatchCard extends StatelessWidget {
     final m = match; final pred = _pred; final ac = _ac;
     return Container(
       width: 164,
-      decoration: BoxDecoration(color: _card, border: Border.all(color: _borderH, width: 1.5), boxShadow: const [_shadow]),
+      decoration: BoxDecoration(
+        color: _card,
+        border: Border.all(color: _border, width: 2),
+        boxShadow: const [_shadow],
+      ),
       child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,  // ← AGREGAR
-      children: [
-        Container(height: 3, color: ac),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Row(children: [
-                Container(
-                  width: 20, height: 20,
-                  decoration: BoxDecoration(color: _bg, border: Border.all(color: _borderH, width: 1.5), boxShadow: const [_shadowSm]),
-                  child: m['league_logo_url'] != null
-                      ? Image.network(m['league_logo_url'], fit: BoxFit.contain,
-                          errorBuilder: (_, _, _) => const Center(child: Text('🏆', style: TextStyle(fontSize: 9))))
-                      : const Center(child: Text('🏆', style: TextStyle(fontSize: 9))),
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  ((m['league'] ?? 'LIGA').toString()).substring(0, ((m['league'] ?? 'LIGA').toString().length).clamp(0, 6)).toUpperCase(),
-                  style: _mono(color: _muted, size: 7, letterSpacing: 1.2),
-                ),
-              ]),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(color: ac.withValues(alpha: 0.1), border: Border.all(color: ac, width: 1.5), boxShadow: const [_shadowSm]),
-                child: Text(_pill, style: _mono(color: ac, size: 7, weight: FontWeight.w800)),
-              ),
-            ]),
-            const SizedBox(height: 10),
-            _MiniTeamRow(name: m['home_team'] ?? '—', logoUrl: m['home_team_logo_url'], score: pred?['home_score'], hasPred: pred != null),
-            Container(height: 1, color: _border, margin: const EdgeInsets.symmetric(vertical: 1)),
-            _MiniTeamRow(name: m['away_team'] ?? '—', logoUrl: m['away_team_logo_url'], score: pred?['away_score'], hasPred: pred != null),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.only(top: 7),
-              decoration: const BoxDecoration(border: Border(top: BorderSide(color: _border))),
-              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Row(children: [
-                  const Icon(Icons.access_time, size: 9, color: _muted),
-                  const SizedBox(width: 3),
-                  Text(m['time'] ?? '—', style: _mono(color: _muted, size: 7)),
-                ]),
-                Text(m['date'] ?? '—', style: _mono(color: _muted, size: 7)),
-              ]),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Top accent bar con gradiente
+          Container(
+            height: 3,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [ac, ac.withOpacity(0.5)]),
             ),
-            const SizedBox(height: 9),
-          ]),
-        ),
-      ]),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Row(children: [
+                  Container(
+                    width: 20, height: 20,
+                    decoration: BoxDecoration(
+                      color: _bg,
+                      border: Border.all(color: _border, width: 1.5),
+                      boxShadow: const [_shadowSm],
+                    ),
+                    child: m['league_logo_url'] != null
+                        ? Image.network(m['league_logo_url'], fit: BoxFit.contain,
+                            errorBuilder: (_, _, _) => const Center(child: Text('🏆', style: TextStyle(fontSize: 9))))
+                        : const Center(child: Text('🏆', style: TextStyle(fontSize: 9))),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    ((m['league'] ?? 'LIGA').toString()).substring(0, ((m['league'] ?? 'LIGA').toString().length).clamp(0, 6)).toUpperCase(),
+                    style: _mono(color: _muted, size: 7, letterSpacing: 1.2),
+                  ),
+                ]),
+                // Pill con borde sólido neobrutalista
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: ac,
+                    boxShadow: const [_shadowSm],
+                  ),
+                  child: Text(_pill, style: _mono(color: Colors.white, size: 7, weight: FontWeight.w800)),
+                ),
+              ]),
+              const SizedBox(height: 10),
+              _MiniTeamRow(name: m['home_team'] ?? '—', logoUrl: m['home_team_logo_url'], score: pred?['home_score'], hasPred: pred != null, ac: ac),
+              Container(height: 1, color: _border, margin: const EdgeInsets.symmetric(vertical: 1)),
+              _MiniTeamRow(name: m['away_team'] ?? '—', logoUrl: m['away_team_logo_url'], score: pred?['away_score'], hasPred: pred != null, ac: ac),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.only(top: 7),
+                decoration: const BoxDecoration(border: Border(top: BorderSide(color: _border))),
+                child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  Row(children: [
+                    const Icon(Icons.access_time, size: 9, color: _muted),
+                    const SizedBox(width: 3),
+                    Text(m['time'] ?? '—', style: _mono(color: _muted, size: 7)),
+                  ]),
+                  Text(m['date'] ?? '—', style: _mono(color: _muted, size: 7)),
+                ]),
+              ),
+              const SizedBox(height: 9),
+            ]),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _MiniTeamRow extends StatelessWidget {
-  final String name; final String? logoUrl; final dynamic score; final bool hasPred;
-  const _MiniTeamRow({required this.name, this.logoUrl, this.score, required this.hasPred});
+  final String name;
+  final String? logoUrl;
+  final dynamic score;
+  final bool hasPred;
+  final Color ac;
+  const _MiniTeamRow({required this.name, this.logoUrl, this.score, required this.hasPred, required this.ac});
+
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 6),
@@ -784,18 +889,19 @@ class _MiniTeamRow extends StatelessWidget {
         style: _mono(color: _text, size: 10, weight: FontWeight.w700),
         overflow: TextOverflow.ellipsis,
       )),
+      // Score box con color de acento sólido
       AnimatedContainer(
         duration: _tMed,
         width: 24, height: 24,
         decoration: BoxDecoration(
-          color: hasPred ? _accent.withValues(alpha: 0.1) : _bg,
-          border: Border.all(color: hasPred ? _accent : _borderH, width: 1.5),
-          boxShadow: const [_shadowSm],
+          color: hasPred ? ac : _bg,
+          border: Border.all(color: hasPred ? ac : _border, width: 2),
+          boxShadow: hasPred ? const [_shadowSm] : null,
         ),
         alignment: Alignment.center,
         child: Text(
           hasPred ? '${score ?? '—'}' : '—',
-          style: _mono(color: hasPred ? _accent : _muted, size: hasPred ? 12 : 10, weight: FontWeight.w700),
+          style: _mono(color: hasPred ? Colors.white : _muted, size: hasPred ? 12 : 10, weight: FontWeight.w700),
         ),
       ),
     ]),
@@ -827,51 +933,64 @@ class _MiniLeagueCard extends StatelessWidget {
     final l = league; final pred = _pred; final champion = pred?['predicted_champion'] as String?; final ac = _ac;
     return Container(
       width: 236,
-      decoration: BoxDecoration(color: _card, border: Border.all(color: _borderH, width: 1.5), boxShadow: const [_shadow]),
+      decoration: BoxDecoration(color: _card, border: Border.all(color: _border, width: 2), boxShadow: const [_shadow]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,  // ← AGREGAR ESTO
+        mainAxisSize: MainAxisSize.min,
         children: [
-        Container(height: 3, color: ac),
-        Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Container(
-              width: 20, height: 20,
-              decoration: BoxDecoration(color: _bg, border: Border.all(color: _borderH, width: 1.5), boxShadow: const [_shadowSm]),
-              child: l['logo_url'] != null
-                  ? Image.network(l['logo_url'], fit: BoxFit.contain, errorBuilder: (_, _, _) => Center(child: Text(l['logo'] ?? '🏆', style: const TextStyle(fontSize: 9))))
-                  : Center(child: Text(l['logo'] ?? '🏆', style: const TextStyle(fontSize: 9))),
-            ),
-            const SizedBox(width: 10),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text((l['name'] ?? 'LIGA').toString().toUpperCase(), style: _mono(color: _text, size: 9, weight: FontWeight.w700, letterSpacing: 1), overflow: TextOverflow.ellipsis),
-              Text(l['season'] ?? '—', style: _mono(color: _muted, size: 7, letterSpacing: 1)),
-            ])),
-            AnimatedContainer(duration: _tMed, width: 7, height: 7, color: ac, margin: const EdgeInsets.only(left: 8)),
-          ]),
-          Container(height: 1, color: _border, margin: const EdgeInsets.symmetric(vertical: 10)),
-          Text('CAMPEÓN', style: _mono(color: _muted, size: 6, weight: FontWeight.w700, letterSpacing: 2)),
-          const SizedBox(height: 6),
-          AnimatedContainer(
-            duration: _tMed,
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
-            decoration: BoxDecoration(
-              color: champion != null ? _accent.withValues(alpha: 0.08) : _bg,
-              border: Border(
-                left: BorderSide(color: champion != null ? _accent : _borderH, width: champion != null ? 2.5 : 1.5),
-                top: const BorderSide(color: _borderH, width: 1.5),
-                right: const BorderSide(color: _borderH, width: 1.5),
-                bottom: const BorderSide(color: _borderH, width: 1.5),
+          Container(height: 3, color: ac),
+          Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(
+                width: 20, height: 20,
+                decoration: BoxDecoration(color: _bg, border: Border.all(color: _border, width: 1.5), boxShadow: const [_shadowSm]),
+                child: l['logo_url'] != null
+                    ? Image.network(l['logo_url'], fit: BoxFit.contain, errorBuilder: (_, _, _) => Center(child: Text(l['logo'] ?? '🏆', style: const TextStyle(fontSize: 9))))
+                    : Center(child: Text(l['logo'] ?? '🏆', style: const TextStyle(fontSize: 9))),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text((l['name'] ?? 'LIGA').toString().toUpperCase(), style: _mono(color: _text, size: 9, weight: FontWeight.w700, letterSpacing: 1), overflow: TextOverflow.ellipsis),
+                Text(l['season'] ?? '—', style: _mono(color: _muted, size: 7, letterSpacing: 1)),
+              ])),
+              // Status pill sólido
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: ac,
+                  border: Border.all(color: _border, width: 1.5),
+                  boxShadow: const [_shadowSm],
+                ),
+                child: Text(
+                  pred != null ? 'GUARD.' : 'PEND.',
+                  style: _mono(color: Colors.white, size: 7, weight: FontWeight.w800),
+                ),
+              ),
+            ]),
+            Container(height: 1.5, color: _border, margin: const EdgeInsets.symmetric(vertical: 10)),
+            Text('CAMPEÓN', style: _mono(color: _muted, size: 6, weight: FontWeight.w700, letterSpacing: 2)),
+            const SizedBox(height: 6),
+            AnimatedContainer(
+              duration: _tMed,
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+              decoration: BoxDecoration(
+                color: champion != null ? ac.withOpacity(0.08) : _bg,
+                border: Border(
+                  left: BorderSide(color: champion != null ? ac : _border, width: champion != null ? 3 : 2),
+                  top: BorderSide(color: _border, width: 1.5),
+                  right: BorderSide(color: _border, width: 1.5),
+                  bottom: BorderSide(color: _border, width: 1.5),
+                ),
+              ),
+              child: Text(
+                champion ?? 'Escribe el equipo...',
+                style: _mono(color: champion != null ? ac : _muted, size: 9, weight: champion != null ? FontWeight.w700 : FontWeight.normal),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            child: Text(
-              champion ?? 'Escribe el equipo...',
-              style: _mono(color: champion != null ? _accent : _muted, size: 9, weight: champion != null ? FontWeight.w700 : FontWeight.normal),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ])),
-      ]),
+          ])),
+        ],
+      ),
     );
   }
 }
@@ -901,14 +1020,14 @@ class _MiniAwardCard extends StatelessWidget {
     final a = award; final pred = _pred; final winner = pred?['predicted_winner'] as String?; final ac = _ac;
     return Container(
       width: 216,
-      decoration: BoxDecoration(color: _card, border: Border.all(color: _borderH, width: 1.5), boxShadow: const [_shadow]),
+      decoration: BoxDecoration(color: _card, border: Border.all(color: _border, width: 2), boxShadow: const [_shadow]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(height: 3, color: ac),
         Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Container(
               width: 20, height: 20,
-              decoration: BoxDecoration(color: _bg, border: Border.all(color: _borderH, width: 1.5), boxShadow: const [_shadowSm]),
+              decoration: BoxDecoration(color: _bg, border: Border.all(color: _border, width: 1.5), boxShadow: const [_shadowSm]),
               child: a['logo_url'] != null
                   ? Image.network(a['logo_url'], fit: BoxFit.contain, errorBuilder: (_, _, _) => Center(child: Text(a['logo'] ?? '🏅', style: const TextStyle(fontSize: 9))))
                   : Center(child: Text(a['logo'] ?? '🏅', style: const TextStyle(fontSize: 9))),
@@ -918,26 +1037,37 @@ class _MiniAwardCard extends StatelessWidget {
               Text((a['name'] ?? 'PREMIO').toString().toUpperCase(), style: _mono(color: _text, size: 9, weight: FontWeight.w700, letterSpacing: 1), overflow: TextOverflow.ellipsis),
               Text(a['season'] ?? '—', style: _mono(color: _muted, size: 7, letterSpacing: 1)),
             ])),
-            AnimatedContainer(duration: _tMed, width: 7, height: 7, color: ac, margin: const EdgeInsets.only(left: 8)),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: ac,
+                border: Border.all(color: _border, width: 1.5),
+                boxShadow: const [_shadowSm],
+              ),
+              child: Text(
+                pred != null ? 'GUARD.' : 'PEND.',
+                style: _mono(color: Colors.white, size: 7, weight: FontWeight.w800),
+              ),
+            ),
           ]),
-          Container(height: 1, color: _border, margin: const EdgeInsets.symmetric(vertical: 10)),
+          Container(height: 1.5, color: _border, margin: const EdgeInsets.symmetric(vertical: 10)),
           Text('TU PREDICCIÓN', style: _mono(color: _muted, size: 6, weight: FontWeight.w700, letterSpacing: 2)),
           const SizedBox(height: 6),
           AnimatedContainer(
             duration: _tMed,
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
             decoration: BoxDecoration(
-              color: winner != null ? _accent.withValues(alpha: 0.08) : _bg,
+              color: winner != null ? ac.withOpacity(0.08) : _bg,
               border: Border(
-                left: BorderSide(color: winner != null ? _accent : _borderH, width: winner != null ? 2.5 : 1.5),
-                top: const BorderSide(color: _borderH, width: 1.5),
-                right: const BorderSide(color: _borderH, width: 1.5),
-                bottom: const BorderSide(color: _borderH, width: 1.5),
+                left: BorderSide(color: winner != null ? ac : _border, width: winner != null ? 3 : 2),
+                top: BorderSide(color: _border, width: 1.5),
+                right: BorderSide(color: _border, width: 1.5),
+                bottom: BorderSide(color: _border, width: 1.5),
               ),
             ),
             child: Text(
               winner ?? 'Ingresa el nombre...',
-              style: _mono(color: winner != null ? _accent : _muted, size: 9, weight: winner != null ? FontWeight.w700 : FontWeight.normal),
+              style: _mono(color: winner != null ? ac : _muted, size: 9, weight: winner != null ? FontWeight.w700 : FontWeight.normal),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -948,7 +1078,7 @@ class _MiniAwardCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  MORE CARD — con press feedback
+//  MORE CARD
 // ─────────────────────────────────────────────────────────────
 class _MoreCard extends StatelessWidget {
   final VoidCallback? onTap;
@@ -962,10 +1092,10 @@ class _MoreCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: _card,
         border: const Border(
-          top: BorderSide(color: _accent, width: 2.5),
-          left: BorderSide(color: _borderH, width: 1.5),
-          right: BorderSide(color: _borderH, width: 1.5),
-          bottom: BorderSide(color: _borderH, width: 1.5),
+          top: BorderSide(color: _accent, width: 3),
+          left: BorderSide(color: _border, width: 2),
+          right: BorderSide(color: _border, width: 2),
+          bottom: BorderSide(color: _border, width: 2),
         ),
         boxShadow: const [_shadow],
       ),
@@ -985,10 +1115,10 @@ class _EmptyMatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     width: 160,
-    height: 55,        // ← fija el alto
+    height: 55,
     decoration: BoxDecoration(
       color: _card,
-      border: const Border(top: BorderSide(color: _accent, width: 2.5), left: BorderSide(color: _borderH, width: 1.5), right: BorderSide(color: _borderH, width: 1.5), bottom: BorderSide(color: _borderH, width: 1.5)),
+      border: const Border(top: BorderSide(color: _accent, width: 3), left: BorderSide(color: _border, width: 2), right: BorderSide(color: _border, width: 2), bottom: BorderSide(color: _border, width: 2)),
       boxShadow: const [_shadow],
     ),
     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -1005,7 +1135,7 @@ class _EmptyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     width: 138,
-    decoration: BoxDecoration(color: _card, border: Border.all(color: _borderH, width: 1.5), boxShadow: const [_shadow]),
+    decoration: BoxDecoration(color: _card, border: Border.all(color: _border, width: 2), boxShadow: const [_shadow]),
     child: Center(child: Text(label, textAlign: TextAlign.center, style: _mono(color: _muted, size: 7, weight: FontWeight.w700, letterSpacing: 1.4))),
   );
 }
@@ -1022,7 +1152,7 @@ class _BottomTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final tabs = [{'id': 'ranking', 'label': 'Ranking', 'count': '3 items'}, {'id': 'stats', 'label': 'Stats', 'count': '4 items'}];
     return Container(
-      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: _borderH, width: 1.5))),
+      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: _border, width: 2))),
       child: Row(children: tabs.map((t) {
         final id = t['id']!; final isActive = activeTab == id;
         return GestureDetector(
@@ -1053,7 +1183,7 @@ class _BottomTabBar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  PODIUM PANEL
+//  PODIUM PANEL — con números de posición en cajas sólidas
 // ─────────────────────────────────────────────────────────────
 class _PodiumPanel extends StatefulWidget {
   final List topUsers;
@@ -1085,29 +1215,39 @@ class _PodiumPanelState extends State<_PodiumPanel> with SingleTickerProviderSta
   Widget build(BuildContext context) {
     if (widget.topUsers.length < 3) return Container(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: _card, border: Border.all(color: _borderH, width: 1.5), boxShadow: const [_shadow]),
+      decoration: BoxDecoration(color: _card, border: Border.all(color: _border, width: 2), boxShadow: const [_shadow]),
       child: Center(child: Text('SIN DATOS DE RANKING', style: _mono(color: _muted, size: 9, weight: FontWeight.w700, letterSpacing: 2))),
     );
 
     final visual    = [widget.topUsers[1], widget.topUsers[0], widget.topUsers[2]];
-    final medals    = ['PLATA', 'ORO', 'BRONCE'];
+    // Posición real: [2, 1, 3]
+    final positions = [2, 1, 3];
     final avSizes   = [42.0, 52.0, 38.0];
     final stepH     = [28.0, 40.0, 16.0];
     final avColors  = [_accentL, _accent, _accentL];
     final borderCs  = [_silver, _gold, _bronze];
-    final stepCs    = [_silver.withValues(alpha: 0.1), _gold.withValues(alpha: 0.1), _bronze.withValues(alpha: 0.1)];
+    final stepCs    = [_silver.withOpacity(0.1), _gold.withOpacity(0.1), _bronze.withOpacity(0.1)];
     final ptCs      = [_silver, _gold, _bronze];
+    // Colores de caja de posición
+    final posBgCs   = [_silver, _amber, _bronze];
 
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 14, 12, 0),
-      decoration: BoxDecoration(color: _card, border: Border.all(color: _borderH, width: 1.5), boxShadow: const [_shadowLg]),
+      decoration: BoxDecoration(
+        color: _card,
+        border: Border.all(color: _borderH, width: 1.5),
+        boxShadow: const [_shadowLg],
+      ),
       child: Column(children: [
+        // Header decorativo
         Row(children: [
           Container(width: 5, height: 5, color: _accent),
           const SizedBox(width: 8),
           Text('RANKING GLOBAL', style: _mono(color: _muted, size: 7, weight: FontWeight.w700, letterSpacing: 2.2)),
           const SizedBox(width: 8),
           Expanded(child: Container(height: 1, color: _border)),
+          const SizedBox(width: 8),
+          Container(width: 5, height: 5, color: _border),
         ]),
         const SizedBox(height: 16),
         Row(
@@ -1119,6 +1259,7 @@ class _PodiumPanelState extends State<_PodiumPanel> with SingleTickerProviderSta
             final pts  = u['points'] ?? 0;
             final av   = u['avatar_url'] as String?;
             final sz   = avSizes[i];
+            final pos  = positions[i];
 
             return Expanded(
               child: AnimatedBuilder(
@@ -1128,12 +1269,29 @@ class _PodiumPanelState extends State<_PodiumPanel> with SingleTickerProviderSta
                   child: Transform.translate(offset: Offset(0, 20 * (1 - _anims[i].value.clamp(0.0, 1.0))), child: child),
                 ),
                 child: Column(children: [
+                  // Número de posición — caja sólida neobrutalista
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: posBgCs[i],
+                      border: Border.all(color: _border, width: 2),
+                      boxShadow: const [_shadowSm],
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '$pos',
+                      style: _mono(color: Colors.white, size: 10, weight: FontWeight.w800),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  // Avatar
                   Container(
                     width: sz, height: sz,
                     decoration: BoxDecoration(
                       color: avColors[i],
-                      border: Border.all(color: borderCs[i], width: i == 1 ? 2 : 1.5),
-                      boxShadow: [BoxShadow(color: Colors.black26, offset: Offset(i == 1 ? 3 : 2, i == 1 ? 3 : 2))],
+                      border: Border.all(color: _border, width: i == 1 ? 3 : 2),
+                      boxShadow: [BoxShadow(color: _shadowColor, offset: Offset(i == 1 ? 4 : 3, i == 1 ? 4 : 3), blurRadius: 0)],
                     ),
                     child: av != null
                         ? Image.network(av, fit: BoxFit.cover,
@@ -1145,13 +1303,27 @@ class _PodiumPanelState extends State<_PodiumPanel> with SingleTickerProviderSta
                   if (isMe) Container(
                     margin: const EdgeInsets.only(top: 2),
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                    decoration: BoxDecoration(border: Border.all(color: _accent, width: 1.5), color: _accent.withValues(alpha: 0.08)),
-                    child: Text('TÚ', style: _mono(color: _accent, size: 6, weight: FontWeight.w800, letterSpacing: 1)),
+                    decoration: BoxDecoration(
+                      color: _accent,
+                      border: Border.all(color: _border, width: 1.5),
+                      boxShadow: const [_shadowSm],
+                    ),
+                    child: Text('TÚ', style: _mono(color: Colors.white, size: 6, weight: FontWeight.w800, letterSpacing: 1)),
                   ),
                   Text('$pts', style: _mono(color: ptCs[i], size: 10, weight: FontWeight.w700)),
-                  Text(medals[i], style: _mono(color: ptCs[i], size: 6, weight: FontWeight.w700, letterSpacing: 1.4)),
                   const SizedBox(height: 4),
-                  Container(width: double.infinity, height: stepH[i], decoration: BoxDecoration(color: stepCs[i], border: Border(top: BorderSide(color: borderCs[i], width: 2)))),
+                  Container(
+                    width: double.infinity,
+                    height: stepH[i],
+                    decoration: BoxDecoration(
+                      color: stepCs[i],
+                      border: Border(
+                        top: BorderSide(color: borderCs[i], width: 2),
+                        left: BorderSide(color: borderCs[i].withOpacity(0.3), width: 1),
+                        right: BorderSide(color: borderCs[i].withOpacity(0.3), width: 1),
+                      ),
+                    ),
+                  ),
                 ]),
               ),
             );
@@ -1163,7 +1335,7 @@ class _PodiumPanelState extends State<_PodiumPanel> with SingleTickerProviderSta
 }
 
 // ─────────────────────────────────────────────────────────────
-//  STATS PANEL — grid 2×2 como el original React
+//  STATS PANEL — grid 2×2
 // ─────────────────────────────────────────────────────────────
 class _StatsPanel extends StatelessWidget {
   final Map<String, dynamic>? user;
@@ -1180,22 +1352,24 @@ class _StatsPanel extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: _card,
-        border: Border.all(color: _borderH, width: 1.5),
+        border: Border.all(color: _border, width: 2),
         boxShadow: const [_shadowLg],
       ),
       child: Column(children: [
+        // Borde superior de acento
+        Container(height: 3, color: _accent),
         IntrinsicHeight(
           child: Row(children: [
             Expanded(child: _StatCell(value: '$points', unit: 'pts', label: 'PUNTOS', accent: true)),
-            Container(width: 1, color: _border),
+            Container(width: 2, color: _border),
             Expanded(child: _StatCell(value: '$correct', label: 'ACIERTOS')),
           ]),
         ),
-        Container(height: 1, color: _border),
+        Container(height: 2, color: _border),
         IntrinsicHeight(
           child: Row(children: [
             Expanded(child: _StatCellBar(value: '$accuracy', unit: '%', label: 'PRECISIÓN', pct: accuracy / 100)),
-            Container(width: 1, color: _border),
+            Container(width: 2, color: _border),
             Expanded(child: _StatCell(value: '$predictions', label: 'PREDICCIONES')),
           ]),
         ),
@@ -1236,7 +1410,12 @@ class _StatCell extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        Text(label, style: _mono(color: _muted, size: 7, weight: FontWeight.w700, letterSpacing: 1.6)),
+        // Línea decorativa bajo el label
+        Row(children: [
+          Container(width: 8, height: 2, color: accent ? _accent : _border),
+          const SizedBox(width: 5),
+          Text(label, style: _mono(color: _muted, size: 7, weight: FontWeight.w700, letterSpacing: 1.6)),
+        ]),
       ],
     ),
   );
@@ -1268,19 +1447,31 @@ class _StatCellBar extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        Text(label, style: _mono(color: _muted, size: 7, weight: FontWeight.w700, letterSpacing: 1.6)),
+        Row(children: [
+          Container(width: 8, height: 2, color: _green),
+          const SizedBox(width: 5),
+          Text(label, style: _mono(color: _muted, size: 7, weight: FontWeight.w700, letterSpacing: 1.6)),
+        ]),
         const SizedBox(height: 6),
         TweenAnimationBuilder<double>(
           tween: Tween(begin: 0, end: pct.clamp(0.0, 1.0)),
           duration: const Duration(milliseconds: 900),
           curve: Curves.easeOutCubic,
           builder: (_, v, __) => Container(
-            height: 3,
-            decoration: BoxDecoration(color: _bg, border: Border.all(color: _borderH, width: 1)),
+            height: 4,
+            decoration: BoxDecoration(
+              color: _bg,
+              border: Border.all(color: _borderH, width: 1),
+            ),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
               widthFactor: v,
-              child: Container(color: _accent),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _accent,
+                  boxShadow: [BoxShadow(color: _accent.withOpacity(0.4), offset: const Offset(0, 1), blurRadius: 2)],
+                ),
+              ),
             ),
           ),
         ),
@@ -1288,8 +1479,9 @@ class _StatCellBar extends StatelessWidget {
     ),
   );
 }
+
 // ─────────────────────────────────────────────────────────────
-//  SPLASH DE CARGA — reemplaza el skeleton genérico
+//  SPLASH DE CARGA
 // ─────────────────────────────────────────────────────────────
 class _AppSplash extends StatefulWidget {
   const _AppSplash();
@@ -1322,7 +1514,6 @@ class _AppSplashState extends State<_AppSplash> with SingleTickerProviderStateMi
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Icono / logo
               Container(
                 width: 72,
                 height: 72,
@@ -1340,7 +1531,6 @@ class _AppSplashState extends State<_AppSplash> with SingleTickerProviderStateMi
                 child: const Icon(Icons.emoji_events, color: Colors.white, size: 36),
               ),
               const SizedBox(height: 20),
-              // Nombre de la app
               Text(
                 'GLOBALSCORE',
                 style: _mono(
@@ -1356,7 +1546,6 @@ class _AppSplashState extends State<_AppSplash> with SingleTickerProviderStateMi
                 style: _mono(size: 9, color: _muted, letterSpacing: 1.5),
               ),
               const SizedBox(height: 32),
-              // Barra de progreso indeterminada
               SizedBox(
                 width: 120,
                 child: ClipRRect(
@@ -1374,8 +1563,9 @@ class _AppSplashState extends State<_AppSplash> with SingleTickerProviderStateMi
     );
   }
 }
+
 // ─────────────────────────────────────────────────────────────
-//  SKELETON — con shimmer
+//  SKELETON
 // ─────────────────────────────────────────────────────────────
 class _BrutalistSkeleton extends StatefulWidget {
   const _BrutalistSkeleton();
