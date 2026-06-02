@@ -3,6 +3,16 @@ import '../../domain/profile_models.dart';
 
 bool _hasUrl(String? url) => url != null && url.trim().isNotEmpty;
 
+// ── Paleta ────────────────────────────────────────────────────
+const _bg      = Color(0xFFF0EDE8);
+const _card    = Color(0xFFEAE7E1);
+const _border  = Color(0xFFC8C3B8);
+const _accent  = Color(0xFF5B4FD8);
+const _text    = Color(0xFF1A1A2E);
+const _muted   = Color(0xFF6B6580);
+
+const _shadowSm = BoxShadow(color: Color(0x4D1A1A2E), offset: Offset(1, 1), blurRadius: 0);
+
 class ProfileHeroBanner extends StatelessWidget {
   final UserProfile profile;
   final bool isOwner;
@@ -13,30 +23,31 @@ class ProfileHeroBanner extends StatelessWidget {
     required this.isOwner,
   });
 
-  // 25% menos que 180 → 135
-  static const double _bannerHeight = 135.0;
+  static const double _bannerHeight = 130.0;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
         _BannerImage(url: profile.equippedBannerUrl, height: _bannerHeight),
+        // Badge neobrutalista
         Positioned(
           bottom: 10,
           left: 14,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: const Color(0xFF60519B).withOpacity(0.85),
-              borderRadius: BorderRadius.circular(4),
+              color: _accent,
+              boxShadow: const [_shadowSm],
             ),
             child: const Text(
               'PERFIL · GLOBALSCORE',
               style: TextStyle(
+                fontFamily: 'DM Mono',
                 color: Colors.white,
-                fontSize: 10,
+                fontSize: 8,
                 letterSpacing: 1.5,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
@@ -81,14 +92,14 @@ class _Fallback extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF60519B), Color(0xFF8B7FC7)],
+          colors: [Color(0xFF5B4FD8), Color(0xFF8B7FC7)],
         ),
       ),
     );
   }
 }
 
-// ─── Fila de identidad ────────────────────────
+// ─── Fila de identidad neobrutalista ─────────
 class ProfileIdentityRow extends StatelessWidget {
   final UserProfile profile;
   final bool isOwner;
@@ -105,11 +116,15 @@ class ProfileIdentityRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      child: Padding(
+      child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: const BoxDecoration(
+          color: _card,
+          border: Border(bottom: BorderSide(color: _border, width: 1)),
+        ),
         child: Row(
           children: [
-            _NetworkAvatar(url: profile.avatarUrl, radius: 30),
+            _NetworkAvatar(url: profile.avatarUrl, radius: 28),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -118,26 +133,53 @@ class ProfileIdentityRow extends StatelessWidget {
                   Text(
                     profile.name,
                     style: const TextStyle(
+                      fontFamily: 'DM Mono',
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                       letterSpacing: -0.3,
-                      color: Color(0xFF1A1A2E),
+                      color: _text,
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    'GLOBAL · NIV.${profile.level}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0x801A1A2E),
-                      letterSpacing: 1.0,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  Row(
+                    children: [
+                      Container(width: 4, height: 4, color: _accent),
+                      const SizedBox(width: 5),
+                      Text(
+                        'GLOBAL · NIV.${profile.level}',
+                        style: const TextStyle(
+                          fontFamily: 'DM Mono',
+                          fontSize: 9,
+                          color: _muted,
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Color(0x401A1A2E), size: 22),
+            if (isOwner)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _accent.withOpacity(0.08),
+                  border: Border.all(color: _accent.withOpacity(0.3), width: 1),
+                ),
+                child: const Text(
+                  'EDITAR',
+                  style: TextStyle(
+                    fontFamily: 'DM Mono',
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
+                    color: _accent,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              )
+            else
+              const Icon(Icons.chevron_right, color: _muted, size: 20),
           ],
         ),
       ),
@@ -145,7 +187,7 @@ class ProfileIdentityRow extends StatelessWidget {
   }
 }
 
-// ─── Avatar circular robusto ──────────────────
+// ─── Avatar ───────────────────────────────────
 class _NetworkAvatar extends StatelessWidget {
   final String? url;
   final double radius;
@@ -153,24 +195,28 @@ class _NetworkAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CircleAvatar(
-      radius: radius,
-      backgroundColor: const Color(0xFFE0DCF5),
+    return Container(
+      width: radius * 2,
+      height: radius * 2,
+      decoration: BoxDecoration(
+        color: const Color(0xFF8B7FC7),
+        border: Border.all(color: _border, width: 1),
+        boxShadow: const [_shadowSm],
+      ),
+      clipBehavior: Clip.hardEdge,
       child: _hasUrl(url)
-          ? ClipOval(
-              child: Image.network(
-                url!,
-                width: radius * 2,
-                height: radius * 2,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Icon(
-                  Icons.person,
-                  size: radius * 0.9,
-                  color: const Color(0xFF60519B),
-                ),
+          ? Image.network(
+              url!,
+              width: radius * 2,
+              height: radius * 2,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Icon(
+                Icons.person,
+                size: radius * 0.9,
+                color: Colors.white,
               ),
             )
-          : Icon(Icons.person, size: radius * 0.9, color: const Color(0xFF60519B)),
+          : Icon(Icons.person, size: radius * 0.9, color: Colors.white),
     );
   }
 }
@@ -195,34 +241,29 @@ class ProfileAvatar extends StatelessWidget {
       children: [
         _NetworkAvatar(url: url, radius: radius),
         Positioned(
-          bottom: -8,
+          bottom: -10,
           left: 0,
           right: 0,
           child: Center(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
               decoration: BoxDecoration(
-                color: const Color(0xFF60519B),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF60519B).withOpacity(0.4),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                color: _accent,
+                boxShadow: const [_shadowSm],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.military_tech, color: Colors.white, size: 12),
+                  const Icon(Icons.military_tech, color: Colors.white, size: 11),
                   const SizedBox(width: 3),
                   Text(
-                    'Lvl $level',
+                    'NIV.$level',
                     style: const TextStyle(
+                      fontFamily: 'DM Mono',
                       color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ],
@@ -235,7 +276,7 @@ class ProfileAvatar extends StatelessWidget {
   }
 }
 
-/// Barra de stats oscura
+/// Barra de stats — estilo neobrutalista oscuro
 class ProfileStatsBar extends StatelessWidget {
   final UserProfile profile;
   const ProfileStatsBar({super.key, required this.profile});
@@ -244,16 +285,23 @@ class ProfileStatsBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final accuracy = profile.accuracy.round();
     return Container(
-      color: const Color(0xFF1E2032),
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Row(
-        children: [
-          _StatCell(value: '${profile.points}', label: 'PUNTOS'),
-          _VDivider(),
-          _StatCell(value: '${profile.correct}', label: 'ACIERTOS'),
-          _VDivider(),
-          _StatCell(value: '$accuracy%', label: 'PRECISIÓN'),
-        ],
+      decoration: const BoxDecoration(
+        color: Color(0xFF1A1A2E),
+        border: Border(
+          bottom: BorderSide(color: Color(0xFF5B4FD8), width: 2),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            _StatCell(value: '${profile.points}', label: 'PUNTOS'),
+            Container(width: 1, color: Colors.white.withOpacity(0.12)),
+            _StatCell(value: '${profile.correct}', label: 'ACIERTOS'),
+            Container(width: 1, color: Colors.white.withOpacity(0.12)),
+            _StatCell(value: '$accuracy%', label: 'PRECISIÓN'),
+          ],
+        ),
       ),
     );
   }
@@ -273,7 +321,8 @@ class _StatCell extends StatelessWidget {
           Text(
             value,
             style: const TextStyle(
-              fontSize: 28,
+              fontFamily: 'DM Mono',
+              fontSize: 26,
               fontWeight: FontWeight.w900,
               color: Colors.white,
               letterSpacing: -1,
@@ -283,21 +332,15 @@ class _StatCell extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: Colors.white.withOpacity(0.55),
-              letterSpacing: 1.2,
+              fontFamily: 'DM Mono',
+              fontSize: 8,
+              fontWeight: FontWeight.w700,
+              color: Colors.white.withOpacity(0.5),
+              letterSpacing: 1.4,
             ),
           ),
         ],
       ),
     );
-  }
-}
-
-class _VDivider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(width: 1, height: 40, color: Colors.white.withOpacity(0.12));
   }
 }

@@ -4,8 +4,19 @@ import '../../domain/profile_models.dart';
 import '../../domain/profile_providers.dart';
 import '../widgets/clinical_list_item.dart';
 
-/// Tab principal del perfil (equivalente a MobileProfileMain en React).
-/// Muestra: stats, preferencias, mi actividad.
+// ── Paleta ────────────────────────────────────────────────────
+const _bg      = Color(0xFFF0EDE8);
+const _card    = Color(0xFFEAE7E1);
+const _border  = Color(0xFFC8C3B8);
+const _accent  = Color(0xFF5B4FD8);
+const _text    = Color(0xFF1A1A2E);
+const _muted   = Color(0xFF6B6580);
+const _gold    = Color(0xFFC9A227);
+const _green   = Color(0xFF1D9E75);
+
+const _shadowSm = BoxShadow(color: Color(0x4D1A1A2E), offset: Offset(1, 1), blurRadius: 0);
+const _shadow   = BoxShadow(color: Color(0x661A1A2E), offset: Offset(2, 2), blurRadius: 0);
+
 class OverviewTab extends ConsumerWidget {
   final UserProfile profile;
   final bool isOwner;
@@ -29,107 +40,98 @@ class OverviewTab extends ConsumerWidget {
         children: [
           // ── Stats cards ─────────────────────
           _StatsGrid(profile: profile),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
 
           // ── Nivel ────────────────────────────
           _LevelCard(profile: profile),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
 
           // ── Ranking ──────────────────────────
           _RankingCard(rankAsync: rankAsync),
+          const SizedBox(height: 4),
 
           // ── Preferencias ─────────────────────
           if (isOwner) ...[
             const SectionHeader(label: 'Preferencias'),
-            ClinicalCard(
-              children: [
-                ClinicalListItem(
-                  iconColor: const Color(0xFF5B6BF5),
-                  icon: Icons.light_mode_outlined,
-                  title: 'Dark Mode',
-                  trailing: _ComingSoonBadge(),
-                  showDivider: false,
-                ),
-              ],
-            ),
-            ClinicalCard(
-              children: [
-                ClinicalListItem(
-                  iconColor: const Color(0xFFEF9D1A),
-                  icon: Icons.palette_outlined,
-                  title: 'Apariencia',
-                  subtitle: 'Tema y estilo visual',
-                  trailing: _ComingSoonBadge(),
-                  showDivider: false,
-                ),
-              ],
-            ),
+            ClinicalCard(children: [
+              ClinicalListItem(
+                iconColor: const Color(0xFF5B6BF5),
+                icon: Icons.light_mode_outlined,
+                title: 'Dark Mode',
+                trailing: _ComingSoonBadge(),
+                showDivider: false,
+              ),
+            ]),
+            ClinicalCard(children: [
+              ClinicalListItem(
+                iconColor: const Color(0xFFEF9D1A),
+                icon: Icons.palette_outlined,
+                title: 'Apariencia',
+                subtitle: 'Tema y estilo visual',
+                trailing: _ComingSoonBadge(),
+                showDivider: false,
+              ),
+            ]),
           ],
 
           // ── Mi actividad ─────────────────────
           const SectionHeader(label: 'Mi Actividad'),
-          ClinicalCard(
-            children: [
-              ClinicalListItem(
-                iconColor: const Color(0xFF22C55E),
-                icon: Icons.bar_chart_rounded,
-                title: 'Estadísticas',
-                subtitle: 'Ver tu rendimiento',
-                onTap: () => onNavigate('/stats'),
-              ),
-              ClinicalListItem(
-                iconColor: const Color(0xFFF59E0B),
-                icon: Icons.emoji_events_outlined,
-                title: 'Logros',
-                subtitle: _achievementsSubtitle(ref),
-                onTap: () => onNavigate('achievements'),
-              ),
-              ClinicalListItem(
-                iconColor: const Color(0xFF60519B),
-                icon: Icons.military_tech_outlined,
-                title: 'Campeonatos',
-                subtitle: '${profile.monthlyChampionships} coronas',
-                onTap: () => onNavigate('championships'),
-                showDivider: false,
-              ),
-            ],
-          ),
+          ClinicalCard(children: [
+            ClinicalListItem(
+              iconColor: const Color(0xFF22C55E),
+              icon: Icons.bar_chart_rounded,
+              title: 'Estadísticas',
+              subtitle: 'Ver tu rendimiento',
+              onTap: () => onNavigate('/stats'),
+            ),
+            ClinicalListItem(
+              iconColor: const Color(0xFFF59E0B),
+              icon: Icons.emoji_events_outlined,
+              title: 'Logros',
+              subtitle: _achievementsSubtitle(ref),
+              onTap: () => onNavigate('achievements'),
+            ),
+            ClinicalListItem(
+              iconColor: _accent,
+              icon: Icons.military_tech_outlined,
+              title: 'Campeonatos',
+              subtitle: '${profile.monthlyChampionships} coronas',
+              onTap: () => onNavigate('championships'),
+              showDivider: false,
+            ),
+          ]),
 
           // ── Notas ────────────────────────────
           if (isOwner) ...[
             const SectionHeader(label: 'Más'),
-            ClinicalCard(
-              children: [
-                ClinicalListItem(
-                  iconColor: const Color(0xFF06B6D4),
-                  icon: Icons.notes_rounded,
-                  title: 'Notas',
-                  subtitle: 'Mis predicciones anotadas',
-                  trailing: _ComingSoonBadge(),
-                  showDivider: false,
-                ),
-              ],
-            ),
+            ClinicalCard(children: [
+              ClinicalListItem(
+                iconColor: const Color(0xFF06B6D4),
+                icon: Icons.notes_rounded,
+                title: 'Notas',
+                subtitle: 'Mis predicciones anotadas',
+                trailing: _ComingSoonBadge(),
+                showDivider: false,
+              ),
+            ]),
           ],
 
-          // ── Admin (solo visible para admins) ──
+          // ── Admin ─────────────────────────────
           if (isOwner && profile.role == 'admin') ...[
             const SectionHeader(label: 'Administración'),
-            ClinicalCard(
-              children: [
-                ClinicalListItem(
-                  iconColor: const Color(0xFF1A1A2E),
-                  icon: Icons.shield_outlined,
-                  title: 'Panel de Admin',
-                  subtitle: 'Partidos · Ligas · Logros · Banners',
-                  onTap: () => onNavigate('/admin'),
-                  showDivider: false,
-                ),
-              ],
-            ),
+            ClinicalCard(children: [
+              ClinicalListItem(
+                iconColor: _text,
+                icon: Icons.shield_outlined,
+                title: 'Panel de Admin',
+                subtitle: 'Partidos · Ligas · Logros · Banners',
+                onTap: () => onNavigate('/admin'),
+                showDivider: false,
+              ),
+            ]),
           ],
 
-          const SizedBox(height: 16),  // ← este ya existía
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -145,7 +147,7 @@ class OverviewTab extends ConsumerWidget {
   }
 }
 
-// ─── Stats 3 columnas ─────────────────────────
+// ─── Stats 3 columnas neobrutalistas ──────────
 class _StatsGrid extends StatelessWidget {
   final UserProfile profile;
   const _StatsGrid({required this.profile});
@@ -154,17 +156,20 @@ class _StatsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: Row(
-        children: [
-          _StatCard(value: '${profile.points}', label: 'PUNTOS'),
-          const SizedBox(width: 8),
-          _StatCard(value: '${profile.correct}', label: 'ACIERTOS'),
-          const SizedBox(width: 8),
-          _StatCard(
-            value: '${profile.accuracy.round()}%',
-            label: 'PRECISIÓN',
-          ),
-        ],
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            _StatCard(value: '${profile.points}', label: 'PUNTOS', accentColor: _accent),
+            Container(width: 1, color: _border),
+            _StatCard(value: '${profile.correct}', label: 'ACIERTOS', accentColor: _green),
+            Container(width: 1, color: _border),
+            _StatCard(
+              value: '${profile.accuracy.round()}%',
+              label: 'PRECISIÓN',
+              accentColor: _gold,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -173,42 +178,43 @@ class _StatsGrid extends StatelessWidget {
 class _StatCard extends StatelessWidget {
   final String value;
   final String label;
-  const _StatCard({required this.value, required this.label});
+  final Color accentColor;
+  const _StatCard({required this.value, required this.label, required this.accentColor});
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          color: _card,
+          border: Border.all(color: _border, width: 1),
+          boxShadow: const [_shadowSm],
         ),
         child: Column(
           children: [
+            // Barra de acento top
+            Container(height: 2, color: accentColor,
+                margin: const EdgeInsets.only(bottom: 8)),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
+                fontFamily: 'DM Mono',
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
                 letterSpacing: -1,
+                color: accentColor,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.45),
-                letterSpacing: 1.0,
+              style: const TextStyle(
+                fontFamily: 'DM Mono',
+                fontSize: 7,
+                fontWeight: FontWeight.w800,
+                color: _muted,
+                letterSpacing: 1.4,
               ),
             ),
           ],
@@ -228,29 +234,21 @@ class _LevelCard extends StatelessWidget {
     final progress = profile.levelProgress;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 6,
-          ),
-        ],
+        color: _card,
+        border: Border.all(color: _border, width: 1),
+        boxShadow: const [_shadowSm],
       ),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFF60519B).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
+            width: 38,
+            height: 38,
+            color: _accent.withOpacity(0.12),
             child: const Icon(Icons.military_tech_outlined,
-                color: Color(0xFF60519B), size: 22),
+                color: _accent, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -261,25 +259,24 @@ class _LevelCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Nivel ${profile.level}',
-                      style:
-                          Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
+                      'NIVEL ${profile.level}',
+                      style: const TextStyle(
+                        fontFamily: 'DM Mono',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: _text,
+                      ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF60519B),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      color: _accent,
                       child: Text(
                         '${profile.pointsToNextLevel} pts',
                         style: const TextStyle(
+                          fontFamily: 'DM Mono',
                           color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
@@ -288,24 +285,24 @@ class _LevelCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   'Para el siguiente nivel',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withOpacity(0.45),
-                      ),
+                  style: const TextStyle(
+                    fontFamily: 'DM Mono',
+                    fontSize: 9,
+                    color: _muted,
+                  ),
                 ),
                 const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: progress.clamp(0.0, 1.0),
-                    minHeight: 6,
-                    backgroundColor:
-                        const Color(0xFF60519B).withOpacity(0.12),
-                    valueColor: const AlwaysStoppedAnimation(
-                      Color(0xFF60519B),
-                    ),
+                // Barra de progreso neobrutalista
+                Container(
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: _bg,
+                    border: Border.all(color: _border, width: 1),
+                  ),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: progress.clamp(0.0, 1.0),
+                    child: Container(color: _accent),
                   ),
                 ),
               ],
@@ -325,62 +322,71 @@ class _RankingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 6,
-          ),
-        ],
+        color: _card,
+        border: Border.all(color: _border, width: 1),
+        boxShadow: const [_shadow],
       ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.leaderboard_outlined,
-                  color: Color(0xFFEF9D1A), size: 20),
-              const SizedBox(width: 6),
-              Text(
-                'RANKING GLOBAL',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: const Color(0xFFEF9D1A),
-                      letterSpacing: 1.2,
-                      fontWeight: FontWeight.w700,
+          // Header dorado
+          Container(
+            height: 2,
+            color: _gold,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(width: 4, height: 4, color: _gold),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'RANKING GLOBAL',
+                      style: TextStyle(
+                        fontFamily: 'DM Mono',
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        color: _gold,
+                        letterSpacing: 1.8,
+                      ),
                     ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          rankAsync.when(
-            data: (pos) => Text(
-              '#$pos',
-              style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -2,
-                  ),
-            ),
-            loading: () => const SizedBox(
-              height: 40,
-              child: Center(
-                  child: CircularProgressIndicator(strokeWidth: 2)),
-            ),
-            error: (_, __) => const Text('—'),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'posición actual',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withOpacity(0.45),
-                  fontWeight: FontWeight.w600,
+                  ],
                 ),
+                const SizedBox(height: 10),
+                rankAsync.when(
+                  data: (pos) => Text(
+                    '#$pos',
+                    style: const TextStyle(
+                      fontFamily: 'DM Mono',
+                      fontSize: 48,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -3,
+                      color: _text,
+                    ),
+                  ),
+                  loading: () => const SizedBox(
+                    height: 48,
+                    child: Center(
+                        child: CircularProgressIndicator(strokeWidth: 2, color: _accent)),
+                  ),
+                  error: (_, __) => const Text('—'),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'posición actual',
+                  style: TextStyle(
+                    fontFamily: 'DM Mono',
+                    fontSize: 9,
+                    color: _muted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -388,25 +394,24 @@ class _RankingCard extends StatelessWidget {
   }
 }
 
-// ─── Próximamente badge ───────────────────────
+// ─── Coming soon badge ────────────────────────
 class _ComingSoonBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: const Color(0xFF60519B).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: const Color(0xFF60519B).withOpacity(0.2),
-        ),
+        color: _accent.withOpacity(0.08),
+        border: Border.all(color: _accent.withOpacity(0.25), width: 1),
       ),
-      child: Text(
-        'Próximamente',
+      child: const Text(
+        'PRONTO',
         style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: const Color(0xFF60519B).withOpacity(0.7),
+          fontFamily: 'DM Mono',
+          fontSize: 8,
+          fontWeight: FontWeight.w800,
+          color: _accent,
+          letterSpacing: 0.8,
         ),
       ),
     );

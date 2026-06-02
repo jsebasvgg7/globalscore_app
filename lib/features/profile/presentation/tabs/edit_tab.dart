@@ -8,10 +8,19 @@ import '../../domain/profile_models.dart';
 import '../../domain/profile_providers.dart';
 import '../widgets/profile_hero_banner.dart';
 
-// ─── Cloudinary config ────────────────────────
-// Reemplaza con tus valores reales
-const _cloudinaryUploadUrl =
-    'https://api.cloudinary.com/v1_1/djahz5tq3/image/upload';
+// ── Paleta ────────────────────────────────────────────────────
+const _bg      = Color(0xFFF0EDE8);
+const _card    = Color(0xFFEAE7E1);
+const _border  = Color(0xFFC8C3B8);
+const _accent  = Color(0xFF5B4FD8);
+const _text    = Color(0xFF1A1A2E);
+const _muted   = Color(0xFF6B6580);
+const _red     = Color(0xFFE24B4A);
+
+const _shadowSm = BoxShadow(color: Color(0x4D1A1A2E), offset: Offset(1, 1), blurRadius: 0);
+const _shadow   = BoxShadow(color: Color(0x661A1A2E), offset: Offset(2, 2), blurRadius: 0);
+
+const _cloudinaryUploadUrl    = 'https://api.cloudinary.com/v1_1/djahz5tq3/image/upload';
 const _cloudinaryUploadPreset = 'globalscoredb';
 
 class EditTab extends ConsumerStatefulWidget {
@@ -25,20 +34,20 @@ class EditTab extends ConsumerStatefulWidget {
 }
 
 class _EditTabState extends ConsumerState<EditTab> {
-  final _nameController = TextEditingController();
-  final _teamController = TextEditingController();
+  final _nameController   = TextEditingController();
+  final _teamController   = TextEditingController();
   final _playerController = TextEditingController();
-  final _bioController = TextEditingController();
+  final _bioController    = TextEditingController();
 
   bool _uploadingAvatar = false;
 
   @override
   void initState() {
     super.initState();
-    _nameController.text = widget.profile.name;
-    _teamController.text = widget.profile.favoriteTeam ?? '';
+    _nameController.text   = widget.profile.name;
+    _teamController.text   = widget.profile.favoriteTeam ?? '';
     _playerController.text = widget.profile.favoritePlayer ?? '';
-    _bioController.text = widget.profile.bio ?? '';
+    _bioController.text    = widget.profile.bio ?? '';
   }
 
   @override
@@ -50,7 +59,6 @@ class _EditTabState extends ConsumerState<EditTab> {
     super.dispose();
   }
 
-  // ─── Cloudinary upload ────────────────────
   Future<void> _pickAndUploadAvatar() async {
     final picker = ImagePicker();
     final XFile? image =
@@ -65,25 +73,20 @@ class _EditTabState extends ConsumerState<EditTab> {
             ..files.add(await http.MultipartFile.fromPath('file', image.path));
 
       final response = await request.send();
-      final body = await response.stream.bytesToString();
-      final json = jsonDecode(body) as Map<String, dynamic>;
-      final url = json['secure_url'] as String;
+      final body     = await response.stream.bytesToString();
+      final json     = jsonDecode(body) as Map<String, dynamic>;
+      final url      = json['secure_url'] as String;
 
-      await ref
-          .read(profileServiceProvider)
-          .updateAvatarUrl(widget.profile.id, url);
-
+      await ref.read(profileServiceProvider).updateAvatarUrl(widget.profile.id, url);
       ref.invalidate(ownProfileProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Avatar actualizado ✓')),
-        );
+          const SnackBar(content: Text('Avatar actualizado ✓')));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al subir imagen: $e')),
-        );
+          SnackBar(content: Text('Error al subir imagen: $e')));
       }
     } finally {
       if (mounted) setState(() => _uploadingAvatar = false);
@@ -92,75 +95,63 @@ class _EditTabState extends ConsumerState<EditTab> {
 
   Future<void> _save() async {
     final input = UpdateProfileInput(
-      name: _nameController.text.trim(),
-      bio: _bioController.text.trim(),
-      favoriteTeam: _teamController.text.trim(),
+      name:           _nameController.text.trim(),
+      bio:            _bioController.text.trim(),
+      favoriteTeam:   _teamController.text.trim(),
       favoritePlayer: _playerController.text.trim(),
     );
 
     await ref.read(editProfileProvider.notifier).save(
-          userId: widget.profile.id,
-          input: input,
-          onSuccess: () {
-            ref.invalidate(ownProfileProvider);
-            widget.onSaved();
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Perfil guardado ✓')),
-            );
-          },
-          onError: (e) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error: $e')),
-            );
-          },
-        );
+      userId:    widget.profile.id,
+      input:     input,
+      onSuccess: () {
+        ref.invalidate(ownProfileProvider);
+        widget.onSaved();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Perfil guardado ✓')));
+      },
+      onError: (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')));
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final saveState = ref.watch(editProfileProvider);
-    final bannersAsync =
-        ref.watch(userBannersProvider(widget.profile.id));
+    final saveState   = ref.watch(editProfileProvider);
+    final bannersAsync = ref.watch(userBannersProvider(widget.profile.id));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 40),
       child: Column(
         children: [
-          // ── Avatar section ──────────────
+          // ── Avatar section ──────────────────
           Container(
             margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(20),
             decoration: const BoxDecoration(
-            color: Color(0xFFEAE7E1),
-            border: Border(
-              top: BorderSide(color: Color(0xFFC4BFB8), width: 1.5),
-              left: BorderSide(color: Color(0xFFC4BFB8), width: 1.5),
-              right: BorderSide(color: Color(0xFFC4BFB8), width: 1.5),
-              bottom: BorderSide(color: Color(0xFFC4BFB8), width: 1.5),
+              color: _card,
+              border: Border.fromBorderSide(BorderSide(color: _border, width: 1)),
+              boxShadow: [_shadow],
             ),
-            boxShadow: [BoxShadow(color: Color(0x55A8A49A), offset: Offset(3, 3), blurRadius: 0)],
-          ),
             child: Column(
               children: [
                 ProfileAvatar(
-                  url: widget.profile.avatarUrl,
+                  url:    widget.profile.avatarUrl,
                   radius: 48,
-                  level: widget.profile.level,
+                  level:  widget.profile.level,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Botón subir — morado, solo icono
+                    // Botón subir
                     GestureDetector(
                       onTap: _uploadingAvatar ? null : _pickAndUploadAvatar,
                       child: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF60519B),
-                          boxShadow: [BoxShadow(color: Color(0x661B14A0), offset: Offset(3, 3), blurRadius: 0)],
-                        ),
+                        width: 48, height: 48,
+                        color: _accent,
                         child: _uploadingAvatar
                             ? const Center(
                                 child: SizedBox(width: 18, height: 18,
@@ -169,21 +160,21 @@ class _EditTabState extends ConsumerState<EditTab> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // Botón quitar — rojo, solo icono
+                    // Botón quitar
                     GestureDetector(
                       onTap: () async {
-                        await ref.read(profileServiceProvider).updateAvatarUrl(widget.profile.id, '');
+                        await ref.read(profileServiceProvider)
+                            .updateAvatarUrl(widget.profile.id, '');
                         ref.invalidate(ownProfileProvider);
                       },
                       child: Container(
-                        width: 48,
-                        height: 48,
+                        width: 48, height: 48,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEAE7E1),
-                          border: Border.all(color: Colors.red, width: 1.5),
-                          boxShadow: const [BoxShadow(color: Color(0x44E24B4A), offset: Offset(3, 3), blurRadius: 0)],
+                          color: _card,
+                          border: Border.all(color: _red, width: 1.5),
+                          boxShadow: const [_shadowSm],
                         ),
-                        child: const Icon(Icons.close, color: Colors.red, size: 22),
+                        child: const Icon(Icons.close, color: _red, size: 22),
                       ),
                     ),
                   ],
@@ -192,83 +183,61 @@ class _EditTabState extends ConsumerState<EditTab> {
             ),
           ),
 
-          // ── Banner selector ─────────────
+          // ── Banner selector ─────────────────
           bannersAsync.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error:   (_, __) => const SizedBox.shrink(),
             data: (banners) => _BannerSelector(
-              banners: banners,
+              banners:    banners,
               currentUrl: widget.profile.equippedBannerUrl,
-              userId: widget.profile.id,
+              userId:     widget.profile.id,
             ),
           ),
 
-          // ── Form fields ──────────────────
+          // ── Form fields ─────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _SectionLabel(
-                    icon: Icons.person_outline, label: 'NOMBRE'),
-                _FormField(
-                  controller: _nameController,
-                  hintText: 'Tu nombre',
-                ),
+                _FieldLabel(icon: Icons.person_outline,           label: 'NOMBRE'),
+                _FormField(controller: _nameController,   hintText: 'Tu nombre'),
                 const SizedBox(height: 16),
 
-                _SectionLabel(
-                    icon: Icons.sports_soccer_outlined,
-                    label: 'EQUIPO FAVORITO'),
-                _FormField(
-                  controller: _teamController,
-                  hintText: 'Ej. Real Madrid',
-                ),
+                _FieldLabel(icon: Icons.sports_soccer_outlined,   label: 'EQUIPO FAVORITO'),
+                _FormField(controller: _teamController,   hintText: 'Ej. Real Madrid'),
                 const SizedBox(height: 16),
 
-                _SectionLabel(
-                    icon: Icons.star_border_rounded,
-                    label: 'JUGADOR FAVORITO'),
-                _FormField(
-                  controller: _playerController,
-                  hintText: 'Ej. Vinicius Jr.',
-                ),
+                _FieldLabel(icon: Icons.star_border_rounded,      label: 'JUGADOR FAVORITO'),
+                _FormField(controller: _playerController, hintText: 'Ej. Vinicius Jr.'),
                 const SizedBox(height: 16),
 
-                _SectionLabel(
-                    icon: Icons.edit_note_rounded, label: 'BIO'),
-                _FormField(
-                  controller: _bioController,
-                  hintText: 'Cuéntanos algo sobre ti...',
-                  maxLines: 3,
-                ),
+                _FieldLabel(icon: Icons.edit_note_rounded,        label: 'BIO'),
+                _FormField(controller: _bioController,    hintText: 'Cuéntanos algo sobre ti...', maxLines: 3),
                 const SizedBox(height: 24),
 
-                // Save button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed:
-                        saveState.isLoading ? null : _save,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF60519B),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero), // ← cambia
-                      elevation: 0,
+                // Botón guardar — neobrutalista
+                GestureDetector(
+                  onTap: saveState.isLoading ? null : _save,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: saveState.isLoading ? _accent.withOpacity(0.6) : _accent,
+                      boxShadow: const [_shadow],
                     ),
+                    alignment: Alignment.center,
                     child: saveState.isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
-                          )
+                        ? const SizedBox(height: 20, width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                         : const Text(
-                            'Guardar cambios',
+                            'GUARDAR CAMBIOS',
                             style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
+                              fontFamily: 'DM Mono',
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                              color: Colors.white,
+                              letterSpacing: 1.0,
                             ),
                           ),
                   ),
@@ -300,49 +269,49 @@ class _BannerSelector extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
           child: Row(
             children: [
-              const Icon(Icons.image_outlined,
-                  size: 16, color: Color(0xFF60519B)),
+              Container(width: 3, height: 12, color: _accent),
               const SizedBox(width: 8),
-              Text(
+              const Text(
                 'BANNER DE PERFIL',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      letterSpacing: 1.2,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withOpacity(0.5),
-                    ),
+                style: TextStyle(
+                  fontFamily: 'DM Mono',
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  color: _muted,
+                  letterSpacing: 1.8,
+                ),
               ),
+              const SizedBox(width: 10),
+              Expanded(child: Container(height: 1, color: _border)),
             ],
           ),
         ),
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
           decoration: const BoxDecoration(
-            color: Color(0xFFEAE7E1),
-            border: Border.fromBorderSide(BorderSide(color: Color(0xFFC4BFB8), width: 1.5)),
-            boxShadow: [BoxShadow(color: Color(0x55A8A49A), offset: Offset(3, 3), blurRadius: 0)],
+            color: _card,
+            border: Border.fromBorderSide(BorderSide(color: _border, width: 1)),
+            boxShadow: [_shadowSm],
           ),
           clipBehavior: Clip.hardEdge,
           child: Column(
             children: banners.map((banner) {
               final isSelected = banner.imageUrl == currentUrl;
               return _BannerRow(
-                banner: banner,
+                banner:     banner,
                 isSelected: isSelected,
                 onTap: () async {
                   await ref.read(editProfileProvider.notifier).equipBanner(
-                        userId: userId,
-                        bannerUrl: isSelected ? null : banner.imageUrl,
-                        onSuccess: () {
-                          ref.invalidate(ownProfileProvider);
-                          ref.invalidate(userBannersProvider(userId));
-                        },
-                      );
+                    userId:    userId,
+                    bannerUrl: isSelected ? null : banner.imageUrl,
+                    onSuccess: () {
+                      ref.invalidate(ownProfileProvider);
+                      ref.invalidate(userBannersProvider(userId));
+                    },
+                  );
                 },
               );
             }).toList(),
@@ -359,11 +328,7 @@ class _BannerRow extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _BannerRow({
-    required this.banner,
-    required this.isSelected,
-    required this.onTap,
-  });
+  const _BannerRow({required this.banner, required this.isSelected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -371,39 +336,48 @@ class _BannerRow extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          border: isSelected
-            ? const Border.fromBorderSide(BorderSide(color: Color(0xFF60519B), width: 2))
+        decoration: isSelected
+            ? BoxDecoration(
+                color: _accent.withOpacity(0.05),
+                border: const Border(
+                  left: BorderSide(color: _accent, width: 3),
+                ),
+              )
             : null,
-          borderRadius: isSelected ? BorderRadius.circular(10) : null,
-        ),
         child: Row(
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.zero,
               child: CachedNetworkImage(
-                imageUrl: banner.imageUrl,
-                width: 80,
-                height: 46,
-                fit: BoxFit.cover,
+                imageUrl:    banner.imageUrl,
+                width:       76,
+                height:      44,
+                fit:         BoxFit.cover,
                 errorWidget: (_, __, ___) => Container(
-                  width: 80,
-                  height: 46,
-                  color: const Color(0xFF60519B),
-                ),
+                  width: 76, height: 44, color: _accent),
               ),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
                 banner.name,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: const TextStyle(
+                  fontFamily: 'DM Mono',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: _text,
+                ),
               ),
             ),
             if (isSelected)
-              const Icon(Icons.check, color: Color(0xFF60519B), size: 20),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                color: _accent,
+                child: const Text(
+                  '✓',
+                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900),
+                ),
+              ),
           ],
         ),
       ),
@@ -411,31 +385,29 @@ class _BannerRow extends StatelessWidget {
   }
 }
 
-// ─── Helpers ──────────────────────────────────
-class _SectionLabel extends StatelessWidget {
+// ─── Field helpers ─────────────────────────────
+class _FieldLabel extends StatelessWidget {
   final IconData icon;
   final String label;
-
-  const _SectionLabel({required this.icon, required this.label});
+  const _FieldLabel({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          Icon(icon, size: 14, color: const Color(0xFF60519B)),
+          Icon(icon, size: 13, color: _accent),
           const SizedBox(width: 6),
           Text(
             label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  letterSpacing: 1.2,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withOpacity(0.5),
-                ),
+            style: const TextStyle(
+              fontFamily: 'DM Mono',
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+              color: _muted,
+              letterSpacing: 1.4,
+            ),
           ),
         ],
       ),
@@ -447,44 +419,44 @@ class _FormField extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;
   final int maxLines;
- 
+
   const _FormField({
     required this.controller,
     required this.hintText,
     this.maxLines = 1,
   });
- 
+
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
-      maxLines: maxLines,
+      maxLines:   maxLines,
       style: const TextStyle(
-        color: Color(0xFF1A1A2E),
-        fontSize: 14,
+        fontFamily: 'DM Mono',
+        color: _text,
+        fontSize: 13,
       ),
       decoration: InputDecoration(
-        hintText: hintText,
-        hintStyle: const TextStyle(
-          color: Color(0x601A1A2E),
+        hintText:  hintText,
+        hintStyle: TextStyle(
+          fontFamily: 'DM Mono',
+          color: _muted.withOpacity(0.6),
+          fontSize: 13,
         ),
-        filled: true,
-        fillColor: const Color(0xFFEEEAE4), // fondo crema, no blanco
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
-        border: OutlineInputBorder(
+        filled:      true,
+        fillColor:   _bg,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        border: const OutlineInputBorder(
           borderRadius: BorderRadius.zero,
-          borderSide: const BorderSide(color: Color(0xFFC4BFB8), width: 1.5),
+          borderSide: BorderSide(color: _border, width: 1),
         ),
-        enabledBorder: OutlineInputBorder(
+        enabledBorder: const OutlineInputBorder(
           borderRadius: BorderRadius.zero,
-          borderSide: const BorderSide(color: Color(0xFFC4BFB8), width: 1.5),
+          borderSide: BorderSide(color: _border, width: 1),
         ),
-        focusedBorder: OutlineInputBorder(
+        focusedBorder: const OutlineInputBorder(
           borderRadius: BorderRadius.zero,
-          borderSide: const BorderSide(color: Color(0xFF60519B), width: 2),
+          borderSide: BorderSide(color: _accent, width: 1.5),
         ),
       ),
     );
