@@ -5,21 +5,20 @@ import '../../data/ranking_service.dart';
 import 'rank_avatar.dart';
 
 // ── Paleta Neobrutalismo ───────────────────────────────────────────────────────
-const _bg      = Color(0xFFF0EDE8);
-const _card    = Color(0xFFEAE7E1);
-const _border  = Color(0xFF1A1A2E);
-const _accent  = Color(0xFF5B4FD8);
-const _text    = Color(0xFF1A1A2E);
-const _muted   = Color(0xFF6B6580);
-const _green   = Color(0xFF1D9E75);
-const _gold    = Color(0xFFC9A227);
-const _silver  = Color(0xFF8A8A8A);
-const _bronze  = Color(0xFFA0652A);
+const _bg     = Color(0xFFF0EDE8);
+const _card   = Color(0xFFEAE7E1);
+const _border = Color(0xFF1A1A2E);
+const _accent = Color(0xFF5B4FD8);
+const _text   = Color(0xFF1A1A2E);
+const _muted  = Color(0xFF6B6580);
+const _gold   = Color(0xFFC9A227);
+const _silver = Color(0xFF8A8A8A);
+const _bronze = Color(0xFFA0652A);
 
 const _shadowColor = Color(0xFF1A1A2E);
-const _shadow   = BoxShadow(color: _shadowColor, offset: Offset(3, 3), blurRadius: 0);
-const _shadowSm = BoxShadow(color: _shadowColor, offset: Offset(2, 2), blurRadius: 0);
-const _shadowLg = BoxShadow(color: _shadowColor, offset: Offset(5, 5), blurRadius: 0);
+const _shadowSm    = BoxShadow(color: _shadowColor, offset: Offset(2, 2), blurRadius: 0);
+const _shadow      = BoxShadow(color: _shadowColor, offset: Offset(3, 3), blurRadius: 0);
+const _shadowLg    = BoxShadow(color: _shadowColor, offset: Offset(5, 5), blurRadius: 0);
 
 TextStyle _mono({
   Color color = _text,
@@ -38,17 +37,18 @@ TextStyle _mono({
 class _Medal {
   final String label;
   final Color color;
-  const _Medal(this.label, this.color);
+  final Color bg;
+  const _Medal(this.label, this.color, this.bg);
 }
 
 const _medals = [
-  _Medal('ORO',    _gold),
-  _Medal('PLATA',  _silver),
-  _Medal('BRONCE', _bronze),
+  _Medal('ORO',    _gold,   Color(0xFFFFF8E1)),
+  _Medal('PLATA',  _silver, Color(0xFFF5F5F5)),
+  _Medal('BRONCE', _bronze, Color(0xFFFFF3E0)),
 ];
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  HOF CAROUSEL — neobrutalista
+//  HOF CAROUSEL — neobrutalista renovado
 // ══════════════════════════════════════════════════════════════════════════════
 class HofCarousel extends StatefulWidget {
   final List<HofChampion> champions;
@@ -62,23 +62,23 @@ class HofCarousel extends StatefulWidget {
 
 class _HofCarouselState extends State<HofCarousel>
     with SingleTickerProviderStateMixin {
-  int _active   = 0;
+  int  _active  = 0;
   bool _exiting = false;
   Timer? _timer;
 
   late AnimationController _animCtrl;
-  late Animation<double> _fadeAnim;
-  late Animation<Offset> _slideAnim;
+  late Animation<double>   _fadeAnim;
+  late Animation<Offset>   _slideAnim;
 
   @override
   void initState() {
     super.initState();
     _animCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 200));
-    _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
+        vsync: this, duration: const Duration(milliseconds: 220));
+    _fadeAnim  = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
     _slideAnim = Tween<Offset>(
-      begin: const Offset(0, 0.04),
-      end: Offset.zero,
+      begin: const Offset(0.04, 0),
+      end:   Offset.zero,
     ).animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut));
     _animCtrl.forward();
     _startTimer();
@@ -98,7 +98,7 @@ class _HofCarouselState extends State<HofCarousel>
       if (!mounted) return;
       setState(() {
         final total = widget.champions.length;
-        _active = target ?? ((_active + delta) % total + total) % total;
+        _active  = target ?? ((_active + delta) % total + total) % total;
         _exiting = false;
       });
       _animCtrl.forward();
@@ -125,7 +125,7 @@ class _HofCarouselState extends State<HofCarousel>
 
     return Column(
       children: [
-        // ── Tarjeta principal ──────────────────────────────────
+        // ── Tarjeta principal ──────────────────────────────────────────────────
         FadeTransition(
           opacity: _fadeAnim,
           child: SlideTransition(
@@ -139,138 +139,104 @@ class _HofCarouselState extends State<HofCarousel>
               ),
               child: Column(
                 children: [
-                  // ── Barra de color en el top (marca la medalla) ──
-                  Container(height: 4, color: medal.color),
-
-                  // ── Header: medalla + badge de posición ──
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    decoration: const BoxDecoration(
-                      color: _bg,
-                      border: Border(bottom: BorderSide(color: _border, width: 2)),
-                    ),
-                    child: Row(
-                      children: [
-                        // Barra vertical decorativa
-                        Container(width: 4, height: 18, color: medal.color),
-                        const SizedBox(width: 8),
-                        const Icon(Icons.workspace_premium_rounded, size: 13, color: _gold),
-                        const SizedBox(width: 6),
-                        Text(
-                          'SALÓN DE LA FAMA',
-                          style: _mono(size: 9, weight: FontWeight.w800, letterSpacing: 1.8, color: _text),
+                  // ── HERO: fondo de color + avatar grande centrado ──────────
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // Fondo de color de medalla
+                      Container(
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: medal.color,
                         ),
-                        const Spacer(),
-                        // Badge de medalla — pill sólida
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: medal.color,
-                            border: Border.all(color: _border, width: 1.5),
-                            boxShadow: const [_shadowSm],
-                          ),
-                          child: Text(
-                            medal.label,
-                            style: _mono(color: Colors.white, size: 8, weight: FontWeight.w900, letterSpacing: 1.2),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // ── Contenido central ──
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Avatar con borde duro neobrutalista
-                        GestureDetector(
-                          onTap: () => widget.onSelect?.call(champ.id),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: _border, width: 2),
-                              boxShadow: const [_shadow],
-                            ),
-                            child: Stack(
-                              children: [
-                                RankAvatar(
-                                  url: champ.avatarUrl,
-                                  name: champ.name,
-                                  size: 80,
-                                  borderColor: medal.color,
-                                  borderWidth: 3,
-                                ),
-                                // Overlay de color en esquina
-                                Positioned(
-                                  bottom: 0,
-                                  left: 0,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                    color: medal.color,
-                                    child: Text(
-                                      '#${_active + 1}',
-                                      style: _mono(color: Colors.white, size: 9, weight: FontWeight.w900),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-
-                        // Info principal
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                champ.name,
-                                style: _mono(size: 18, weight: FontWeight.w900, color: _text),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                        child: Stack(
+                          children: [
+                            // Patrón de puntos decorativo (neobrutal)
+                            Positioned.fill(
+                              child: CustomPaint(
+                                painter: _DotPatternPainter(
+                                    color: _border.withOpacity(0.08)),
                               ),
-                              const SizedBox(height: 6),
-                              // Coronas — row de iconos
-                              _CrownRow(count: champ.monthlyChampionships, color: medal.color),
-                              const SizedBox(height: 10),
-                              // Último título
-                              if (champ.lastMonthYear != null) ...[
-                                Row(
-                                  children: [
-                                    Container(width: 3, height: 12, color: medal.color),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'ÚLT. TÍTULO',
-                                      style: _mono(size: 7, weight: FontWeight.w700, letterSpacing: 1.4, color: _muted),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: _card,
-                                        border: Border.all(color: _border, width: 1.5),
-                                      ),
-                                      child: Text(
-                                        champ.lastMonthYear!,
-                                        style: _mono(size: 9, weight: FontWeight.w800, color: _text),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ],
+                            ),
+                            // Label "S. FAMA"
+                            Positioned(
+                              top: 10,
+                              left: 12,
+                              child: Text(
+                                'SALÓN DE LA FAMA',
+                                style: _mono(
+                                    size: 8,
+                                    weight: FontWeight.w700,
+                                    letterSpacing: 1.4,
+                                    color: _border.withOpacity(0.5)),
+                              ),
+                            ),
+                          ],
+                        )
+                      ),
+                      // Avatar centrado, mitad dentro mitad fuera del hero
+                      Positioned(
+                        bottom: -40,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: GestureDetector(
+                            onTap: () => widget.onSelect?.call(champ.id),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: _border, width: 2.5),
+                                boxShadow: const [_shadow],
+                              ),
+                              child: RankAvatar(
+                                url: champ.avatarUrl,
+                                name: champ.name,
+                                size: 80,
+                                borderColor: medal.color,
+                                borderWidth: 3,
+                              ),
+                            ),
                           ),
                         ),
+                      ),
+                    ],
+                  ),
+
+                  // ── Espaciado para el avatar que sobresale ────────────────
+                  const SizedBox(height: 48),
+
+                  // ── Nombre + coronas (centrado) ───────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: [
+                        // Nombre
+                        Text(
+                          champ.name,
+                          style: _mono(
+                              size: 20,
+                              weight: FontWeight.w900,
+                              color: _text,
+                              letterSpacing: -0.5),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 10),
+                        // Coronas — solo aquí
+                        _CrownRow(
+                            count: champ.monthlyChampionships,
+                            color: medal.color),
                       ],
                     ),
                   ),
 
-                  // ── Stats grid (3 celdas) — bordes duros ──
+                  const SizedBox(height: 16),
+
+                  // ── Stats 3 celdas ────────────────────────────────────────
                   Container(
                     decoration: const BoxDecoration(
-                      border: Border(top: BorderSide(color: _border, width: 2)),
+                      border: Border(
+                          top: BorderSide(color: _border, width: 2)),
                     ),
                     child: IntrinsicHeight(
                       child: Row(
@@ -279,11 +245,12 @@ class _HofCarouselState extends State<HofCarousel>
                             value: '${champ.monthlyChampionships}',
                             label: 'CORONAS',
                             color: medal.color,
-                            icon: Icons.workspace_premium_rounded,
                           ),
                           Container(width: 2, color: _border),
                           _StatCell(
-                            value: champ.bestPoints > 0 ? _fmt(champ.bestPoints) : '—',
+                            value: champ.bestPoints > 0
+                                ? _fmt(champ.bestPoints)
+                                : '—',
                             label: 'MAX PTS',
                             color: _accent,
                           ),
@@ -299,46 +266,50 @@ class _HofCarouselState extends State<HofCarousel>
                     ),
                   ),
 
-                  // ── Controles de navegación ──
+                  // ── Controles de navegación ───────────────────────────────
                   Container(
                     decoration: const BoxDecoration(
                       color: _bg,
-                      border: Border(top: BorderSide(color: _border, width: 2)),
+                      border:
+                          Border(top: BorderSide(color: _border, width: 2)),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Botón anterior — caja sólida neobrutalista
                         _NavButton(
                           icon: Icons.arrow_back_ios_rounded,
                           onTap: () => _nav(-1),
                           enabled: total > 1,
+                          color: medal.color,
                         ),
-                        // Indicadores de punto
+                        // Indicadores
                         Row(
                           children: List.generate(total.clamp(0, 5), (i) {
-                            final isActive = i == _active;
+                            final isAct = i == _active;
                             return AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              width: isActive ? 20 : 8,
+                              duration: const Duration(milliseconds: 200),
+                              width:  isAct ? 22 : 8,
                               height: 8,
                               margin: const EdgeInsets.symmetric(horizontal: 2),
                               decoration: BoxDecoration(
-                                color: isActive ? medal.color : _border.withOpacity(0.2),
+                                color: isAct
+                                    ? medal.color
+                                    : _border.withOpacity(0.18),
                                 border: Border.all(
-                                  color: isActive ? _border : Colors.transparent,
+                                  color: isAct ? _border : Colors.transparent,
                                   width: 1.5,
                                 ),
                               ),
                             );
                           }),
                         ),
-                        // Botón siguiente
                         _NavButton(
                           icon: Icons.arrow_forward_ios_rounded,
                           onTap: () => _nav(1),
                           enabled: total > 1,
+                          color: medal.color,
                         ),
                       ],
                     ),
@@ -351,8 +322,8 @@ class _HofCarouselState extends State<HofCarousel>
 
         const SizedBox(height: 20),
 
-        // ── Lista de top 3 campeones — estilo tabla neobrutalista ──
-        if (champions.length > 0)
+        // ── Lista TOP CAMPEONES ────────────────────────────────────────────────
+        if (champions.isNotEmpty)
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
@@ -362,12 +333,14 @@ class _HofCarouselState extends State<HofCarousel>
             ),
             child: Column(
               children: [
-                // Encabezado de tabla
+                // Header tabla
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: const BoxDecoration(
                     color: _bg,
-                    border: Border(bottom: BorderSide(color: _border, width: 2)),
+                    border: Border(
+                        bottom: BorderSide(color: _border, width: 2)),
                   ),
                   child: Row(
                     children: [
@@ -375,26 +348,34 @@ class _HofCarouselState extends State<HofCarousel>
                       const SizedBox(width: 8),
                       Text(
                         'TOP CAMPEONES',
-                        style: _mono(size: 9, weight: FontWeight.w800, letterSpacing: 1.8, color: _text),
+                        style: _mono(
+                            size: 9,
+                            weight: FontWeight.w800,
+                            letterSpacing: 1.8,
+                            color: _text),
                       ),
                     ],
                   ),
                 ),
-                // Filas de campeones
+                // Filas
                 ...champions.take(3).toList().asMap().entries.map((e) {
-                  final i      = e.key;
-                  final u      = e.value;
-                  final medal  = _medals[i];
-                  final isAct  = i == _active;
+                  final i     = e.key;
+                  final u     = e.value;
+                  final medal = _medals[i];
+                  final isAct = i == _active;
 
                   return GestureDetector(
-                    onTap: () => _nav(i > _active ? 1 : -1, target: i),
+                    onTap: () =>
+                        _nav(i > _active ? 1 : -1, target: i),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
                       decoration: BoxDecoration(
-                        color: isAct ? medal.color.withOpacity(0.06) : Colors.transparent,
+                        color: isAct
+                            ? medal.color.withOpacity(0.07)
+                            : Colors.transparent,
                         border: Border(
-                          bottom: BorderSide(color: _border.withOpacity(0.3), width: 0.5),
+                          bottom: BorderSide(
+                              color: _border.withOpacity(0.3), width: 0.5),
                           left: BorderSide(
                             color: isAct ? medal.color : Colors.transparent,
                             width: 3,
@@ -402,14 +383,14 @@ class _HofCarouselState extends State<HofCarousel>
                         ),
                       ),
                       padding: EdgeInsets.only(
-                        left: isAct ? 13 : 16,
-                        right: 16,
-                        top: 12,
+                        left:   isAct ? 13 : 16,
+                        right:  16,
+                        top:    12,
                         bottom: 12,
                       ),
                       child: Row(
                         children: [
-                          // Badge posición — caja sólida
+                          // Badge posición
                           Container(
                             width: 24,
                             height: 24,
@@ -421,64 +402,57 @@ class _HofCarouselState extends State<HofCarousel>
                             alignment: Alignment.center,
                             child: Text(
                               '${i + 1}',
-                              style: _mono(color: Colors.white, size: 10, weight: FontWeight.w900),
+                              style: _mono(
+                                  color: Colors.white,
+                                  size: 10,
+                                  weight: FontWeight.w900),
                             ),
                           ),
                           const SizedBox(width: 10),
-
-                          // Avatar
-                          RankAvatar(url: u.avatarUrl, name: u.name, size: 36),
+                          RankAvatar(
+                              url: u.avatarUrl, name: u.name, size: 36),
                           const SizedBox(width: 10),
-
-                          // Nombre + coronas
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   u.name,
-                                  style: _mono(size: 13, weight: FontWeight.w700, color: _text),
+                                  style: _mono(
+                                      size: 13,
+                                      weight: FontWeight.w700,
+                                      color: _text),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(height: 2),
-                                Row(
-                                  children: [
-                                    Icon(Icons.workspace_premium_rounded, size: 10, color: medal.color),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      '${u.monthlyChampionships} coronas',
-                                      style: _mono(size: 9, weight: FontWeight.w700, color: medal.color),
-                                    ),
-                                  ],
-                                ),
+
                               ],
                             ),
                           ),
-
-                          // Puntos máximos + tag
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Row(
-                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.baseline,
                                 textBaseline: TextBaseline.alphabetic,
                                 children: [
                                   Text(
-                                    u.bestPoints > 0 ? _fmt(u.bestPoints) : '—',
-                                    style: _mono(size: 16, weight: FontWeight.w900, color: medal.color),
+                                    u.bestPoints > 0
+                                        ? _fmt(u.bestPoints)
+                                        : '—',
+                                    style: _mono(
+                                        size: 16,
+                                        weight: FontWeight.w900,
+                                        color: medal.color),
                                   ),
-                                  Text(
-                                    'pts',
-                                    style: _mono(size: 8, color: _muted),
-                                  ),
+                                  Text('pts',
+                                      style: _mono(size: 8, color: _muted)),
                                 ],
                               ),
                               const SizedBox(height: 2),
-                              Text(
-                                'mejor mes',
-                                style: _mono(size: 7, color: _muted),
-                              ),
+                              Text('mejor mes',
+                                  style: _mono(size: 7, color: _muted)),
                             ],
                           ),
                         ],
@@ -512,7 +486,13 @@ class _HofCarouselState extends State<HofCarousel>
               border: Border.all(color: _border, width: 2),
               boxShadow: const [_shadowSm],
             ),
-            child: const Icon(Icons.workspace_premium_rounded, size: 28, color: _gold),
+            child: Center(
+                child: SizedBox(
+                  width: 28,
+                  height: 22,
+                  child: CustomPaint(painter: _CrownPainter(color: _gold)),
+                ),
+              ),
           ),
           const SizedBox(height: 14),
           Row(
@@ -520,51 +500,57 @@ class _HofCarouselState extends State<HofCarousel>
             children: [
               Container(width: 20, height: 2, color: _border),
               const SizedBox(width: 8),
-              Text(
-                'SIN CAMPEONES',
-                style: _mono(size: 10, weight: FontWeight.w800, letterSpacing: 2, color: _text),
-              ),
+              Text('SIN CAMPEONES',
+                  style: _mono(
+                      size: 10,
+                      weight: FontWeight.w800,
+                      letterSpacing: 2,
+                      color: _text)),
               const SizedBox(width: 8),
               Container(width: 20, height: 2, color: _border),
             ],
           ),
           const SizedBox(height: 6),
-          Text(
-            'Aún no hay campeones registrados',
-            style: _mono(color: _muted, size: 11),
-          ),
+          Text('Aún no hay campeones registrados',
+              style: _mono(color: _muted, size: 11)),
         ],
       ),
     );
   }
 }
 
-// ── Botón de navegación — caja cuadrada neobrutalista ────────────────────────
+// ── Botón nav — cuadrado con color de medalla activa ─────────────────────────
 class _NavButton extends StatelessWidget {
-  final IconData icon;
+  final IconData   icon;
   final VoidCallback? onTap;
-  final bool enabled;
+  final bool       enabled;
+  final Color      color;
 
-  const _NavButton({required this.icon, this.onTap, required this.enabled});
+  const _NavButton({
+    required this.icon,
+    this.onTap,
+    required this.enabled,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: enabled ? onTap : null,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: enabled ? _accent : _card,
-          border: Border.all(color: _border, width: enabled ? 2 : 1.5),
+          color: enabled ? color : _card,
+          border: Border.all(
+              color: _border, width: enabled ? 2 : 1.5),
           boxShadow: enabled ? const [_shadowSm] : null,
         ),
         alignment: Alignment.center,
-        child: Icon(
-          icon,
-          size: 13,
-          color: enabled ? Colors.white : _muted,
-        ),
+        child: Icon(icon,
+            size: 13,
+            color: enabled ? Colors.white : _muted),
       ),
     );
   }
@@ -572,7 +558,7 @@ class _NavButton extends StatelessWidget {
 
 // ── Crown Row ────────────────────────────────────────────────────────────────
 class _CrownRow extends StatelessWidget {
-  final int count;
+  final int   count;
   final Color color;
   const _CrownRow({required this.count, required this.color});
 
@@ -583,9 +569,14 @@ class _CrownRow extends StatelessWidget {
     return Wrap(
       spacing: 3,
       runSpacing: 3,
+      alignment: WrapAlignment.center,
       children: [
         for (int i = 0; i < show; i++)
-          Icon(Icons.workspace_premium_rounded, size: 18, color: color),
+          SizedBox(
+            width: 20,
+            height: 16,
+            child: CustomPaint(painter: _CrownPainter(color: color)),
+          ),
         if (extra > 0)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
@@ -593,10 +584,11 @@ class _CrownRow extends StatelessWidget {
               color: color,
               border: Border.all(color: _border, width: 1.5),
             ),
-            child: Text(
-              '+$extra',
-              style: _mono(size: 9, weight: FontWeight.w800, color: Colors.white),
-            ),
+            child: Text('+$extra',
+                style: _mono(
+                    size: 9,
+                    weight: FontWeight.w800,
+                    color: Colors.white)),
           ),
       ],
     );
@@ -605,11 +597,12 @@ class _CrownRow extends StatelessWidget {
 
 // ── Stat Cell ────────────────────────────────────────────────────────────────
 class _StatCell extends StatelessWidget {
-  final String value;
-  final String label;
-  final Color color;
+  final String  value;
+  final String  label;
+  final Color   color;
   final IconData? icon;
-  final bool small;
+  final bool    small;
+  final bool    crownIcon;
 
   const _StatCell({
     required this.value,
@@ -617,13 +610,15 @@ class _StatCell extends StatelessWidget {
     required this.color,
     this.icon,
     this.small = false,
+    this.crownIcon = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        padding:
+            const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -631,7 +626,14 @@ class _StatCell extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                if (icon != null) ...[
+                if (crownIcon) ...[
+                  SizedBox(
+                    width: 16,
+                    height: 13,
+                    child: CustomPaint(painter: _CrownPainter(color: color)),
+                  ),
+                  const SizedBox(width: 3),
+                ] else if (icon != null) ...[
                   Icon(icon, size: 14, color: color),
                   const SizedBox(width: 3),
                 ],
@@ -654,7 +656,11 @@ class _StatCell extends StatelessWidget {
                 Flexible(
                   child: Text(
                     label,
-                    style: _mono(size: 7, weight: FontWeight.w700, letterSpacing: 1.0, color: _muted),
+                    style: _mono(
+                        size: 7,
+                        weight: FontWeight.w700,
+                        letterSpacing: 1.0,
+                        color: _muted),
                   ),
                 ),
               ],
@@ -664,6 +670,67 @@ class _StatCell extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Crown Painter — corona vectorial dibujada con Path ────────────────────────
+class _CrownPainter extends CustomPainter {
+  final Color color;
+  const _CrownPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final fill = Paint()..color = color..style = PaintingStyle.fill;
+
+    // ── Cuerpo de la corona (izq → centro → der, sentido horario) ────
+    final path = Path()
+      ..moveTo(0,        h * 0.55)   // base pico izq
+      ..lineTo(w * 0.14, 0)          // tip pico izq
+      ..lineTo(w * 0.28, h * 0.55)   // valle izq-centro
+      ..lineTo(w * 0.50, h * 0.05)   // tip pico centro
+      ..lineTo(w * 0.72, h * 0.55)   // valle centro-der
+      ..lineTo(w * 0.86, 0)          // tip pico der
+      ..lineTo(w,        h * 0.55)   // base pico der
+      ..lineTo(w,        h)          // esquina inf-der
+      ..lineTo(0,        h)          // borde inferior
+      ..close();
+
+    canvas.drawPath(path, fill);
+
+    // ── Perlas en cada tip ────────────────────────────────────────────
+    final r = w * 0.09;
+    for (final pt in [
+      Offset(w * 0.14, 0),
+      Offset(w * 0.50, h * 0.05),
+      Offset(w * 0.86, 0),
+    ]) {
+      canvas.drawCircle(pt, r, fill);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CrownPainter old) => old.color != color;
+}
+
+// ── Painter para patrón de puntos ────────────────────────────────────────────
+class _DotPatternPainter extends CustomPainter {
+  final Color color;
+  const _DotPatternPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    const spacing = 16.0;
+    for (double x = 0; x < size.width; x += spacing) {
+      for (double y = 0; y < size.height; y += spacing) {
+        canvas.drawCircle(Offset(x, y), 2, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DotPatternPainter old) => old.color != color;
 }
 
 // ── Utilidad ─────────────────────────────────────────────────────────────────

@@ -17,7 +17,6 @@ const _text    = Color(0xFF1A1A2E);
 const _muted   = Color(0xFF6B6580);
 const _gold    = Color(0xFFC9A227);
 
-// Sombras duras neobrutalistas (sin blur)
 const _shadowColor = Color(0xFF1A1A2E);
 const _shadow   = BoxShadow(color: _shadowColor, offset: Offset(3, 3), blurRadius: 0);
 const _shadowLg = BoxShadow(color: _shadowColor, offset: Offset(5, 5), blurRadius: 0);
@@ -71,7 +70,11 @@ class RankingPage extends ConsumerWidget {
                         Container(width: 4, height: 20, color: const Color(0xFFE24B4A)),
                         const SizedBox(width: 8),
                         Text('ERROR',
-                            style: _mono(color: const Color(0xFFE24B4A), size: 10, weight: FontWeight.w900, letterSpacing: 2)),
+                            style: _mono(
+                                color: const Color(0xFFE24B4A),
+                                size: 10,
+                                weight: FontWeight.w900,
+                                letterSpacing: 2)),
                       ]),
                       const SizedBox(height: 10),
                       Text('Error cargando ranking\n$e',
@@ -87,11 +90,11 @@ class RankingPage extends ConsumerWidget {
                       b.rankPoints(tab).compareTo(a.rankPoints(tab)));
                 return championsAsync.when(
                   loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
-                  data: (champions) => _RankingContent(
-                    tab: tab,
-                    users: users,
-                    sorted: sorted,
+                  error:   (_, __) => const SizedBox.shrink(),
+                  data:    (champions) => _RankingContent(
+                    tab:       tab,
+                    users:     users,
+                    sorted:    sorted,
                     champions: champions,
                   ),
                 );
@@ -105,7 +108,7 @@ class RankingPage extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TAB BAR — estilo neobrutalista con bordes duros y sombras
+// TAB BAR — compacto: solo icono + nombre, sin subtítulo, sin exceso de padding
 // ─────────────────────────────────────────────────────────────────────────────
 class _TabBar extends StatelessWidget {
   final String activeTab;
@@ -114,9 +117,9 @@ class _TabBar extends StatelessWidget {
   const _TabBar({required this.activeTab, required this.onTab});
 
   static const _tabs = [
-    ('global',     Icons.public_rounded,            'GLOBAL',  'ranking general'),
-    ('monthly',    Icons.calendar_month_rounded,    'MENSUAL', 'este mes'),
-    ('halloffame', Icons.workspace_premium_rounded, 'S. FAMA', 'campeones'),
+    ('global',     Icons.public_rounded,            'GLOBAL'),
+    ('monthly',    Icons.calendar_month_rounded,    'MENSUAL'),
+    ('halloffame', Icons.workspace_premium_rounded, 'S. FAMA'),
   ];
 
   @override
@@ -128,7 +131,7 @@ class _TabBar extends StatelessWidget {
       ),
       child: Row(
         children: _tabs.map((t) {
-          final (key, icon, label, sub) = t;
+          final (key, icon, label) = t;
           final isActive = activeTab == key;
 
           return Expanded(
@@ -137,7 +140,8 @@ class _TabBar extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                // ↓ padding vertical reducido: 8 top, 8 bottom
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
                   color: isActive ? _accent.withOpacity(0.06) : Colors.transparent,
                   border: Border(
@@ -150,25 +154,29 @@ class _TabBar extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Icono con caja cuadrada cuando activo
+                    // Icono en caja cuadrada cuando activo
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
-                      width: isActive ? 26 : 22,
+                      width:  isActive ? 26 : 22,
                       height: isActive ? 26 : 22,
                       decoration: isActive
                           ? BoxDecoration(
                               color: _accent,
-                              boxShadow: const [BoxShadow(color: _shadowColor, offset: Offset(2, 2), blurRadius: 0)],
+                              boxShadow: const [
+                                BoxShadow(
+                                    color: _shadowColor,
+                                    offset: Offset(2, 2),
+                                    blurRadius: 0)
+                              ],
                             )
                           : null,
                       alignment: Alignment.center,
-                      child: Icon(
-                        icon,
-                        size: 12,
-                        color: isActive ? Colors.white : _muted,
-                      ),
+                      child: Icon(icon,
+                          size: 12,
+                          color: isActive ? Colors.white : _muted),
                     ),
                     const SizedBox(height: 4),
+                    // Solo el nombre — sin subtítulo
                     Text(
                       label,
                       style: _mono(
@@ -177,10 +185,6 @@ class _TabBar extends StatelessWidget {
                         letterSpacing: 0.8,
                         color: isActive ? _accent : _muted,
                       ),
-                    ),
-                    Text(
-                      sub,
-                      style: _mono(size: 7, letterSpacing: 0.4, color: isActive ? _accent.withOpacity(0.7) : _muted.withOpacity(0.6)),
                     ),
                   ],
                 ),
@@ -218,8 +222,8 @@ class _RankingContent extends ConsumerWidget {
         SliverToBoxAdapter(
           child: RankingStatsRow(
             rankingType: tab,
-            users: users,
-            champions: champions,
+            users:       users,
+            champions:   champions,
           ),
         ),
 
@@ -230,7 +234,7 @@ class _RankingContent extends ConsumerWidget {
               padding: const EdgeInsets.only(top: 20, bottom: 32),
               child: HofCarousel(
                 champions: champions,
-                onSelect: (userId) {},
+                onSelect:  (userId) {},
               ),
             ),
           ),
@@ -240,13 +244,13 @@ class _RankingContent extends ConsumerWidget {
         if (tab != 'halloffame' && sorted.isNotEmpty) ...[
           SliverToBoxAdapter(
             child: RankingPodium(
-              top3: sorted.take(3).toList(),
+              top3:        sorted.take(3).toList(),
               rankingType: tab,
             ),
           ),
         ],
 
-        // Cabecera tabla — neobrutalista
+        // Cabecera tabla
         if (tab != 'halloffame') ...[
           SliverToBoxAdapter(
             child: Container(
@@ -254,30 +258,42 @@ class _RankingContent extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: _card,
                 border: Border(
-                  top: BorderSide(color: _border.withOpacity(0.5), width: 0.5),
-                  bottom: BorderSide(color: _border, width: 2),
+                  top:    BorderSide(color: _border.withOpacity(0.5), width: 0.5),
+                  bottom: const BorderSide(color: _border, width: 2),
                 ),
               ),
               child: Row(
                 children: [
-                  // Barra de acento
                   Container(width: 4, height: 16, color: _accent),
                   const SizedBox(width: 8),
                   Text(
                     'CLASIFICACIÓN',
-                    style: _mono(size: 10, weight: FontWeight.w800, letterSpacing: 1.8, color: _text),
+                    style: _mono(
+                        size: 10,
+                        weight: FontWeight.w800,
+                        letterSpacing: 1.8,
+                        color: _text),
                   ),
                   const Spacer(),
-                  // Badge de periodo — pill sólida
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
                     decoration: const BoxDecoration(
                       color: _accent,
-                      boxShadow: [BoxShadow(color: _shadowColor, offset: Offset(2, 2), blurRadius: 0)],
+                      boxShadow: [
+                        BoxShadow(
+                            color: _shadowColor,
+                            offset: Offset(2, 2),
+                            blurRadius: 0)
+                      ],
                     ),
                     child: Text(
                       tab == 'monthly' ? _currentMonthLabel() : 'GLOBAL',
-                      style: _mono(color: Colors.white, size: 8, weight: FontWeight.w800, letterSpacing: 1.2),
+                      style: _mono(
+                          color: Colors.white,
+                          size: 8,
+                          weight: FontWeight.w800,
+                          letterSpacing: 1.2),
                     ),
                   ),
                 ],
@@ -289,9 +305,9 @@ class _RankingContent extends ConsumerWidget {
               (context, index) {
                 final user = sorted[index];
                 return RankingTableRow(
-                  user: user,
-                  pos: index + 1,
-                  isMe: false,
+                  user:        user,
+                  pos:         index + 1,
+                  isMe:        false,
                   rankingType: tab,
                 );
               },
