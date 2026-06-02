@@ -146,7 +146,7 @@ class _HeroHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 22),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
         color: _kBg,
         border: Border(bottom: BorderSide(color: _kBorder, width: 1.5)),
@@ -156,8 +156,8 @@ class _HeroHeader extends StatelessWidget {
           // Dot grid decorativo (esquina superior derecha)
           Positioned(
             right: 0,
-            top: 0,
-            child: _DotGrid(cols: 6, rows: 5),
+            top: 18,
+            child: _DotGrid(cols: 6, rows: 4),
           ),
 
           Column(
@@ -178,32 +178,30 @@ class _HeroHeader extends StatelessWidget {
                   Text('HISTÓRICO', style: _mono(size: 9, color: _kMuted, letterSpacing: 1.2)),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 8),
 
-              // Título grande
+              // Título grande — una línea, fuente reducida
               Text(
                 'BÓVEDA\nHISTÓRICA',
-                style: _mono(size: 38, weight: FontWeight.w900, letterSpacing: -1.5),
+                style: _mono(size: 28, weight: FontWeight.w900, letterSpacing: -1.0),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 8),
 
-              // Subtítulo con barra izquierda
+              // Subtítulo con barra izquierda — una línea
               Row(
                 children: [
                   Container(
-                    width: 4,
-                    height: 38,
+                    width: 3,
+                    height: 18,
                     decoration: BoxDecoration(
                       color: _kAccent,
                       border: Border.all(color: _kBorder, width: 1),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Explora la historia que\ndefinió el fútbol.',
-                      style: _mono(size: 13, color: _kMuted),
-                    ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Explora la historia que definió el fútbol.',
+                    style: _mono(size: 11, color: _kMuted),
                   ),
                 ],
               ),
