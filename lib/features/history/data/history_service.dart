@@ -230,7 +230,7 @@ class HistoryService {
             .from('historical_event_standings')
             .select('position, team_name, points, wins, draws, losses, goals_for, goals_against, is_champion')
             .eq('event_id', eventId)
-            .order('position')
+            .order('position', ascending: true)
       else
         Future.value(<dynamic>[]),
     ]);

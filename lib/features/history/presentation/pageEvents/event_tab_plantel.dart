@@ -10,8 +10,6 @@ class EventTabPlantel extends StatelessWidget {
   Widget build(BuildContext context) {
     final category = detail.event.eventCategory;
 
-    // Eventos 'team' → usa squad (historical_event_squad)
-    // Eventos 'player' → usa solo lineupA (equipo protagonista = team_a)
     if (category == 'team') {
       return _SquadPlantel(detail: detail);
     } else {
@@ -20,7 +18,7 @@ class EventTabPlantel extends StatelessWidget {
   }
 }
 
-// ── Para eventos 'player': muestra lineupA (equipo del protagonista) ──
+// ── Eventos 'player': muestra el equipo donde juega el protagonista ──
 class _LineupPlantel extends StatelessWidget {
   final EventDetail detail;
   const _LineupPlantel({required this.detail});
@@ -36,19 +34,27 @@ class _LineupPlantel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Solo el equipo protagonista (team_a)
-    final players = detail.lineupA;
+    // Detectar en qué side está el protagonista
+    final protagonistInA = detail.lineupA.any((p) => p.isProtagonist);
+    final players = protagonistInA ? detail.lineupA : detail.lineupB;
 
-    if (players.isEmpty) {
+    // Fallback: si ninguno tiene protagonista, usar lineupA
+    final resolvedPlayers = players.isNotEmpty
+        ? players
+        : detail.lineupA.isNotEmpty
+            ? detail.lineupA
+            : detail.lineupB;
+
+    if (resolvedPlayers.isEmpty) {
       return const Center(child: EvEmpty(message: 'Sin plantel registrado'));
     }
 
-    final keyPlayers = players.where((p) => p.isProtagonist).toList();
-    final rest = players.where((p) => !p.isProtagonist).toList();
+    final teamName = protagonistInA
+        ? (detail.event.teamAName ?? resolvedPlayers.firstOrNull?.teamName ?? 'Equipo')
+        : (detail.event.teamBName ?? resolvedPlayers.firstOrNull?.teamName ?? 'Equipo');
 
-    final teamName = detail.event.teamAName ??
-        players.firstOrNull?.teamName ??
-        'Equipo';
+    final protagonist = resolvedPlayers.where((p) => p.isProtagonist).toList();
+    final rest = resolvedPlayers.where((p) => !p.isProtagonist).toList();
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -61,29 +67,28 @@ class _LineupPlantel extends StatelessWidget {
             subtitle: teamName,
           ),
 
-          if (keyPlayers.isNotEmpty) ...[
-            EvSectionLabel(label: 'JUGADORES CLAVE', color: kEvGold),
-            ...keyPlayers.map((p) => _PlayerRow(
+          if (protagonist.isNotEmpty) ...[
+            EvSectionLabel(label: 'PROTAGONISTA', color: kEvAccent),
+            ...protagonist.map((p) => _PlayerRow(
                   playerName: p.playerName,
                   shirtNumber: p.shirtNumber,
                   positionRole: p.positionRole,
-                  teamName: p.teamName,
+                  teamName: teamName,
                   highlight: true,
+                  highlightColor: kEvAccent,
                   posLabel: _posLabel,
                 )),
           ],
 
           if (rest.isNotEmpty) ...[
-            EvSectionLabel(
-              label: keyPlayers.isNotEmpty ? 'RESTO DEL EQUIPO' : 'EQUIPO',
-              color: kEvAccent,
-            ),
+            EvSectionLabel(label: 'EQUIPO', color: kEvMuted),
             ...rest.map((p) => _PlayerRow(
                   playerName: p.playerName,
                   shirtNumber: p.shirtNumber,
                   positionRole: p.positionRole,
-                  teamName: p.teamName,
+                  teamName: teamName,
                   highlight: false,
+                  highlightColor: kEvAccent,
                   posLabel: _posLabel,
                 )),
           ],
@@ -95,7 +100,7 @@ class _LineupPlantel extends StatelessWidget {
   }
 }
 
-// ── Para eventos 'team': muestra squad (historical_event_squad) ──
+// ── Eventos 'team': muestra el squad del equipo protagonista ──
 class _SquadPlantel extends StatelessWidget {
   final EventDetail detail;
   const _SquadPlantel({required this.detail});
@@ -143,6 +148,7 @@ class _SquadPlantel extends StatelessWidget {
                   positionRole: p.positionRole,
                   teamName: teamName,
                   highlight: true,
+                  highlightColor: kEvGold,
                   posLabel: _posLabel,
                 )),
           ],
@@ -158,6 +164,7 @@ class _SquadPlantel extends StatelessWidget {
                   positionRole: p.positionRole,
                   teamName: teamName,
                   highlight: false,
+                  highlightColor: kEvGold,
                   posLabel: _posLabel,
                 )),
           ],
@@ -169,13 +176,14 @@ class _SquadPlantel extends StatelessWidget {
   }
 }
 
-// ── Row unificado (acepta campos sueltos para reusar en ambos casos) ──
+// ── Row compartido ────────────────────────────────────────────
 class _PlayerRow extends StatelessWidget {
   final String playerName;
   final int? shirtNumber;
   final String? positionRole;
   final String teamName;
   final bool highlight;
+  final Color highlightColor;
   final Map<String, String> posLabel;
 
   const _PlayerRow({
@@ -184,6 +192,7 @@ class _PlayerRow extends StatelessWidget {
     required this.positionRole,
     required this.teamName,
     required this.highlight,
+    required this.highlightColor,
     required this.posLabel,
   });
 
@@ -195,11 +204,11 @@ class _PlayerRow extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       decoration: BoxDecoration(
-        color: highlight ? kEvGold.withOpacity(0.06) : Colors.transparent,
+        color: highlight ? highlightColor.withOpacity(0.06) : Colors.transparent,
         border: Border(
           bottom: BorderSide(color: kEvBorderL, width: 0.5),
           left: highlight
-              ? const BorderSide(color: kEvGold, width: 3)
+              ? BorderSide(color: highlightColor, width: 3)
               : BorderSide.none,
         ),
       ),
@@ -207,14 +216,14 @@ class _PlayerRow extends StatelessWidget {
       child: Row(
         children: [
           if (highlight) ...[
-            const Icon(Icons.star, size: 10, color: kEvGold),
+            Icon(Icons.star, size: 10, color: highlightColor),
             const SizedBox(width: 6),
           ],
           if (shirtNumber != null) ...[
             Container(
               width: 22,
               height: 22,
-              color: highlight ? kEvGold : kEvDark.withOpacity(0.08),
+              color: highlight ? highlightColor : kEvDark.withOpacity(0.08),
               child: Center(
                 child: Text(
                   '$shirtNumber',
@@ -228,20 +237,17 @@ class _PlayerRow extends StatelessWidget {
             ),
             const SizedBox(width: 8),
           ],
-          // Equipo mini-badge (solo si el nombre no es muy largo)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
             color: highlight
-                ? kEvGold.withOpacity(0.2)
+                ? highlightColor.withOpacity(0.2)
                 : kEvBorderL.withOpacity(0.4),
             child: Text(
-              teamName.length > 10
-                  ? '${teamName.substring(0, 9)}…'
-                  : teamName,
+              teamName.length > 10 ? '${teamName.substring(0, 9)}…' : teamName,
               style: evMono(
                 size: 7,
                 weight: FontWeight.w700,
-                color: highlight ? kEvGold : kEvMuted,
+                color: highlight ? highlightColor : kEvMuted,
               ),
             ),
           ),
@@ -260,14 +266,14 @@ class _PlayerRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
               color: highlight
-                  ? kEvGold.withOpacity(0.15)
+                  ? highlightColor.withOpacity(0.15)
                   : kEvBorderL.withOpacity(0.5),
               child: Text(
                 pos,
                 style: evMono(
                   size: 7,
                   weight: FontWeight.w800,
-                  color: highlight ? kEvGold : kEvMuted,
+                  color: highlight ? highlightColor : kEvMuted,
                 ),
               ),
             ),

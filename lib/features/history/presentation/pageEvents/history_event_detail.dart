@@ -5,7 +5,6 @@ import '../../domain/history_providers.dart';
 import 'history_events_shared.dart';
 import 'event_tab_info.dart';
 import 'event_tab_alineaciones.dart';
-import 'event_tab_historia.dart';
 import 'event_tab_plantel.dart';
 import 'event_tab_tabla.dart';
 
@@ -43,15 +42,14 @@ class _HistoryEventDetailState extends ConsumerState<HistoryEventDetail>
       case 'player':
         return [
           (Icons.info_outline, 'INFO'),
-          (Icons.groups_outlined, 'ALINEACIONES'),
+          (Icons.groups_outlined, 'DUELO'),
           (Icons.people_outline, 'PLANTEL'),
         ];
       case 'team':
         return [
           (Icons.info_outline, 'INFO'),
-          (Icons.history_edu_outlined, 'HISTORIA'),
           (Icons.people_outline, 'PLANTEL'),
-          (Icons.table_chart_outlined, 'TABLA'),
+          (Icons.route_outlined, 'CAMPAÑA'),
         ];
       default:
         return [(Icons.info_outline, 'INFO')];
@@ -69,7 +67,6 @@ class _HistoryEventDetailState extends ConsumerState<HistoryEventDetail>
       case 'team':
         return [
           EventTabInfo(detail: detail),
-          EventTabHistoria(detail: detail),
           EventTabPlantel(detail: detail),
           EventTabTabla(detail: detail),
         ];
@@ -91,18 +88,21 @@ class _HistoryEventDetailState extends ConsumerState<HistoryEventDetail>
 
     return Scaffold(
       backgroundColor: kEvBg,
+      // ── Tab bar abajo ─────────────────────────────────────
+      bottomNavigationBar: _EventTabBar(
+        controller: _tabController,
+        tabs: _tabs,
+        accentColor: accentColor,
+      ),
       body: Column(
         children: [
+          // ── Solo el app bar arriba ────────────────────────
           _EventAppBar(
             event: widget.event,
             accentColor: accentColor,
             onBack: widget.onBack,
           ),
-          _EventTabBar(
-            controller: _tabController,
-            tabs: _tabs,
-            accentColor: accentColor,
-          ),
+          // ── Contenido ────────────────────────────────────
           Expanded(
             child: detailAsync.when(
               loading: () => Center(
@@ -111,7 +111,7 @@ class _HistoryEventDetailState extends ConsumerState<HistoryEventDetail>
                   children: [
                     CircularProgressIndicator(color: accentColor, strokeWidth: 2),
                     const SizedBox(height: 14),
-                    Text('Cargando evento…', style: evMono(size: 12, color: kEvMuted)),
+                    Text('Cargando evento...', style: evMono(size: 12, color: kEvMuted)),
                   ],
                 ),
               ),
@@ -139,8 +139,6 @@ class _HistoryEventDetailState extends ConsumerState<HistoryEventDetail>
               ),
               data: (detail) {
                 final views = _buildTabViews(detail);
-                // Guard: si por alguna razón el número de vistas no coincide con los tabs,
-                // reconstruir el controller de forma segura.
                 if (views.length != _tabController.length) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (!mounted) return;
@@ -158,7 +156,6 @@ class _HistoryEventDetailState extends ConsumerState<HistoryEventDetail>
                     child: CircularProgressIndicator(color: accentColor, strokeWidth: 2),
                   );
                 }
-
                 return TabBarView(
                   controller: _tabController,
                   physics: const NeverScrollableScrollPhysics(),
@@ -174,7 +171,7 @@ class _HistoryEventDetailState extends ConsumerState<HistoryEventDetail>
 }
 
 // ══════════════════════════════════════════════════════════════
-//  APP BAR
+//  APP BAR — solo título + back, sin tabs
 // ══════════════════════════════════════════════════════════════
 
 class _EventAppBar extends StatelessWidget {
@@ -222,7 +219,6 @@ class _EventAppBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-
           if (event.year != null)
             Container(
               width: 36,
@@ -236,7 +232,6 @@ class _EventAppBar extends StatelessWidget {
               ),
             ),
           const SizedBox(width: 10),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -255,7 +250,6 @@ class _EventAppBar extends StatelessWidget {
               ],
             ),
           ),
-
           if (event.eventCategory != null)
             EvCatBadge(category: event.eventCategory!),
         ],
@@ -265,7 +259,7 @@ class _EventAppBar extends StatelessWidget {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  TAB BAR
+//  TAB BAR — abajo, respeta safe area del home indicator
 // ══════════════════════════════════════════════════════════════
 
 class _EventTabBar extends StatelessWidget {
@@ -281,39 +275,54 @@ class _EventTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+
     return Container(
       decoration: BoxDecoration(
         color: kEvBg,
-        border: Border(bottom: BorderSide(color: kEvBorder, width: 1.5)),
+        border: Border(
+          top: BorderSide(color: kEvBorder, width: 1.5),
+          // línea de color del tipo de evento en la parte superior del nav
+          bottom: BorderSide(color: accentColor, width: 3),
+        ),
       ),
-      child: TabBar(
-        controller: controller,
-        indicatorColor: accentColor,
-        indicatorWeight: 2.5,
-        labelPadding: EdgeInsets.zero,
-        tabs: tabs.asMap().entries.map((e) {
-          final isActive = controller.index == e.key;
-          final (icon, label) = e.value;
-          return Container(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 16, color: isActive ? accentColor : kEvMuted),
-                const SizedBox(height: 3),
-                Text(
-                  label,
-                  style: evMono(
-                    size: 8,
-                    weight: FontWeight.w700,
-                    letterSpacing: 0.6,
-                    color: isActive ? accentColor : kEvMuted,
-                  ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TabBar(
+            controller: controller,
+            indicatorColor: accentColor,
+            indicatorWeight: 2.5,
+            indicatorSize: TabBarIndicatorSize.tab,
+            // El indicador va arriba (hacia el contenido)
+            labelPadding: EdgeInsets.zero,
+            tabs: tabs.asMap().entries.map((e) {
+              final isActive = controller.index == e.key;
+              final (icon, label) = e.value;
+              return Container(
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 18, color: isActive ? accentColor : kEvMuted),
+                    const SizedBox(height: 3),
+                    Text(
+                      label,
+                      style: evMono(
+                        size: 8,
+                        weight: FontWeight.w700,
+                        letterSpacing: 0.6,
+                        color: isActive ? accentColor : kEvMuted,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          );
-        }).toList(),
+              );
+            }).toList(),
+          ),
+          // Safe area para el home indicator de iOS/Android
+          SizedBox(height: bottomPad),
+        ],
       ),
     );
   }

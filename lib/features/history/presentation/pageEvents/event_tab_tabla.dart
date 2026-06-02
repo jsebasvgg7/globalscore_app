@@ -106,12 +106,15 @@ class _StandingsTable extends StatelessWidget {
               ],
             ),
           ),
-          // Data rows
-          ...standings.asMap().entries.map((e) {
-            final s = e.value;
-            final isLast = e.key == standings.length - 1;
-            return _StandingRow(standing: s, showBorder: !isLast);
-          }),
+          // Data rows (ordenados por posición ascendente)
+          ...(() {
+            final sorted = [...standings]..sort((a, b) => a.position.compareTo(b.position));
+            return sorted.asMap().entries.map((e) {
+              final s = e.value;
+              final isLast = e.key == sorted.length - 1;
+              return _StandingRow(standing: s, showBorder: !isLast);
+            });
+          })(),
         ],
       ),
     );
