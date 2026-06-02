@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../domain/history_models.dart';
-import '../../../domain/history_providers.dart';
-import '../../../data/history_service.dart';
+import '../../domain/history_models.dart';
+import '../../domain/history_providers.dart';
+import '../../data/history_service.dart';
 import 'history_players_shared.dart';
-import '../tabs/player_tab_resumen.dart';
-import '../tabs/player_tab_trayectoria.dart';
-import '../tabs/player_tab_equipos.dart';
-import '../tabs/player_tab_palmares.dart';
-import '../tabs/player_tab_historia.dart';
+import 'player_tab_resumen.dart';
+import 'player_tab_trayectoria.dart';
+import 'player_tab_equipos.dart';
+import 'player_tab_palmares.dart';
+import 'player_tab_historia.dart';
 
 // ── Tab activa ────────────────────────────────────────────────
 enum PlayerDetailTab { resumen, trayectoria, equipos, palmares, historia }

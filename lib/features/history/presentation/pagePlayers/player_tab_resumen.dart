@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../data/history_service.dart';
 import '../../domain/history_models.dart';
-import '../history_players_shared.dart';
+import 'history_players_shared.dart';
 
 class PlayerTabResumen extends StatelessWidget {
   final PlayerDetail detail;

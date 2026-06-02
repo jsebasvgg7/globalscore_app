@@ -103,12 +103,12 @@ class _TeamListView extends ConsumerWidget {
                           icon: const Icon(Icons.clear, size: 14),
                           onPressed: () {
                             searchCtrl.clear();
-                            ref.read(teamSearchProvider.notifier).state = '';
+                             ref.read(teamSearchProvider.notifier).set('');
                           },
                         )
                       : null,
                 ),
-                onChanged: (v) => ref.read(teamSearchProvider.notifier).state = v,
+                onChanged: (v) => ref.read(teamSearchProvider.notifier).set(v),
               ),
             ),
           ),
@@ -134,7 +134,7 @@ class _TeamListView extends ConsumerWidget {
                   itemCount: teams.length,
                   itemBuilder: (_, i) => _TeamCard(
                     team: teams[i],
-                    onTap: () => ref.read(selectedTeamProvider.notifier).state = teams[i],
+                    onTap: () => ref.read(selectedTeamProvider.notifier).select(teams[i]),
                   ),
                 );
               },
@@ -238,7 +238,7 @@ class _TeamDetailView extends ConsumerWidget {
             title: team.name.toUpperCase(),
             subtitle: team.era ?? team.country ?? '',
             icon: Icons.shield_outlined,
-            onBack: () => ref.read(selectedTeamProvider.notifier).state = null,
+            onBack: () => ref.read(selectedTeamProvider.notifier).select(null),
           ),
           Expanded(
             child: CustomScrollView(

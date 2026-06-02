@@ -127,12 +127,12 @@ class _EventListView extends ConsumerWidget {
                           icon: const Icon(Icons.clear, size: 14),
                           onPressed: () {
                             searchCtrl.clear();
-                            ref.read(eventSearchProvider.notifier).state = '';
+                            ref.read(eventSearchProvider.notifier).set('');
                           },
                         )
                       : null,
                 ),
-                onChanged: (v) => ref.read(eventSearchProvider.notifier).state = v,
+                onChanged: (v) =>ref.read(eventSearchProvider.notifier).set(v),
               ),
             ),
           ),
@@ -154,7 +154,7 @@ class _EventListView extends ConsumerWidget {
                   itemCount: events.length,
                   itemBuilder: (_, i) => _EventCard(
                     event: events[i],
-                    onTap: () => ref.read(selectedEventProvider.notifier).state = events[i],
+                    onTap: () => ref.read(selectedEventProvider.notifier).select(events[i]),
                   ),
                 );
               },
@@ -185,7 +185,7 @@ class _CategoryFilter extends ConsumerWidget {
           final isActive = active == cats[i];
           return Expanded(
             child: GestureDetector(
-              onTap: () => ref.read(eventCategoryFilterProvider.notifier).state = cats[i],
+              onTap: () =>ref.read(eventCategoryFilterProvider.notifier).set(cats[i]),
               child: Container(
                 decoration: BoxDecoration(
                   border: Border(
@@ -330,7 +330,7 @@ class _EventDetailView extends ConsumerWidget {
             title: event.title.toUpperCase(),
             subtitle: event.year != null ? '${event.year}' : '',
             icon: Icons.star_border_rounded,
-            onBack: () => ref.read(selectedEventProvider.notifier).state = null,
+            onBack: () =>ref.read(selectedEventProvider.notifier).select(null),
           ),
           Expanded(
             child: CustomScrollView(

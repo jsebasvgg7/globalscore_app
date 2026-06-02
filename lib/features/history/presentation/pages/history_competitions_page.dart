@@ -171,7 +171,7 @@ class _SearchBar extends ConsumerWidget {
                           icon: const Icon(Icons.clear, size: 14),
                           onPressed: () {
                             controller.clear();
-                            ref.read(competitionSearchProvider.notifier).state = '';
+                             ref.read(competitionSearchProvider.notifier).set('');
                           },
                         )
                       : null,
@@ -208,7 +208,7 @@ class _TypeFilterRow extends ConsumerWidget {
           final isActive = active == t;
           return GestureDetector(
             onTap: () =>
-                ref.read(competitionTypeFilterProvider.notifier).state = t,
+             ref.read(competitionTypeFilterProvider.notifier).set(t),
             child: Container(
               margin: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
               padding: const EdgeInsets.symmetric(horizontal: 10),

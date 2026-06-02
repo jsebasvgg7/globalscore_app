@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../data/history_service.dart';
-import '../../../domain/history_models.dart';
+import '../../data/history_service.dart';
+import '../../domain/history_models.dart';
 
 // ─── Paleta neobrutalista ────────────────────────────────────
 const kHistBg      = Color(0xFFF0EDE8);

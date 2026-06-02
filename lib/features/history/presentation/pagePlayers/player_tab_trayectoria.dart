@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../domain/history_models.dart';
-import '../history_players_shared.dart';
+import 'history_players_shared.dart';
 
 class PlayerTabTrayectoria extends StatelessWidget {
   final PlayerDetail detail;

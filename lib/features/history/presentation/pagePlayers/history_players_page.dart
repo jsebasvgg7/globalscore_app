@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../domain/history_models.dart';
-import '../../../domain/history_providers.dart';
+import '../../domain/history_models.dart';
+import '../../domain/history_providers.dart';
 import '../../../../../shared/layout/scaffold_with_nav_bar.dart'
     show hideTopBarProvider;
 import 'history_players_shared.dart';
