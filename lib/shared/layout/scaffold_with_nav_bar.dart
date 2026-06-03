@@ -661,8 +661,6 @@ class _NavItem {
 
 abstract class _GsColors {
   static const Color cream   = Color(0xFFF0EDE8);
-  static const Color surface = Color(0xFFE8E4DE);
-  static const Color border  = Color(0xFFC4BFB8);
   static const Color dark    = Color(0xFF1A1A2E);
   static const Color accent  = Color(0xFF5B4FD8);
   static const Color muted   = Color(0xFF88887D);

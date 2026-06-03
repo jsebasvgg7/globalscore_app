@@ -38,8 +38,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: '/login',    builder: (c, s) => const LoginPage()),
-      GoRoute(path: '/register', builder: (c, s) => const RegisterPage()),
+      GoRoute(path: '/login',    builder: (_, _) => const LoginPage()),
+      GoRoute(path: '/register', builder: (_, _) => const RegisterPage()),
 
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -49,21 +49,21 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(routes: [
             GoRoute(
               path: '/dashboard',
-              builder: (_, __) => const DashboardPage(),
+              builder: (_, _) => const DashboardPage(),
             ),
           ]),
           // 1 — Ranking
           StatefulShellBranch(routes: [
             GoRoute(
               path: '/ranking',
-              builder: (_, __) => const RankingPage(),
+              builder: (_, _) => const RankingPage(),
             ),
           ]),
           // 2 — Albums
           StatefulShellBranch(routes: [
             GoRoute(
               path: '/albums',
-              builder: (_, __) => const AlbumsPage(),
+              builder: (_, _) => const AlbumsPage(),
               routes: [
                 GoRoute(
                   path: ':albumId',
@@ -77,37 +77,37 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(routes: [
             GoRoute(
               path: '/stats',
-              builder: (_, __) => const StatsPage(),
+              builder: (_, _) => const StatsPage(),
             ),
           ]),
           // 4 — History
           StatefulShellBranch(routes: [
             GoRoute(
               path: '/history',
-              builder: (_, __) => const hist.HistoryPage(),
+              builder: (_, _) => const hist.HistoryPage(),
             ),
           ]),
           // 5 — Perfil propio
-          StatefulShellBranch(routes: [  // branchIndex = 5
+          StatefulShellBranch(routes: [
             GoRoute(
               path: '/profile',
-              builder: (_, __) => const ProfilePage(),
+              builder: (_, _) => const ProfilePage(),
               routes: [
                 GoRoute(
                   path: 'achievements',
-                  builder: (_, __) => const AchievementsPage(),
+                  builder: (_, _) => const AchievementsPage(),
                 ),
                 GoRoute(
                   path: 'championships',
-                  builder: (_, __) => const ChampionshipsPage(),
+                  builder: (_, _) => const ChampionshipsPage(),
                 ),
                 GoRoute(
                   path: 'history',
-                  builder: (_, __) => const PredictionHistoryPage(),
+                  builder: (_, _) => const PredictionHistoryPage(),
                 ),
                 GoRoute(
                   path: 'edit',
-                  builder: (_, __) => const EditProfilePage(),
+                  builder: (_, _) => const EditProfilePage(),
                 ),
               ],
             ),
@@ -121,26 +121,26 @@ final routerProvider = Provider<GoRouter>((ref) {
           userId: state.pathParameters['userId']!,
         ),
       ),
-    
+
       GoRoute(
         path: '/notes',
-        builder: (_, __) => const NotesPage(),
+        builder: (_, _) => const NotesPage(),
       ),
 
       GoRoute(
         path: '/notifications',
-        builder: (_, __) => const NotificationsPage(),
+        builder: (_, _) => const NotificationsPage(),
       ),
 
       GoRoute(
         path: '/worldcup',
-        builder: (_, __) => const WorldCupPage(),
+        builder: (_, _) => const WorldCupPage(),
       ),
-      
+
       // Admin — fuera del shell, sin nav bar
       // GoRoute(
       //   path: '/admin',
-      //   builder: (_, __) => const AdminPage(),
+      //   builder: (_, _) => const AdminPage(),
       // ),
     ],
   );
