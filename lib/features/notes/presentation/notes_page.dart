@@ -129,6 +129,7 @@ class _NotesList extends ConsumerWidget {
               final unpinned = filtered.where((n) => !n.isPinned).toList();
 
               return ListView(
+                padding: EdgeInsets.zero,
                 children: [
                   if (pinned.isNotEmpty) ...[
                     _GroupLabel(label: 'FIJADAS', icon: Icons.push_pin_rounded),
@@ -235,6 +236,7 @@ class _SearchBar extends StatelessWidget {
                 hintStyle: TextStyle(fontSize: 12, color: _muted),
                 border: InputBorder.none,
                 isDense: true,
+                contentPadding: EdgeInsets.zero,
               ),
             ),
           ),
