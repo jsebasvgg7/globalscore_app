@@ -176,20 +176,21 @@ class _DashboardPageState extends ConsumerState<DashboardPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── 0: Progress bar ──────────────────────
-                    _enter(0, _ProgressBar(
-                      saved: savedCount,
-                      total: totalCount,
-                      target: barPct,
-                    )),
-
-                    // ── 1: Next match banner ─────────────────
-                    _enter(1, GestureDetector(
+                    // ── 0: Next match banner ─────────────────
+                    _enter(0, GestureDetector(
                       onTap: nextMatch != null
                           ? () => showMatchSubPage(context, ref,
                               jumpToMatchId: nextMatch['id'] as String?)
                           : null,
                       child: _NextMatchBanner(match: nextMatch),
+                    )),
+
+                    // ── 1: Progress bar ──────────────────────
+                    _enter(1, _ProgressBar(
+                      saved: savedCount,
+                      total: totalCount,
+                      target: barPct,
+                      onTap: () => showMatchSubPage(context, ref),
                     )),
 
                     const SizedBox(height: 14),
@@ -422,13 +423,19 @@ class _ErrorPanel extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  PROGRESS BAR — con decoraciones neobrutalistas mejoradas
+//  PROGRESS BAR — rediseño imagen 1
 // ─────────────────────────────────────────────────────────────
 class _ProgressBar extends StatefulWidget {
   final int saved;
   final int total;
   final double target;
-  const _ProgressBar({required this.saved, required this.total, required this.target});
+  final VoidCallback? onTap;
+  const _ProgressBar({
+    required this.saved,
+    required this.total,
+    required this.target,
+    this.onTap,
+  });
 
   @override
   State<_ProgressBar> createState() => _ProgressBarState();
@@ -437,7 +444,9 @@ class _ProgressBar extends StatefulWidget {
 class _ProgressBarState extends State<_ProgressBar> {
   @override
   Widget build(BuildContext context) {
-    final isComplete = widget.saved == widget.total && widget.total > 0;
+    final pct      = widget.total > 0 ? widget.saved / widget.total : 0.0;
+    final pctLabel = '${(pct * 100).round()}%';
+
     return Container(
       margin: const EdgeInsets.fromLTRB(18, 14, 18, 0),
       decoration: BoxDecoration(
@@ -445,81 +454,124 @@ class _ProgressBarState extends State<_ProgressBar> {
         border: Border.all(color: _border, width: 1),
         boxShadow: const [_shadow],
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
-        child: Column(children: [
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Row(children: [
-              // Bloque decorativo izquierdo
-              Container(
-                width: 4,
-                height: 26,
-                color: _accent,
-                margin: const EdgeInsets.only(right: 10),
-              ),
-              Text('PREDIC.', style: _mono(color: _muted, size: 10, weight: FontWeight.w700, letterSpacing: 2)),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Fila superior: ícono + título + badge ──
+                Row(
+                  children: [
+                    Row(children: [
+                      Container(
+                        width: 4, height: 20, color: _accent,
+                        margin: const EdgeInsets.only(right: 9),
+                      ),
+                      const Icon(Icons.gps_fixed, size: 13, color: _accent),
+                      const SizedBox(width: 7),
+                      Text('PREDICCIONES',
+                          style: _mono(color: _text, size: 10,
+                              weight: FontWeight.w800, letterSpacing: 1.8)),
+                    ]),
+                    const Spacer(),
+                    // Badge verde con porcentaje — pegado al borde derecho
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _green.withOpacity(0.08),
+                        border: Border.all(color: _green, width: 1.5),
+                      ),
+                      child: Text('✓ $pctLabel',
+                          style: _mono(color: _green, size: 8,
+                              weight: FontWeight.w800, letterSpacing: 0.5)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // ── Números grandes ──
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text('${widget.saved}',
+                        style: _mono(color: _text, size: 40,
+                            weight: FontWeight.w900, letterSpacing: -2)),
+                    Text(' / ${widget.total}',
+                        style: _mono(color: _muted, size: 22,
+                            weight: FontWeight.w500, letterSpacing: -1)),
+                  ],
+                ),
+                Text('COMPLETADAS',
+                    style: _mono(color: _muted, size: 8,
+                        weight: FontWeight.w700, letterSpacing: 1.8)),
+                const SizedBox(height: 12),
+                // ── Barra de progreso segmentada ──
+                Padding(
+                  padding: const EdgeInsets.only(right: 42),
+                  child: Stack(children: [
+                  Container(
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: _bg,
+                      border: Border.all(color: _border, width: 1),
+                    ),
+                  ),
+                  TweenAnimationBuilder<double>(
+                    key: ValueKey(widget.target),
+                    tween: Tween(begin: 0, end: widget.target.clamp(0.0, 1.0)),
+                    duration: const Duration(milliseconds: 900),
+                    curve: Curves.easeOutCubic,
+                    builder: (_, v, __) => FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: v,
+                      child: Container(height: 7, color: _accent),
+                    ),
+                  ),
+                  // Separadores de cuartos
+                  ...List.generate(3, (i) {
+                    final pos = (i + 1) / 4;
+                    return Align(
+                      alignment: Alignment(pos * 2 - 1, 0),
+                      child: Container(
+                          width: 1.5, height: 7,
+                          color: _card.withOpacity(0.8)),
+                    );
+                  }),
+                  ]),
+                ),
+              ],
+            ),
+          ),
+          // ── Botón ">" abajo a la derecha ──
+          Positioned(
+            bottom: 12,
+            right: 12,
+            child: GestureDetector(
+              onTap: widget.onTap,
+              child: Container(
+                width: 30,
+                height: 30,
                 decoration: BoxDecoration(
-                  color: _accent,
+                  color: _bg,
+                  border: Border.all(color: _border, width: 1),
                   boxShadow: const [_shadowSm],
                 ),
-                child: Text('[${widget.saved}/${widget.total}]',
-                    style: _mono(color: Colors.white, size: 11, weight: FontWeight.w700)),
-              ),
-            ]),
-            if (isComplete)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: _green.withOpacity(0.1),
-                  border: Border.all(color: _green, width: 1.5),
-                ),
-                child: Text('✓ COMPLETO', style: _mono(color: _green, size: 7, weight: FontWeight.w800, letterSpacing: 1)),
-              ),
-          ]),
-          const SizedBox(height: 10),
-          // Track con marcadores de tick
-          Stack(children: [
-            Container(
-              height: 8,
-              decoration: BoxDecoration(
-                color: _bg,
-                border: Border.all(color: _border, width: 1),
-              ),
-            ),
-            TweenAnimationBuilder<double>(
-              key: ValueKey(widget.target),
-              tween: Tween(begin: 0, end: widget.target.clamp(0.0, 1.0)),
-              duration: const Duration(milliseconds: 900),
-              curve: Curves.easeOutCubic,
-              builder: (_, v, __) => FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: v,
-                child: Container(
-                  height: 8,
-                  color: _accent,
+                child: const Center(
+                  child: Icon(Icons.arrow_forward_ios, size: 11, color: _text),
                 ),
               ),
             ),
-            // Marcadores de cuartos
-            ...List.generate(3, (i) {
-              final pos = (i + 1) / 4;
-              return Align(
-                alignment: Alignment(pos * 2 - 1, 0),
-                child: Container(width: 1.5, height: 8, color: _card.withOpacity(0.8)),
-              );
-            }),
-          ]),
-        ]),
+          ),
+        ],
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────
-//  NEXT MATCH BANNER — con más decoración neobrutalista
+//  NEXT MATCH BANNER — rediseño imagen 1 (fondo púrpura sólido)
 // ─────────────────────────────────────────────────────────────
 class _NextMatchBanner extends StatelessWidget {
   final Map<String, dynamic>? match;
@@ -534,143 +586,200 @@ class _NextMatchBanner extends StatelessWidget {
   Widget _buildEmpty() => Container(
     margin: const EdgeInsets.fromLTRB(18, 13, 18, 0),
     decoration: BoxDecoration(
-      color: _card,
-      border: const Border(
-        top: BorderSide(color: _accent, width: 3),
-        left: BorderSide(color: _border, width: 1),
-        right: BorderSide(color: _border, width: 1),
-        bottom: BorderSide(color: _border, width: 1),
-      ),
+      color: _accent,
+      border: Border.all(color: _border, width: 1.5),
       boxShadow: const [_shadowLg],
     ),
-    child: Row(children: [
-      Container(
-        width: 78,
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: const BoxDecoration(color: _bg, border: Border(right: BorderSide(color: _border, width: 1))),
+    child: Stack(children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 46),
         child: Column(children: [
-          Text('0', style: _mono(color: _borderH, size: 44, weight: FontWeight.w700, letterSpacing: -3)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                color: _border,
+                child: Text('PRÓXIMO PARTIDO',
+                    style: _mono(color: Colors.white, size: 7,
+                        weight: FontWeight.w800, letterSpacing: 1.5)),
+              ),
+              Row(children: [
+                Icon(Icons.calendar_today_outlined, size: 10,
+                    color: Colors.white70),
+                const SizedBox(width: 5),
+                Text('—', style: _mono(color: Colors.white, size: 9)),
+              ]),
+            ],
+          ),
+          const SizedBox(height: 28),
+          Text('SIN PARTIDOS',
+              style: _mono(color: Colors.white54, size: 18,
+                  weight: FontWeight.w700, letterSpacing: 1.5)),
           const SizedBox(height: 6),
-          Column(children: [
-            Container(height: 1.5, width: 40, color: _borderH),
-            const SizedBox(height: 3),
-            Container(height: 1.5, width: 26, color: _accent),
-            const SizedBox(height: 3),
-            Container(height: 1.5, width: 16, color: _borderH),
-          ]),
+          Text('TEMPORADA AL DÍA',
+              style: _mono(color: Colors.white38, size: 8,
+                  weight: FontWeight.w700, letterSpacing: 2)),
+          const SizedBox(height: 8),
         ]),
       ),
-      Expanded(child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('// PRÓXIMO PARTIDO', style: _mono(color: _accent, size: 7, weight: FontWeight.w700, letterSpacing: 2.2)),
-          const SizedBox(height: 6),
-          Text('SIN\nPARTIDOS', style: _mono(color: _text, size: 22, weight: FontWeight.w700)),
-          const SizedBox(height: 6),
-          Container(width: 32, height: 2, color: _accent),
-          const SizedBox(height: 5),
-          Text('TEMPORADA AL DÍA', style: _mono(color: _muted, size: 7, weight: FontWeight.w700, letterSpacing: 1.8)),
-        ]),
-      )),
+      Positioned(
+        bottom: 12, left: 14,
+        child: Text('+', style: _mono(color: Colors.white38, size: 18,
+            weight: FontWeight.w300)),
+      ),
     ]),
   );
 
-  Widget _buildMatch(Map<String, dynamic> m) => Container(
-    margin: const EdgeInsets.fromLTRB(18, 13, 18, 0),
-    decoration: BoxDecoration(
-      color: _card,
-      border: const Border(
-        top: BorderSide(color: _accent, width: 3),
-        left: BorderSide(color: _border, width: 1),
-        right: BorderSide(color: _border, width: 1),
-        bottom: BorderSide(color: _border, width: 1),
+  Widget _buildMatch(Map<String, dynamic> m) {
+    final leagueRaw  = (m['league'] ?? 'LIGA').toString().toUpperCase();
+    final leagueLabel = leagueRaw.length > 8
+        ? leagueRaw.substring(0, 8) : leagueRaw;
+    final dateLabel  = m['date'] ?? '—';
+    final timeLabel  = m['time'] ?? '—';
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+      decoration: BoxDecoration(
+        color: _accent,
+        border: Border.all(color: _border, width: 1.5),
+        boxShadow: const [_shadowLg],
       ),
-      boxShadow: const [_shadowLg],
-    ),
-    child: Column(children: [
-      // Header con más detalles
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: const BoxDecoration(
-          color: _bg,
-          border: Border(bottom: BorderSide(color: _border, width: 1)),
-        ),
-        child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Row(children: [
-            // Dot indicator
-            Container(width: 6, height: 6, color: _accent, margin: const EdgeInsets.only(right: 6)),
-            Text('PRÓXIMO PARTIDO · ${(m['league'] ?? '').toString().toUpperCase()}',
-                style: _mono(color: _muted, size: 7, letterSpacing: 1.8)),
-          ]),
-          Row(children: [
-            Text(m['date'] ?? '—', style: _mono(color: _muted, size: 7, letterSpacing: 1.2)),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                color: _accent.withOpacity(0.1),
-                border: Border.all(color: _accent, width: 1),
-              ),
-              child: const Icon(Icons.arrow_forward_ios, size: 8, color: _accent),
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 44),
+            child: Column(
+              children: [
+                // ── Header ──
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Chip oscuro "PRÓXIMO PARTIDO"
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 3),
+                      color: _border,
+                      child: Text('PRÓXIMO PARTIDO',
+                          style: _mono(color: Colors.white, size: 6.5,
+                              weight: FontWeight.w800, letterSpacing: 1.5)),
+                    ),
+                    // Fecha con ícono de calendario
+                    Row(children: [
+                      Icon(Icons.calendar_today_outlined, size: 9,
+                          color: Colors.white70),
+                      const SizedBox(width: 4),
+                      Text(dateLabel,
+                          style: _mono(color: Colors.white, size: 8,
+                              weight: FontWeight.w600, letterSpacing: 0.8)),
+                    ]),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // ── Equipos + hora ──
+                Row(children: [
+                  Expanded(
+                    child: _NmTeamLight(
+                      name: m['home_team'] ?? '—',
+                      logoUrl: m['home_team_logo_url'],
+                    ),
+                  ),
+                  SizedBox(
+                    width: 90,
+                    child: Column(children: [
+                      Text('VS',
+                          style: _mono(color: Colors.white54, size: 6.5,
+                              letterSpacing: 3.5, weight: FontWeight.w700)),
+                      const SizedBox(height: 2),
+                      Text(timeLabel,
+                          style: _mono(color: Colors.white, size: 27,
+                              weight: FontWeight.w900, letterSpacing: -1.5)),
+                      const SizedBox(height: 6),
+                      // Badge de liga — fondo transparente, borde blanco delgado
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 9, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          border: Border.all(color: Colors.white60, width: 1),
+                        ),
+                        child: Text(leagueLabel,
+                            style: _mono(color: Colors.white, size: 6.5,
+                                weight: FontWeight.w800, letterSpacing: 1.5)),
+                      ),
+                    ]),
+                  ),
+                  Expanded(
+                    child: _NmTeamLight(
+                      name: m['away_team'] ?? '—',
+                      logoUrl: m['away_team_logo_url'],
+                    ),
+                  ),
+                ]),
+              ],
             ),
-          ]),
-        ]),
-      ),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 14),
-        child: Row(children: [
-          Expanded(child: _NmTeam(name: m['home_team'] ?? '—', logoUrl: m['home_team_logo_url'])),
-          SizedBox(width: 90, child: Column(children: [
-            Text('VS', style: _mono(color: _muted, size: 7, letterSpacing: 3.2)),
-            const SizedBox(height: 2),
-            Text(m['time'] ?? '—', style: _mono(color: _text, size: 24, weight: FontWeight.w700, letterSpacing: -0.5)),
-            const SizedBox(height: 6),
-            // Badge de liga con borde neobrutalista
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          ),
+          // ── "+" decorativo abajo a la izquierda ──
+          Positioned(
+            bottom: 10, left: 12,
+            child: Text('+',
+                style: _mono(color: Colors.white38, size: 16,
+                    weight: FontWeight.w300)),
+          ),
+          // ── Botón ">" abajo a la derecha — fondo crema, borde negro ──
+          Positioned(
+            bottom: 9, right: 10,
+            child: Container(
+              width: 27, height: 27,
               decoration: BoxDecoration(
-                color: _accent,
+                color: _surface,
+                border: Border.all(color: _border, width: 1),
                 boxShadow: const [_shadowSm],
               ),
-              child: Text(
-                (m['league'] ?? 'LIGA').toString().toUpperCase().substring(
-                    0, ((m['league'] ?? 'LIGA').toString().length).clamp(0, 8)),
-                style: _mono(color: Colors.white, size: 7, weight: FontWeight.w800, letterSpacing: 1.2),
+              child: const Center(
+                child: Icon(Icons.arrow_forward_ios,
+                    size: 11, color: _text),
               ),
             ),
-          ])),
-          Expanded(child: _NmTeam(name: m['away_team'] ?? '—', logoUrl: m['away_team_logo_url'])),
-        ]),
+          ),
+        ],
       ),
-    ]),
-  );
+    );
+  }
 }
 
-class _NmTeam extends StatelessWidget {
+// Logo circular blanco sobre fondo púrpura
+class _NmTeamLight extends StatelessWidget {
   final String name;
   final String? logoUrl;
-  const _NmTeam({required this.name, this.logoUrl});
+  const _NmTeamLight({required this.name, this.logoUrl});
+
   @override
   Widget build(BuildContext context) => Column(children: [
     Container(
-      width: 40, height: 40,
+      width: 54, height: 54,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: _bg,
-        border: Border.all(color: _border, width: 1),
-        boxShadow: const [_shadowSm],
+        color: Colors.white,
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.25),
+              offset: const Offset(2, 2), blurRadius: 0),
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: logoUrl != null
           ? Image.network(logoUrl!, fit: BoxFit.contain,
-              errorBuilder: (_, _, _) => const Center(child: Text('⚽', style: TextStyle(fontSize: 22))))
-          : const Center(child: Text('⚽', style: TextStyle(fontSize: 22))),
+              errorBuilder: (_, __, ___) =>
+                  const Center(child: Text('⚽', style: TextStyle(fontSize: 26))))
+          : const Center(child: Text('⚽', style: TextStyle(fontSize: 26))),
     ),
-    const SizedBox(height: 6),
+    const SizedBox(height: 8),
     Text(
       (name.length > 8 ? name.substring(0, 8) : name).toUpperCase(),
       textAlign: TextAlign.center,
-      style: _mono(color: _text, size: 11, weight: FontWeight.w700, letterSpacing: 0.8),
+      style: _mono(color: Colors.white, size: 12,
+          weight: FontWeight.w800, letterSpacing: 0.5),
     ),
   ]);
 }
@@ -868,19 +977,18 @@ class _MiniTeamRow extends StatelessWidget {
         style: _mono(color: _text, size: 10, weight: FontWeight.w700),
         overflow: TextOverflow.ellipsis,
       )),
-      // Score box con color de acento sólido
+      // Score box — fondo crema, borde gris suave, número gris
       AnimatedContainer(
         duration: _tMed,
         width: 24, height: 24,
         decoration: BoxDecoration(
-          color: hasPred ? ac : _bg,
-          border: Border.all(color: hasPred ? ac : _border, width: 1.5),
-          boxShadow: hasPred ? const [_shadowSm] : null,
+          color: _surface,
+          border: Border.all(color: _muted, width: 1),
         ),
         alignment: Alignment.center,
         child: Text(
           hasPred ? '${score ?? '—'}' : '—',
-          style: _mono(color: hasPred ? Colors.white : _muted, size: hasPred ? 12 : 10, weight: FontWeight.w700),
+          style: _mono(color: _muted, size: hasPred ? 12 : 10, weight: FontWeight.w700),
         ),
       ),
     ]),
