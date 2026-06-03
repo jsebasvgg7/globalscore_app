@@ -7,16 +7,16 @@ import '../widgets/group_modal.dart';
 import '../widgets/knockout_section.dart';
 import '../widgets/awards_section.dart';
 
-// ── Paleta
-const _accent  = Color(0xFF2D0CFF);
-const _bg      = Color(0xFFF5F0E8);
-const _card    = Color(0xFFEDE7DA);
-const _border  = Color(0xFF1A1A2E);
+// ── Paleta neobrutalismo (morado — alineada con history_vault_page)
+const _accent  = Color(0xFF5B4FD8);   // violeta principal
+const _bg      = Color(0xFFF0EDE8);   // crema base
+const _card    = Color(0xFFE8E4DC);   // crema oscura
+const _border  = Color(0xFF1A1A2E);   // negro azulado
 const _text    = Color(0xFF1A1A2E);
-const _muted   = Color(0xFF555550);
-const _shadow  = Color(0x661A1A2E);
-const _gold    = Color(0xFFFFD600);
-const _correct = Color(0xFF00C48C);
+const _muted   = Color(0xFF88887D);
+const _shadow  = Color(0x8C1A1A2E);
+const _gold    = Color(0xFFF59E0B);   // ámbar/oro
+const _correct = Color(0xFF1D9E75);   // verde
 
 class WorldCupPage extends ConsumerStatefulWidget {
   const WorldCupPage({super.key});
@@ -306,26 +306,15 @@ class _GroupsTab extends StatelessWidget {
         const SizedBox(height: 10),
 
         // ── Grid de grupos (2 columnas)
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: 2.2,
+        ...groups.map((g) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: GroupCardButton(
+            group: g,
+            prediction: state.predictions.groups[g],
+            supabaseUrl: supabaseUrl,
+            onTap: () => showGroupModal(context, g, supabaseUrl),
           ),
-          itemCount: groups.length,
-          itemBuilder: (_, i) {
-            final g = groups[i];
-            return GroupCardButton(
-              group: g,
-              prediction: state.predictions.groups[g],
-              supabaseUrl: supabaseUrl,
-              onTap: () => showGroupModal(context, g, supabaseUrl),
-            );
-          },
-        ),
+        )),
 
         // ── Mejores terceros
         if (bestThirds.isNotEmpty) ...[

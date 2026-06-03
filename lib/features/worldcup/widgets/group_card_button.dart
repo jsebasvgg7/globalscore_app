@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import '../domain/worldcup_models.dart';
 
-// ── Paleta neobrutalismo (igual que stats)
-const _accent  = Color(0xFF2D0CFF);
-const _bg      = Color(0xFFF5F0E8);
-const _card    = Color(0xFFEDE7DA);
+// ── Paleta neobrutalismo (morado — alineada con history_vault_page)
+const _accent  = Color(0xFF5B4FD8);
+const _bg      = Color(0xFFF0EDE8);
+const _card    = Color(0xFFE8E4DC);
 const _border  = Color(0xFF1A1A2E);
 const _text    = Color(0xFF1A1A2E);
-const _muted   = Color(0xFF555550);
-const _shadow  = Color(0x661A1A2E);
-const _gold    = Color(0xFFFFD600);
+const _muted   = Color(0xFF88887D);
+const _shadow  = Color(0x8C1A1A2E);
+const _gold    = Color(0xFFF59E0B);
 
 class GroupCardButton extends StatelessWidget {
   final String group;
@@ -84,12 +84,13 @@ class GroupCardButton extends StatelessWidget {
             // ── Escudos (4 flags)
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: _teams.map((team) => _TeamFlag(
-                    team: team,
-                    supabaseUrl: supabaseUrl,
+                  children: _teams.map((team) => Expanded(
+                    child: _TeamFlag(
+                      team: team,
+                      supabaseUrl: supabaseUrl,
+                    ),
                   )).toList(),
                 ),
               ),
@@ -149,8 +150,8 @@ class _TeamFlag extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Container(
-          width: 32,
-          height: 22,
+          width: 30,
+          height: 20,
           decoration: BoxDecoration(
             border: Border.all(color: _border.withValues(alpha: 0.25), width: 0.5),
           ),
@@ -163,19 +164,17 @@ class _TeamFlag extends StatelessWidget {
               : const _FlagPlaceholder(),
         ),
         const SizedBox(height: 3),
-        SizedBox(
-          width: 40,
-          child: Text(
-            team.length > 6 ? '${team.substring(0, 5)}.' : team,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 7,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.2,
-              color: _muted,
-            ),
-            overflow: TextOverflow.ellipsis,
+        Text(
+          team.length > 5 ? '${team.substring(0, 4)}.' : team,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 7,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.1,
+            color: _muted,
           ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
       ],
     );
