@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/presentation/login_page.dart';
 import '../../features/auth/presentation/register_page.dart';
+import '../../features/notifications/presentation/notifications_page.dart';
 import '../../features/notes/presentation/notes_page.dart';
 import '../../features/dashboard/presentation/dashboard_page.dart';
 import '../../features/ranking/presentation/ranking_page.dart';
@@ -119,10 +120,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           userId: state.pathParameters['userId']!,
         ),
       ),
+    
       GoRoute(
         path: '/notes',
         builder: (_, __) => const NotesPage(),
       ),
+
+      GoRoute(
+        path: '/notifications',
+        builder: (_, __) => const NotificationsPage(),
+      ),
+      
       // Admin — fuera del shell, sin nav bar
       // GoRoute(
       //   path: '/admin',
