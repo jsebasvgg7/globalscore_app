@@ -52,7 +52,7 @@ class WorldCupState {
 // ─── Notifier ─────────────────────────────────────────────
 class WorldCupNotifier extends Notifier<WorldCupState> {
   late WorldCupService _service;
-  String? _userId; // se resuelve de forma asíncrona en _load()
+  String? _userId;
 
   @override
   WorldCupState build() {
@@ -63,7 +63,6 @@ class WorldCupNotifier extends Notifier<WorldCupState> {
 
   Future<void> _load() async {
     try {
-      // Resolver el UUID real de public.users a partir del auth_id
       final authId = Supabase.instance.client.auth.currentUser!.id;
       final userRes = await Supabase.instance.client
           .from('users')
@@ -95,7 +94,6 @@ class WorldCupNotifier extends Notifier<WorldCupState> {
     }
   }
 
-  // ── Grupos ─────────────────────────────────────────────
   void updateGroupMatch(String group, int matchIdx, MatchPrediction pred) {
     final current = state.predictions.groups[group] ?? const GroupPrediction();
     final updated = current.copyWithMatch(matchIdx, pred);
@@ -106,7 +104,6 @@ class WorldCupNotifier extends Notifier<WorldCupState> {
     );
   }
 
-  // ── Knockout ───────────────────────────────────────────
   void updateRound16(String id, String team) {
     state = state.copyWith(
       predictions: state.predictions.copyWith(
@@ -155,7 +152,6 @@ class WorldCupNotifier extends Notifier<WorldCupState> {
     );
   }
 
-  // ── Premios ────────────────────────────────────────────
   void updateAward(String key, String value) {
     state = state.copyWith(
       predictions: state.predictions.copyWith(
@@ -165,8 +161,43 @@ class WorldCupNotifier extends Notifier<WorldCupState> {
   }
 }
 
-// ─── Provider principal ───────────────────────────────────
+// ─── Provider principal — SIN autoDispose para evitar re-fetch al volver ───
 final worldCupProvider =
-    NotifierProvider.autoDispose<WorldCupNotifier, WorldCupState>(
+    NotifierProvider<WorldCupNotifier, WorldCupState>(
   WorldCupNotifier.new,
 );
+
+// ─── Providers derivados (computed) ───────────────────────
+// Evitan recalcular tablas de grupo en cada rebuild de KnockoutSection.
+// Solo se recomputan cuando cambia groups, no cuando cambia knockout/awards.
+
+/// Tablas de clasificados (1° y 2°) por grupo — se recalcula solo si cambian groups
+final qualifiedTeamsProvider = Provider<Map<String, Map<String, String?>>>((ref) {
+  // select → solo observa groups, ignora cambios en knockout/awards
+  final groups = ref.watch(
+    worldCupProvider.select((s) => s.predictions.groups),
+  );
+  final qualified = <String, Map<String, String?>>{};
+  for (final g in kGroupsData.keys) {
+    final table = calcGroupTable(g, groups[g]);
+    qualified[g] = {
+      'first':  table.isNotEmpty ? table[0].team : null,
+      'second': table.length > 1 ? table[1].team : null,
+    };
+  }
+  return qualified;
+});
+
+/// Lista de mejores terceros — se recalcula solo si cambian groups
+final bestThirdsProvider = Provider<List<ThirdPlaceEntry>>((ref) {
+  final groups = ref.watch(
+    worldCupProvider.select((s) => s.predictions.groups),
+  );
+  return calcBestThirds(groups);
+});
+
+/// Mapa groupLetter → team para los mejores terceros
+final thirdsMapProvider = Provider<Map<String, String>>((ref) {
+  final thirds = ref.watch(bestThirdsProvider);
+  return {for (final t in thirds) t.group: t.team};
+});

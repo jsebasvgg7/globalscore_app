@@ -7,16 +7,15 @@ import '../widgets/group_modal.dart';
 import '../widgets/knockout_section.dart';
 import '../widgets/awards_section.dart';
 
-// ── Paleta neobrutalismo (morado — alineada con history_vault_page)
-const _accent  = Color(0xFF5B4FD8);   // violeta principal
-const _bg      = Color(0xFFF0EDE8);   // crema base
-const _card    = Color(0xFFE8E4DC);   // crema oscura
-const _border  = Color(0xFF1A1A2E);   // negro azulado
+const _accent  = Color(0xFF5B4FD8);
+const _bg      = Color(0xFFF0EDE8);
+const _card    = Color(0xFFE8E4DC);
+const _border  = Color(0xFF1A1A2E);
 const _text    = Color(0xFF1A1A2E);
 const _muted   = Color(0xFF88887D);
 const _shadow  = Color(0x8C1A1A2E);
-const _gold    = Color(0xFFF59E0B);   // ámbar/oro
-const _correct = Color(0xFF1D9E75);   // verde
+const _gold    = Color(0xFFF59E0B);
+const _correct = Color(0xFF1D9E75);
 
 class WorldCupPage extends ConsumerStatefulWidget {
   const WorldCupPage({super.key});
@@ -64,7 +63,8 @@ class _WorldCupPageState extends ConsumerState<WorldCupPage>
 
   @override
   Widget build(BuildContext context) {
-    final state      = ref.watch(worldCupProvider);
+    // Solo observa loading para el estado inicial — los tabs manejan sus propios selects
+    final loading = ref.watch(worldCupProvider.select((s) => s.loading));
     final supabaseUrl = ref.watch(supabaseUrlProvider);
 
     return Theme(
@@ -84,72 +84,54 @@ class _WorldCupPageState extends ConsumerState<WorldCupPage>
         ),
       ),
       child: Scaffold(
-      backgroundColor: _bg,
-      body: Column(
-        children: [
-          // ── AppBar neobrut
-          _WorldCupAppBar(
-            state: state,
-            onSave: _saving ? null : _save,
-            saving: _saving,
-          ),
-
-          // ── TabBar
-          _NeoTabBar(controller: _tabCtrl),
-          const Divider(height: 1, thickness: 1.5, color: _border),
-
-          // ── Contenido
-          Expanded(
-            child: state.loading
-                ? const _LoadingState()
-                : TabBarView(
-                    controller: _tabCtrl,
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: [
-                      // ── Tab 0: Grupos
-                      _GroupsTab(state: state, supabaseUrl: supabaseUrl),
-                      // ── Tab 1: Eliminatorias
-                      SingleChildScrollView(
-                        child: KnockoutSection(supabaseUrl: supabaseUrl),
-                      ),
-                      // ── Tab 2: Premios
-                      const SingleChildScrollView(
-                        child: AwardsSection(),
-                      ),
-                    ],
-                  ),
-          ),
-        ],
+        backgroundColor: _bg,
+        body: Column(
+          children: [
+            _WorldCupAppBar(
+              onSave: _saving ? null : _save,
+              saving: _saving,
+            ),
+            _NeoTabBar(controller: _tabCtrl),
+            const Divider(height: 1, thickness: 1.5, color: _border),
+            Expanded(
+              child: loading
+                  ? const _LoadingState()
+                  : TabBarView(
+                      controller: _tabCtrl,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        // Cada tab es keepAlive — no se rebuildan al deslizar
+                        _GroupsTab(supabaseUrl: supabaseUrl),
+                        _KnockoutTab(supabaseUrl: supabaseUrl),
+                        const _AwardsTab(),
+                      ],
+                    ),
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 }
 
-// ── AppBar ────────────────────────────────────────────────
-class _WorldCupAppBar extends StatelessWidget {
-  final WorldCupState state;
+// ── AppBar — solo observa lo que necesita ─────────────────
+class _WorldCupAppBar extends ConsumerWidget {
   final VoidCallback? onSave;
   final bool saving;
 
-  const _WorldCupAppBar({
-    required this.state,
-    required this.onSave,
-    required this.saving,
-  });
-
-  int get _totalGroups => kGroupsData.length; // 12
-  int get _completedGroups {
-    int count = 0;
-    for (final g in kGroupsData.keys) {
-      final pred = state.predictions.groups[g];
-      if (pred != null && pred.filledCount == 6) count++;
-    }
-    return count;
-  }
+  const _WorldCupAppBar({required this.onSave, required this.saving});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // select: solo grupos → no se rebuilda cuando cambia knockout/awards
+    final groups = ref.watch(
+      worldCupProvider.select((s) => s.predictions.groups),
+    );
+
+    final completedGroups = kGroupsData.keys
+        .where((g) => (groups[g]?.filledCount ?? 0) == 6)
+        .length;
+
     final top = MediaQuery.of(context).padding.top;
     return Container(
       padding: EdgeInsets.only(top: top + 8, bottom: 12, left: 16, right: 16),
@@ -160,7 +142,6 @@ class _WorldCupAppBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // ── Título
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,11 +149,8 @@ class _WorldCupAppBar extends StatelessWidget {
                 const Text(
                   'MUNDIAL 2026',
                   style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
-                    color: Colors.white,
-                    height: 1,
+                    fontSize: 18, fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5, color: Colors.white, height: 1,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -184,19 +162,17 @@ class _WorldCupAppBar extends StatelessWidget {
                         color: _gold,
                         border: Border.all(color: _border, width: 0.5),
                       ),
-                      child: Text(
+                      child: const Text(
                         'USA · CAN · MEX',
-                        style: const TextStyle(
-                          fontSize: 7,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1,
-                          color: _border,
+                        style: TextStyle(
+                          fontSize: 7, fontWeight: FontWeight.w900,
+                          letterSpacing: 1, color: _border,
                         ),
                       ),
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      '$_completedGroups/$_totalGroups grupos',
+                      '$completedGroups/${kGroupsData.length} grupos',
                       style: TextStyle(
                         fontSize: 9,
                         color: Colors.white.withValues(alpha: 0.7),
@@ -208,8 +184,6 @@ class _WorldCupAppBar extends StatelessWidget {
               ],
             ),
           ),
-
-          // ── Botón guardar
           GestureDetector(
             onTap: onSave,
             child: AnimatedContainer(
@@ -224,12 +198,8 @@ class _WorldCupAppBar extends StatelessWidget {
               ),
               child: saving
                   ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: _border,
-                      ),
+                      width: 14, height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: _border),
                     )
                   : const Row(
                       mainAxisSize: MainAxisSize.min,
@@ -239,10 +209,8 @@ class _WorldCupAppBar extends StatelessWidget {
                         Text(
                           'GUARDAR',
                           style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1,
-                            color: _border,
+                            fontSize: 10, fontWeight: FontWeight.w900,
+                            letterSpacing: 1, color: _border,
                           ),
                         ),
                       ],
@@ -262,7 +230,7 @@ class _NeoTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final labels = ['GRUPOS', 'ELIMINATORIAS', 'PREMIOS'];
+    const labels = ['GRUPOS', 'ELIMINATORIAS', 'PREMIOS'];
     return Container(
       color: _bg,
       height: 44,
@@ -289,8 +257,7 @@ class _NeoTabBar extends StatelessWidget {
                 child: Text(
                   labels[i],
                   style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
+                    fontSize: 9, fontWeight: FontWeight.w900,
                     letterSpacing: 1.2,
                     color: selected ? Colors.white : _muted,
                   ),
@@ -304,52 +271,104 @@ class _NeoTabBar extends StatelessWidget {
   }
 }
 
-// ── Tab Grupos ────────────────────────────────────────────
-class _GroupsTab extends StatelessWidget {
-  final WorldCupState state;
+// ── Tab Grupos — keepAlive ────────────────────────────────
+class _GroupsTab extends ConsumerStatefulWidget {
   final String supabaseUrl;
-  const _GroupsTab({required this.state, required this.supabaseUrl});
+  const _GroupsTab({required this.supabaseUrl});
+
+  @override
+  ConsumerState<_GroupsTab> createState() => _GroupsTabState();
+}
+
+class _GroupsTabState extends ConsumerState<_GroupsTab>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
-    final groups = kGroupsData.keys.toList();
-    final bestThirds = calcBestThirds(state.predictions.groups);
+    super.build(context);
+
+    // select: solo grupos, no knockout ni awards
+    final groups = ref.watch(
+      worldCupProvider.select((s) => s.predictions.groups),
+    );
+    final bestThirds = ref.watch(bestThirdsProvider);
 
     return ColoredBox(
       color: _bg,
       child: ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // ── Header sección grupos
-        _ListHeader(title: 'FASE DE GRUPOS', subtitle: '12 grupos · 48 selecciones'),
-        const SizedBox(height: 10),
-
-        // ── Grid de grupos (2 columnas)
-        ...groups.map((g) => Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: GroupCardButton(
-            group: g,
-            prediction: state.predictions.groups[g],
-            supabaseUrl: supabaseUrl,
-            onTap: () => showGroupModal(context, g, supabaseUrl),
-          ),
-        )),
-
-        // ── Mejores terceros
-        if (bestThirds.isNotEmpty) ...[
-          const SizedBox(height: 20),
-          _ListHeader(
-            title: 'MEJORES TERCEROS',
-            subtitle: 'Top 8 clasifican a octavos',
-          ),
+        padding: const EdgeInsets.all(16),
+        children: [
+          _ListHeader(title: 'FASE DE GRUPOS', subtitle: '12 grupos · 48 selecciones'),
           const SizedBox(height: 10),
-          _BestThirdsTable(thirds: bestThirds, supabaseUrl: supabaseUrl),
+          ...kGroupsData.keys.map((g) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: RepaintBoundary(
+              child: GroupCardButton(
+                group: g,
+                prediction: groups[g],
+                supabaseUrl: widget.supabaseUrl,
+                onTap: () => showGroupModal(context, g, widget.supabaseUrl),
+              ),
+            ),
+          )),
+          if (bestThirds.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            _ListHeader(
+              title: 'MEJORES TERCEROS',
+              subtitle: 'Top 8 clasifican a octavos',
+            ),
+            const SizedBox(height: 10),
+            _BestThirdsTable(thirds: bestThirds, supabaseUrl: widget.supabaseUrl),
+          ],
+          const SizedBox(height: 20),
         ],
-
-        const SizedBox(height: 20),
-      ],
-    ),
+      ),
     );
+  }
+}
+
+// ── Tab Eliminatorias — keepAlive ─────────────────────────
+class _KnockoutTab extends ConsumerStatefulWidget {
+  final String supabaseUrl;
+  const _KnockoutTab({required this.supabaseUrl});
+
+  @override
+  ConsumerState<_KnockoutTab> createState() => _KnockoutTabState();
+}
+
+class _KnockoutTabState extends ConsumerState<_KnockoutTab>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return SingleChildScrollView(
+      child: KnockoutSection(supabaseUrl: widget.supabaseUrl),
+    );
+  }
+}
+
+// ── Tab Premios — keepAlive ───────────────────────────────
+class _AwardsTab extends ConsumerStatefulWidget {
+  const _AwardsTab();
+
+  @override
+  ConsumerState<_AwardsTab> createState() => _AwardsTabState();
+}
+
+class _AwardsTabState extends ConsumerState<_AwardsTab>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return const SingleChildScrollView(child: AwardsSection());
   }
 }
 
@@ -370,13 +389,13 @@ class _ListHeader extends StatelessWidget {
           children: [
             Text(title,
                 style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.5,
-                  color: _text,
+                  fontSize: 11, fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5, color: _text,
                 )),
             Text(subtitle,
-                style: const TextStyle(fontSize: 9, color: _muted, fontWeight: FontWeight.w600)),
+                style: const TextStyle(
+                  fontSize: 9, color: _muted, fontWeight: FontWeight.w600,
+                )),
           ],
         ),
       ],
@@ -400,7 +419,6 @@ class _BestThirdsTable extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Thead
           Container(
             height: 28,
             color: _bg,
@@ -422,71 +440,69 @@ class _BestThirdsTable extends StatelessWidget {
             final entry = e.value;
             final qualifies = rank <= 8;
             final flagUrl = getTeamFlagUrl(entry.team, supabaseUrl);
-            return Container(
-              height: 40,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: qualifies ? _correct.withValues(alpha: 0.05) : _bg,
-                border: const Border(bottom: BorderSide(color: _border, width: 0.5)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 18,
-                    height: 18,
-                    decoration: BoxDecoration(
-                      color: qualifies ? _correct : _muted,
-                      border: Border.all(color: _border, width: 0.5),
+            return RepaintBoundary(
+              child: Container(
+                height: 40,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: qualifies ? _correct.withValues(alpha: 0.05) : _bg,
+                  border: const Border(bottom: BorderSide(color: _border, width: 0.5)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 18, height: 18,
+                      decoration: BoxDecoration(
+                        color: qualifies ? _correct : _muted,
+                        border: Border.all(color: _border, width: 0.5),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text('$rank',
+                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white)),
                     ),
-                    alignment: Alignment.center,
-                    child: Text('$rank',
-                        style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white)),
-                  ),
-                  const SizedBox(width: 4),
-                  // Grupo badge
-                  Container(
-                    width: 28,
-                    height: 18,
-                    decoration: BoxDecoration(
-                      color: _accent,
-                      border: Border.all(color: _border, width: 0.5),
+                    const SizedBox(width: 4),
+                    Container(
+                      width: 28, height: 18,
+                      decoration: BoxDecoration(
+                        color: _accent,
+                        border: Border.all(color: _border, width: 0.5),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(entry.group,
+                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white)),
                     ),
-                    alignment: Alignment.center,
-                    child: Text(entry.group,
-                        style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white)),
-                  ),
-                  const SizedBox(width: 6),
-                  // Flag
-                  Container(
-                    width: 24,
-                    height: 17,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: _border.withValues(alpha: 0.2), width: 0.5),
+                    const SizedBox(width: 6),
+                    Container(
+                      width: 24, height: 17,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: _border.withValues(alpha: 0.2), width: 0.5),
+                      ),
+                      child: flagUrl.isNotEmpty
+                          ? Image.network(flagUrl, fit: BoxFit.cover,
+                              cacheWidth: 48, cacheHeight: 34,
+                              errorBuilder: (_, __, ___) => const Icon(Icons.flag, size: 10, color: _muted))
+                          : const Icon(Icons.flag, size: 10, color: _muted),
                     ),
-                    child: flagUrl.isNotEmpty
-                        ? Image.network(flagUrl, fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(Icons.flag, size: 10, color: _muted))
-                        : const Icon(Icons.flag, size: 10, color: _muted),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(entry.team,
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _text),
-                        overflow: TextOverflow.ellipsis),
-                  ),
-                  SizedBox(width: 24, child: Text('${entry.played}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, color: _muted))),
-                  SizedBox(width: 24, child: Text(
-                    entry.gd >= 0 ? '+${entry.gd}' : '${entry.gd}',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 10, fontWeight: FontWeight.w700,
-                      color: entry.gd > 0 ? _correct : entry.gd < 0 ? Colors.red : _muted,
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(entry.team,
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _text),
+                          overflow: TextOverflow.ellipsis),
                     ),
-                  )),
-                  SizedBox(width: 28, child: Text('${entry.pts}',
+                    SizedBox(width: 24, child: Text('${entry.played}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, color: _muted))),
+                    SizedBox(width: 24, child: Text(
+                      entry.gd >= 0 ? '+${entry.gd}' : '${entry.gd}',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: _text))),
-                ],
+                      style: TextStyle(
+                        fontSize: 10, fontWeight: FontWeight.w700,
+                        color: entry.gd > 0 ? _correct : entry.gd < 0 ? Colors.red : _muted,
+                      ),
+                    )),
+                    SizedBox(width: 28, child: Text('${entry.pts}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: _text))),
+                  ],
+                ),
               ),
             );
           }),
@@ -507,8 +523,7 @@ class _LoadingState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 56,
-            height: 56,
+            width: 56, height: 56,
             decoration: BoxDecoration(
               color: _card,
               border: Border.all(color: _border, width: 2),
@@ -523,10 +538,8 @@ class _LoadingState extends StatelessWidget {
           const Text(
             'CARGANDO PREDICCIONES...',
             style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 2,
-              color: _muted,
+              fontSize: 10, fontWeight: FontWeight.w900,
+              letterSpacing: 2, color: _muted,
             ),
           ),
         ],
