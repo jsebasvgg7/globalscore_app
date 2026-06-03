@@ -4,13 +4,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/router/app_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+const String kSupabaseUrl = 'https://auquyjigjceqzwpjbbff.supabase.co';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   GoogleFonts.config.allowRuntimeFetching = true;
 
   await Supabase.initialize(
-    url: 'https://auquyjigjceqzwpjbbff.supabase.co',
+    url: kSupabaseUrl,
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1cXV5amlnamNlcXp3cGpiYmZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0MzAwNzksImV4cCI6MjA4MDAwNjA3OX0.aiFHuOp6CgyjN3VL8OQZp7U2bGLxZu9-OFlCGwkqq3w',
   );
 

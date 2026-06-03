@@ -16,6 +16,7 @@ import '../../features/profile/presentation/public_profile_page.dart';
 import '../../features/profile/presentation/pages/achievements_page.dart';
 import '../../features/profile/presentation/pages/championships_page.dart';
 import '../../features/profile/presentation/pages/history_page.dart';
+import '../../features/worldcup/presentation/worldcup_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
 import '../../features/history/presentation/history_page.dart' as hist;
 import '../../shared/layout/scaffold_with_nav_bar.dart';
@@ -129,6 +130,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/notifications',
         builder: (_, __) => const NotificationsPage(),
+      ),
+
+      GoRoute(
+        path: '/worldcup',
+        builder: (_, __) => const WorldCupPage(),
       ),
       
       // Admin — fuera del shell, sin nav bar

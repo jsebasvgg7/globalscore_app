@@ -1,17 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/worldcup_service.dart';
+import '../../../main.dart';
 import 'worldcup_models.dart';
 
 // ─── Service provider ─────────────────────────────────────
 final worldCupServiceProvider = Provider<WorldCupService>((_) => WorldCupService());
 
 // ─── Supabase URL (para imágenes) ─────────────────────────
-final supabaseUrlProvider = Provider<String>((_) {
-  return Supabase.instance.client.supabaseUrl;
-});
-
-// ─── Estado del notifier ──────────────────────────────────
+final supabaseUrlProvider = Provider<String>((_) => kSupabaseUrl);
+// ─── Estado ───────────────────────────────────────────────
 class WorldCupState {
   final WorldCupPredictions predictions;
   final bool loading;
@@ -39,13 +37,17 @@ class WorldCupState {
       );
 }
 
-// ─── Notifier ─────────────────────────────────────────────
-class WorldCupNotifier extends StateNotifier<WorldCupState> {
-  final WorldCupService _service;
-  final String _userId;
+// ─── Notifier (Riverpod 3.x — reemplaza StateNotifier) ────
+class WorldCupNotifier extends Notifier<WorldCupState> {
+  late WorldCupService _service;
+  late String _userId;
 
-  WorldCupNotifier(this._service, this._userId) : super(const WorldCupState()) {
+  @override
+  WorldCupState build() {
+    _service = ref.watch(worldCupServiceProvider);
+    _userId  = Supabase.instance.client.auth.currentUser!.id;
     _load();
+    return const WorldCupState();
   }
 
   Future<void> _load() async {
@@ -144,8 +146,6 @@ class WorldCupNotifier extends StateNotifier<WorldCupState> {
 
 // ─── Provider principal ───────────────────────────────────
 final worldCupProvider =
-    StateNotifierProvider.autoDispose<WorldCupNotifier, WorldCupState>((ref) {
-  final service = ref.watch(worldCupServiceProvider);
-  final userId = Supabase.instance.client.auth.currentUser!.id;
-  return WorldCupNotifier(service, userId);
-});
+    NotifierProvider.autoDispose<WorldCupNotifier, WorldCupState>(
+  WorldCupNotifier.new,
+);
