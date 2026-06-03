@@ -453,7 +453,7 @@ class _ScoreInput extends StatelessWidget {
       width: 36,
       height: 36,
       decoration: BoxDecoration(
-        color: controller.text.isNotEmpty ? _correct.withValues(alpha: 0.1) : Colors.white,
+        color: controller.text.isNotEmpty ? _correct.withValues(alpha: 0.1) : _bg,
         border: Border.all(
           color: controller.text.isNotEmpty ? _correct : _border.withValues(alpha: 0.4),
           width: 1,

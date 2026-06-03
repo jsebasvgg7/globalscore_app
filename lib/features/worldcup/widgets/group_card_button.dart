@@ -31,18 +31,20 @@ class GroupCardButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 72,
-        decoration: BoxDecoration(
-          // FIX: fondo crema en lugar de gris
-          color: _isComplete ? _accent.withValues(alpha: 0.06) : _bg,
-          border: Border.all(color: _border, width: 1.5),
-          boxShadow: const [
-            BoxShadow(color: _shadow, offset: Offset(2, 2), blurRadius: 0),
-          ],
-        ),
+    return Material(
+      color: _isComplete ? _accent.withValues(alpha: 0.06) : _bg,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        child: Container(
+          height: 72,
+          decoration: BoxDecoration(
+            border: Border.all(color: _border, width: 1.5),
+            boxShadow: const [
+              BoxShadow(color: _shadow, offset: Offset(2, 2), blurRadius: 0),
+            ],
+          ),
         child: Row(
           children: [
             // ── Etiqueta grupo
@@ -130,6 +132,7 @@ class GroupCardButton extends StatelessWidget {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

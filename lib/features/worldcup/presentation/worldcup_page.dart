@@ -67,7 +67,23 @@ class _WorldCupPageState extends ConsumerState<WorldCupPage>
     final state      = ref.watch(worldCupProvider);
     final supabaseUrl = ref.watch(supabaseUrlProvider);
 
-    return Scaffold(
+    return Theme(
+      data: Theme.of(context).copyWith(
+        scaffoldBackgroundColor: _bg,
+        canvasColor: _bg,
+        cardColor: _bg,
+        colorScheme: Theme.of(context).colorScheme.copyWith(
+          surface: _bg,
+          surfaceContainerHighest: _bg,
+          surfaceContainerHigh: _bg,
+          surfaceContainer: _bg,
+          surfaceContainerLow: _bg,
+          surfaceContainerLowest: _bg,
+          surfaceDim: _bg,
+          surfaceBright: _bg,
+        ),
+      ),
+      child: Scaffold(
       backgroundColor: _bg,
       body: Column(
         children: [
@@ -105,6 +121,7 @@ class _WorldCupPageState extends ConsumerState<WorldCupPage>
           ),
         ],
       ),
+    ),
     );
   }
 }
@@ -298,7 +315,9 @@ class _GroupsTab extends StatelessWidget {
     final groups = kGroupsData.keys.toList();
     final bestThirds = calcBestThirds(state.predictions.groups);
 
-    return ListView(
+    return ColoredBox(
+      color: _bg,
+      child: ListView(
       padding: const EdgeInsets.all(16),
       children: [
         // ── Header sección grupos
@@ -329,6 +348,7 @@ class _GroupsTab extends StatelessWidget {
 
         const SizedBox(height: 20),
       ],
+    ),
     );
   }
 }
