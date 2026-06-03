@@ -133,6 +133,13 @@ class _ProfileMain extends ConsumerWidget {
                 title: 'Historial',
                 subtitle: 'Todas tus predicciones',
                 onTap: () => context.push('/profile/history'),
+              ),
+               ClinicalListItem(
+                iconColor: Color(0xFF8B7FC7), 
+                icon: Icons.note_alt_outlined,
+                title: 'Notas',
+                subtitle: 'Mis notas privadas',
+                onTap: () => context.push('/notes'),
                 showDivider: false,
               ),
             ]),
