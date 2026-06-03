@@ -13,6 +13,8 @@ class WorldCupService {
 
     if (res == null) return null;
 
+    // Usar fromJson directamente sobre cada campo JSONB tal como viene de Supabase.
+    // Los campos pueden llegar como Map<String, dynamic> o ya deserializados.
     return WorldCupPredictions(
       groups: _parseGroups(res['groups_predictions']),
       knockout: KnockoutPredictions.fromJson(
@@ -25,10 +27,11 @@ class WorldCupService {
   }
 
   Future<void> upsertPredictions(String userId, WorldCupPredictions p) async {
+    // Serializar usando los mismos toJson() que fromJson() espera.
     await _client.from('worldcup_predictions').upsert(
       {
         'user_id': userId,
-        'groups_predictions': p.groups.map((k, v) => MapEntry(k, v.toJson())),
+        'groups_predictions': _serializeGroups(p.groups),
         'knockout_predictions': p.knockout.toJson(),
         'awards_predictions': p.awards.toJson(),
         'updated_at': DateTime.now().toIso8601String(),
@@ -37,10 +40,19 @@ class WorldCupService {
     );
   }
 
+  // Serializa Map<String, GroupPrediction> → formato que fromJson espera.
+  Map<String, dynamic> _serializeGroups(Map<String, GroupPrediction> groups) {
+    return groups.map((k, v) => MapEntry(k, v.toJson()));
+  }
+
+  // Deserializa el campo groups_predictions desde Supabase.
+  // El formato guardado es: { "A": { "matches": { "0": {...}, ... } }, ... }
   Map<String, GroupPrediction> _parseGroups(dynamic raw) {
     if (raw == null) return {};
-    return (raw as Map<String, dynamic>).map(
-      (k, v) => MapEntry(k, GroupPrediction.fromJson(v as Map<String, dynamic>)),
-    );
+    final map = raw as Map<String, dynamic>;
+    return map.map((k, v) => MapEntry(
+          k,
+          GroupPrediction.fromJson(v as Map<String, dynamic>),
+        ));
   }
 }

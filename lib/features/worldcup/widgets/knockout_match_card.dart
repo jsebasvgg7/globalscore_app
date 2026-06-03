@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import '../domain/worldcup_models.dart';
 
-const _accent  = Color(0xFF2D0CFF);
-const _bg      = Color(0xFFF5F0E8);
-const _card    = Color(0xFFEDE7DA);
+// ── Paleta ────────────────────────────────────────────────
+const _accent  = Color(0xFF5B4FD8);
+const _bg      = Color(0xFFF0EDE8);
+const _card    = Color(0xFFE8E4DC);
 const _border  = Color(0xFF1A1A2E);
 const _text    = Color(0xFF1A1A2E);
-const _muted   = Color(0xFF555550);
-const _shadow  = Color(0x661A1A2E);
-const _gold    = Color(0xFFFFD600);
-const _correct = Color(0xFF00C48C);
+const _muted   = Color(0xFF88887D);
+const _gold    = Color(0xFFF59E0B);
+const _correct = Color(0xFF1D9E75);
 
 class KnockoutMatchCard extends StatelessWidget {
   final KoMatchConfig match;
@@ -37,7 +37,7 @@ class KnockoutMatchCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: _bg,
         border: Border.all(color: _border, width: 1),
-        boxShadow: const [BoxShadow(color: _shadow, offset: Offset(2, 2), blurRadius: 0)],
+        boxShadow: const [BoxShadow(color: _muted, offset: Offset(2, 2), blurRadius: 0)],
       ),
       child: Column(
         children: [
@@ -79,7 +79,7 @@ class KnockoutMatchCard extends StatelessWidget {
             supabaseUrl: supabaseUrl,
           ),
 
-          // ── VS
+          // ── VS divider
           Container(
             height: 18,
             alignment: Alignment.center,
@@ -215,7 +215,7 @@ class _TeamOption extends StatelessWidget {
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (team == null)
+                  if (team == null && desc.isNotEmpty)
                     Text(desc,
                         style: const TextStyle(fontSize: 8, color: _muted),
                         overflow: TextOverflow.ellipsis),

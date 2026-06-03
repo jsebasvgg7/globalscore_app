@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════
-//  WORLDCUP MODELS
+//  WORLDCUP MODELS  —  fixed: round16 keys always String
 // ═══════════════════════════════════════════════════════════
 
 const Map<String, List<String>> kGroupsData = {
@@ -33,7 +33,6 @@ const Map<String, String> kTeamLogoMap = {
   'England': 'inglaterra', 'Croatia': 'croacia', 'Ghana': 'ghana', 'Panama': 'panama',
 };
 
-// Genera la URL pública del logo desde Supabase Storage
 String getTeamFlagUrl(String team, String supabaseUrl) {
   final slug = kTeamLogoMap[team];
   if (slug == null) return '';
@@ -128,8 +127,10 @@ class ThirdPlaceEntry extends GroupTableRow {
 }
 
 // ─── Predicciones de eliminatorias ───────────────────────
+// FIX: round16 ahora usa Map<String, String> en lugar de Map<dynamic, String>
+// para evitar inconsistencias de tipo al serializar/deserializar.
 class KnockoutPredictions {
-  final Map<dynamic, String> round16;
+  final Map<String, String> round16;
   final Map<String, String> round8;
   final Map<String, String> quarters;
   final Map<String, String> semis;
@@ -146,7 +147,7 @@ class KnockoutPredictions {
   });
 
   Map<String, dynamic> toJson() => {
-        'round16': round16.map((k, v) => MapEntry(k.toString(), v)),
+        'round16': round16,
         'round8': round8,
         'quarters': quarters,
         'semis': semis,
@@ -160,14 +161,8 @@ class KnockoutPredictions {
       return (raw as Map).map((k, v) => MapEntry(k.toString(), v.toString()));
     }
 
-    final r16Raw = json['round16'] as Map? ?? {};
-    final round16 = r16Raw.map((k, v) {
-      final key = int.tryParse(k.toString()) ?? k.toString();
-      return MapEntry(key, v.toString());
-    });
-
     return KnockoutPredictions(
-      round16: Map<dynamic, String>.from(round16),
+      round16: _toStrMap(json['round16']),
       round8: _toStrMap(json['round8']),
       quarters: _toStrMap(json['quarters']),
       semis: _toStrMap(json['semis']),
@@ -176,7 +171,7 @@ class KnockoutPredictions {
     );
   }
 
-  KnockoutPredictions copyWithRound16(dynamic id, String team) => KnockoutPredictions(
+  KnockoutPredictions copyWithRound16(String id, String team) => KnockoutPredictions(
         round16: {...round16, id: team},
         round8: round8, quarters: quarters, semis: semis, final_: final_, thirdPlace: thirdPlace,
       );
@@ -345,7 +340,7 @@ const List<AwardConfig> kAwardsConfig = [
 
 // ─── Config de bracket KO ─────────────────────────────────
 class KoMatchConfig {
-  final dynamic id;
+  final String id; // FIX: siempre String
   final String home, away, label, homeDesc, awayDesc;
   const KoMatchConfig({
     required this.id, required this.home, required this.away,
@@ -354,22 +349,22 @@ class KoMatchConfig {
 }
 
 const List<KoMatchConfig> kRound16 = [
-  KoMatchConfig(id: 1, home: 'E-1', away: 'ABCDF-3', label: 'Llave 1', homeDesc: '1° Grupo E', awayDesc: '3° A/B/C/D/F'),
-  KoMatchConfig(id: 2, home: 'I-1', away: 'CDFGH-3', label: 'Llave 2', homeDesc: '1° Grupo I', awayDesc: '3° C/D/F/G/H'),
-  KoMatchConfig(id: 3, home: 'A-2', away: 'B-2', label: 'Llave 3', homeDesc: '2° Grupo A', awayDesc: '2° Grupo B'),
-  KoMatchConfig(id: 4, home: 'F-1', away: 'C-2', label: 'Llave 4', homeDesc: '1° Grupo F', awayDesc: '2° Grupo C'),
-  KoMatchConfig(id: 5, home: 'K-2', away: 'L-2', label: 'Llave 5', homeDesc: '2° Grupo K', awayDesc: '2° Grupo L'),
-  KoMatchConfig(id: 6, home: 'H-1', away: 'J-2', label: 'Llave 6', homeDesc: '1° Grupo H', awayDesc: '2° Grupo J'),
-  KoMatchConfig(id: 7, home: 'D-1', away: 'BEFIJ-3', label: 'Llave 7', homeDesc: '1° Grupo D', awayDesc: '3° B/E/F/I/J'),
-  KoMatchConfig(id: 8, home: 'G-1', away: 'AEHIJ-3', label: 'Llave 8', homeDesc: '1° Grupo G', awayDesc: '3° A/E/H/I/J'),
-  KoMatchConfig(id: 9, home: 'C-1', away: 'F-2', label: 'Llave 9', homeDesc: '1° Grupo C', awayDesc: '2° Grupo F'),
-  KoMatchConfig(id: 10, home: 'E-2', away: 'I-2', label: 'Llave 10', homeDesc: '2° Grupo E', awayDesc: '2° Grupo I'),
-  KoMatchConfig(id: 11, home: 'A-1', away: 'CEFHI-3', label: 'Llave 11', homeDesc: '1° Grupo A', awayDesc: '3° C/E/F/H/I'),
-  KoMatchConfig(id: 12, home: 'L-1', away: 'BHIJK-3', label: 'Llave 12', homeDesc: '1° Grupo L', awayDesc: '3° B/H/I/J/K'),
-  KoMatchConfig(id: 13, home: 'J-1', away: 'H-2', label: 'Llave 13', homeDesc: '1° Grupo J', awayDesc: '2° Grupo H'),
-  KoMatchConfig(id: 14, home: 'D-2', away: 'G-2', label: 'Llave 14', homeDesc: '2° Grupo D', awayDesc: '2° Grupo G'),
-  KoMatchConfig(id: 15, home: 'B-1', away: 'EFGIJ-3', label: 'Llave 15', homeDesc: '1° Grupo B', awayDesc: '3° E/F/G/I/J'),
-  KoMatchConfig(id: 16, home: 'K-1', away: 'DEJL-3', label: 'Llave 16', homeDesc: '1° Grupo K', awayDesc: '3° D/E/J/L'),
+  KoMatchConfig(id: '1',  home: 'E-1', away: 'ABCDF-3',  label: 'Llave 1',  homeDesc: '1° Grupo E',  awayDesc: '3° A/B/C/D/F'),
+  KoMatchConfig(id: '2',  home: 'I-1', away: 'CDFGH-3',  label: 'Llave 2',  homeDesc: '1° Grupo I',  awayDesc: '3° C/D/F/G/H'),
+  KoMatchConfig(id: '3',  home: 'A-2', away: 'B-2',      label: 'Llave 3',  homeDesc: '2° Grupo A',  awayDesc: '2° Grupo B'),
+  KoMatchConfig(id: '4',  home: 'F-1', away: 'C-2',      label: 'Llave 4',  homeDesc: '1° Grupo F',  awayDesc: '2° Grupo C'),
+  KoMatchConfig(id: '5',  home: 'K-2', away: 'L-2',      label: 'Llave 5',  homeDesc: '2° Grupo K',  awayDesc: '2° Grupo L'),
+  KoMatchConfig(id: '6',  home: 'H-1', away: 'J-2',      label: 'Llave 6',  homeDesc: '1° Grupo H',  awayDesc: '2° Grupo J'),
+  KoMatchConfig(id: '7',  home: 'D-1', away: 'BEFIJ-3',  label: 'Llave 7',  homeDesc: '1° Grupo D',  awayDesc: '3° B/E/F/I/J'),
+  KoMatchConfig(id: '8',  home: 'G-1', away: 'AEHIJ-3',  label: 'Llave 8',  homeDesc: '1° Grupo G',  awayDesc: '3° A/E/H/I/J'),
+  KoMatchConfig(id: '9',  home: 'C-1', away: 'F-2',      label: 'Llave 9',  homeDesc: '1° Grupo C',  awayDesc: '2° Grupo F'),
+  KoMatchConfig(id: '10', home: 'E-2', away: 'I-2',      label: 'Llave 10', homeDesc: '2° Grupo E',  awayDesc: '2° Grupo I'),
+  KoMatchConfig(id: '11', home: 'A-1', away: 'CEFHI-3',  label: 'Llave 11', homeDesc: '1° Grupo A',  awayDesc: '3° C/E/F/H/I'),
+  KoMatchConfig(id: '12', home: 'L-1', away: 'BHIJK-3',  label: 'Llave 12', homeDesc: '1° Grupo L',  awayDesc: '3° B/H/I/J/K'),
+  KoMatchConfig(id: '13', home: 'J-1', away: 'H-2',      label: 'Llave 13', homeDesc: '1° Grupo J',  awayDesc: '2° Grupo H'),
+  KoMatchConfig(id: '14', home: 'D-2', away: 'G-2',      label: 'Llave 14', homeDesc: '2° Grupo D',  awayDesc: '2° Grupo G'),
+  KoMatchConfig(id: '15', home: 'B-1', away: 'EFGIJ-3',  label: 'Llave 15', homeDesc: '1° Grupo B',  awayDesc: '3° E/F/G/I/J'),
+  KoMatchConfig(id: '16', home: 'K-1', away: 'DEJL-3',   label: 'Llave 16', homeDesc: '1° Grupo K',  awayDesc: '3° D/E/J/L'),
 ];
 
 // ─── Helpers de cálculo ───────────────────────────────────
@@ -422,7 +417,7 @@ List<GroupTableRow> calcGroupTable(String group, GroupPrediction? pred) {
 
 List<ThirdPlaceEntry> calcBestThirds(Map<String, GroupPrediction> groups) {
   final thirds = <ThirdPlaceEntry>[];
-  kGroupsData.keys.forEach((g) {
+  for (final g in kGroupsData.keys) {
     final table = calcGroupTable(g, groups[g]);
     if (table.length > 2) {
       final t = table[2];
@@ -432,11 +427,25 @@ List<ThirdPlaceEntry> calcBestThirds(Map<String, GroupPrediction> groups) {
         gf: t.gf, ga: t.ga, gd: t.gd, pts: t.pts,
       ));
     }
-  });
+  }
   thirds.sort((a, b) {
     if (b.pts != a.pts) return b.pts.compareTo(a.pts);
     if (b.gd != a.gd) return b.gd.compareTo(a.gd);
     return b.gf.compareTo(a.gf);
   });
   return thirds.take(8).toList();
+}
+
+// Dado el ganador de una semi y los equipos que participaron,
+// devuelve el perdedor (para el partido por el 3er puesto).
+// homeTeam/awayTeam deben ser los ganadores de cuartos que se enfrentaron.
+String? calcSemiLoser({
+  required String? winner,
+  required String? homeTeam,
+  required String? awayTeam,
+}) {
+  if (winner == null || homeTeam == null || awayTeam == null) return null;
+  if (winner == homeTeam) return awayTeam;
+  if (winner == awayTeam) return homeTeam;
+  return null;
 }

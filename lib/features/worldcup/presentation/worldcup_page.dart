@@ -247,7 +247,7 @@ class _NeoTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final labels = ['GRUPOS', 'ELIMINATORIAS', 'PREMIOS'];
     return Container(
-      color: _card,
+      color: _bg,
       height: 44,
       child: Row(
         children: List.generate(labels.length, (i) {
@@ -258,7 +258,7 @@ class _NeoTabBar extends StatelessWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 decoration: BoxDecoration(
-                  color: selected ? _accent : _card,
+                  color: selected ? _accent : _bg,
                   border: Border(
                     right: i < labels.length - 1
                         ? const BorderSide(color: _border, width: 0.5)
@@ -383,7 +383,7 @@ class _BestThirdsTable extends StatelessWidget {
           // Thead
           Container(
             height: 28,
-            color: _card,
+            color: _bg,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: const Row(
               children: [

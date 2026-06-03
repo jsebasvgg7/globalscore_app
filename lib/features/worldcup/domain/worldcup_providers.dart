@@ -9,6 +9,18 @@ final worldCupServiceProvider = Provider<WorldCupService>((_) => WorldCupService
 
 // ─── Supabase URL (para imágenes) ─────────────────────────
 final supabaseUrlProvider = Provider<String>((_) => kSupabaseUrl);
+
+// ─── Provider que resuelve el UUID real del usuario ───────
+final userIdProvider = FutureProvider<String>((ref) async {
+  final authId = Supabase.instance.client.auth.currentUser!.id;
+  final res = await Supabase.instance.client
+      .from('users')
+      .select('id')
+      .eq('auth_id', authId)
+      .single();
+  return res['id'] as String;
+});
+
 // ─── Estado ───────────────────────────────────────────────
 class WorldCupState {
   final WorldCupPredictions predictions;
@@ -37,22 +49,30 @@ class WorldCupState {
       );
 }
 
-// ─── Notifier (Riverpod 3.x — reemplaza StateNotifier) ────
+// ─── Notifier ─────────────────────────────────────────────
 class WorldCupNotifier extends Notifier<WorldCupState> {
   late WorldCupService _service;
-  late String _userId;
+  String? _userId; // se resuelve de forma asíncrona en _load()
 
   @override
   WorldCupState build() {
     _service = ref.watch(worldCupServiceProvider);
-    _userId  = Supabase.instance.client.auth.currentUser!.id;
     _load();
     return const WorldCupState();
   }
 
   Future<void> _load() async {
     try {
-      final data = await _service.fetchPredictions(_userId);
+      // Resolver el UUID real de public.users a partir del auth_id
+      final authId = Supabase.instance.client.auth.currentUser!.id;
+      final userRes = await Supabase.instance.client
+          .from('users')
+          .select('id')
+          .eq('auth_id', authId)
+          .single();
+      _userId = userRes['id'] as String;
+
+      final data = await _service.fetchPredictions(_userId!);
       state = state.copyWith(
         predictions: data ?? const WorldCupPredictions(),
         loading: false,
@@ -63,9 +83,10 @@ class WorldCupNotifier extends Notifier<WorldCupState> {
   }
 
   Future<bool> save() async {
+    if (_userId == null) return false;
     state = state.copyWith(saving: true);
     try {
-      await _service.upsertPredictions(_userId, state.predictions);
+      await _service.upsertPredictions(_userId!, state.predictions);
       state = state.copyWith(saving: false);
       return true;
     } catch (e) {
@@ -86,7 +107,7 @@ class WorldCupNotifier extends Notifier<WorldCupState> {
   }
 
   // ── Knockout ───────────────────────────────────────────
-  void updateRound16(dynamic id, String team) {
+  void updateRound16(String id, String team) {
     state = state.copyWith(
       predictions: state.predictions.copyWith(
         knockout: state.predictions.knockout.copyWithRound16(id, team),

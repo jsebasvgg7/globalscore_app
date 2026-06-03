@@ -4,16 +4,16 @@ import '../domain/worldcup_models.dart';
 import '../domain/worldcup_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// ── Paleta
-const _accent   = Color(0xFF2D0CFF);
-const _correct  = Color(0xFF00C48C);
-const _bg       = Color(0xFFF5F0E8);
-const _card     = Color(0xFFEDE7DA);
+// ── Paleta unificada
+const _accent   = Color(0xFF5B4FD8);
+const _correct  = Color(0xFF1D9E75);
+const _bg       = Color(0xFFF0EDE8);
+const _card     = Color(0xFFE8E4DC);
 const _border   = Color(0xFF1A1A2E);
 const _text     = Color(0xFF1A1A2E);
-const _muted    = Color(0xFF555550);
-const _shadow   = Color(0x661A1A2E);
-const _gold     = Color(0xFFFFD600);
+const _muted    = Color(0xFF88887D);
+const _shadow   = Color(0x8C1A1A2E);
+const _gold     = Color(0xFFF59E0B);
 
 void showGroupModal(BuildContext context, String group, String supabaseUrl) {
   showModalBottomSheet(
@@ -59,7 +59,7 @@ class _GroupModal extends ConsumerWidget {
         ),
         child: Column(
           children: [
-            // ── Handle
+            // ── Handle / header
             Container(
               width: double.infinity,
               height: 44,
@@ -75,21 +75,11 @@ class _GroupModal extends ConsumerWidget {
                     children: [
                       const Text(
                         'GRUPO ',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2,
-                          color: Colors.white,
-                        ),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 2, color: Colors.white),
                       ),
                       Text(
                         group,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2,
-                          color: _gold,
-                        ),
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 2, color: _gold),
                       ),
                     ],
                   ),
@@ -120,10 +110,10 @@ class _GroupModal extends ConsumerWidget {
                   // ── Tabla del grupo
                   _GroupTable(table: table, supabaseUrl: supabaseUrl),
 
-                  // ── Divisor
+                  // ── Divisor sección partidos
                   Container(
                     height: 36,
-                    color: _card,
+                    color: _bg,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     alignment: Alignment.centerLeft,
                     child: Row(
@@ -132,12 +122,7 @@ class _GroupModal extends ConsumerWidget {
                         const SizedBox(width: 8),
                         const Text(
                           'PREDICCIONES DE PARTIDOS',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2,
-                            color: _text,
-                          ),
+                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 2, color: _text),
                         ),
                       ],
                     ),
@@ -165,7 +150,7 @@ class _GroupModal extends ConsumerWidget {
   }
 }
 
-// ── Tabla del grupo ──────────────────────────────────────────────────
+// ── Tabla del grupo ───────────────────────────────────────
 class _GroupTable extends StatelessWidget {
   final List<GroupTableRow> table;
   final String supabaseUrl;
@@ -175,10 +160,9 @@ class _GroupTable extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Thead
         Container(
           height: 28,
-          color: _card,
+          color: _bg,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: const Row(
             children: [
@@ -234,21 +218,15 @@ class _TableRow extends StatelessWidget {
           Container(
             width: 18,
             height: 18,
-            decoration: BoxDecoration(
-              color: _rankColor,
-              border: Border.all(color: _border, width: 0.5),
-            ),
+            decoration: BoxDecoration(color: _rankColor, border: Border.all(color: _border, width: 0.5)),
             alignment: Alignment.center,
-            child: Text('$rank',
-                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white)),
+            child: Text('$rank', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white)),
           ),
           const SizedBox(width: 8),
           Container(
             width: 28,
             height: 20,
-            decoration: BoxDecoration(
-              border: Border.all(color: _border.withValues(alpha: 0.2), width: 0.5),
-            ),
+            decoration: BoxDecoration(border: Border.all(color: _border.withValues(alpha: 0.2), width: 0.5)),
             child: flagUrl.isNotEmpty
                 ? Image.network(flagUrl, fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => const Icon(Icons.flag, size: 10, color: _muted))
@@ -265,24 +243,19 @@ class _TableRow extends StatelessWidget {
           SizedBox(width: 24, child: Text(
             row.gd >= 0 ? '+${row.gd}' : '${row.gd}',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 10, fontWeight: FontWeight.w700,
-              color: row.gd > 0 ? _correct : row.gd < 0 ? Colors.red : _muted,
-            ),
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                color: row.gd > 0 ? _correct : row.gd < 0 ? Colors.red : _muted),
           )),
-          SizedBox(
-            width: 28,
-            child: Text('${row.pts}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: _text)),
-          ),
+          SizedBox(width: 28, child: Text('${row.pts}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: _text))),
         ],
       ),
     );
   }
 }
 
-// ── Fila de partido ──────────────────────────────────────────────────
+// ── Fila de partido ───────────────────────────────────────
 class _MatchRow extends ConsumerStatefulWidget {
   final String group;
   final int matchIdx;
@@ -320,14 +293,21 @@ class _MatchRowState extends ConsumerState<_MatchRow> {
   @override
   void didUpdateWidget(_MatchRow old) {
     super.didUpdateWidget(old);
+    // FIX: siempre llamar setState después de actualizar los controllers
+    bool needsRebuild = false;
     if (old.prediction.homeScore != widget.prediction.homeScore &&
         _homeCtrl.text != widget.prediction.homeScore) {
       _homeCtrl.text = widget.prediction.homeScore;
+      _homeCtrl.selection = TextSelection.collapsed(offset: widget.prediction.homeScore.length);
+      needsRebuild = true;
     }
     if (old.prediction.awayScore != widget.prediction.awayScore &&
         _awayCtrl.text != widget.prediction.awayScore) {
       _awayCtrl.text = widget.prediction.awayScore;
+      _awayCtrl.selection = TextSelection.collapsed(offset: widget.prediction.awayScore.length);
+      needsRebuild = true;
     }
+    if (needsRebuild) setState(() {});
   }
 
   @override
@@ -395,6 +375,7 @@ class _MatchRowState extends ConsumerState<_MatchRow> {
                 focusNode: _homeFocus,
                 onChanged: (_) {
                   _update();
+                  setState(() {}); // rebuild borde
                   if (_homeCtrl.text.isNotEmpty) _awayFocus.requestFocus();
                 },
               ),
@@ -405,7 +386,10 @@ class _MatchRowState extends ConsumerState<_MatchRow> {
               _ScoreInput(
                 controller: _awayCtrl,
                 focusNode: _awayFocus,
-                onChanged: (_) => _update(),
+                onChanged: (_) {
+                  _update();
+                  setState(() {}); // rebuild borde
+                },
               ),
             ],
           ),

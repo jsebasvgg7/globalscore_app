@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import '../domain/worldcup_models.dart';
 
-// ── Paleta neobrutalismo (morado — alineada con history_vault_page)
 const _accent  = Color(0xFF5B4FD8);
-const _bg      = Color(0xFFF0EDE8);
-const _card    = Color(0xFFE8E4DC);
+const _bg      = Color(0xFFF0EDE8); // crema base
+const _card    = Color(0xFFE8E4DC); // crema oscura
 const _border  = Color(0xFF1A1A2E);
 const _text    = Color(0xFF1A1A2E);
 const _muted   = Color(0xFF88887D);
@@ -26,10 +25,8 @@ class GroupCardButton extends StatelessWidget {
   });
 
   List<String> get _teams => kGroupsData[group] ?? [];
-
   int get _filledMatches => prediction?.matches.values.where((m) => m.isFilled).length ?? 0;
   static const int _totalMatches = 6;
-
   bool get _isComplete => _filledMatches == _totalMatches;
 
   @override
@@ -39,6 +36,7 @@ class GroupCardButton extends StatelessWidget {
       child: Container(
         height: 72,
         decoration: BoxDecoration(
+          // FIX: fondo crema en lugar de gris
           color: _isComplete ? _accent.withValues(alpha: 0.06) : _bg,
           border: Border.all(color: _border, width: 1.5),
           boxShadow: const [
@@ -81,9 +79,10 @@ class GroupCardButton extends StatelessWidget {
               ),
             ),
 
-            // ── Escudos (4 flags)
+            // ── Escudos (4 flags) — fondo crema
             Expanded(
-              child: Padding(
+              child: Container(
+                color: _isComplete ? _accent.withValues(alpha: 0.06) : _bg,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Row(
                   children: _teams.map((team) => Expanded(
@@ -96,11 +95,12 @@ class GroupCardButton extends StatelessWidget {
               ),
             ),
 
-            // ── Indicador progreso + flecha
+            // ── Indicador progreso + flecha — fondo crema
             Container(
               width: 52,
-              decoration: const BoxDecoration(
-                border: Border(left: BorderSide(color: _border, width: 1)),
+              decoration: BoxDecoration(
+                color: _isComplete ? _accent.withValues(alpha: 0.06) : _bg,
+                border: const Border(left: BorderSide(color: _border, width: 1)),
               ),
               alignment: Alignment.center,
               child: Column(
@@ -187,7 +187,8 @@ class _FlagPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: _card,
+      // FIX: fondo crema en lugar de _card gris
+      color: _bg,
       child: const Icon(Icons.flag, size: 14, color: _muted),
     );
   }

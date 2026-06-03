@@ -3,20 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/worldcup_models.dart';
 import '../domain/worldcup_providers.dart';
 
-// ── Paleta neobrutalismo
-const _accent  = Color(0xFF2D0CFF);
-const _bg      = Color(0xFFF5F0E8);
-const _card    = Color(0xFFEDE7DA);
-const _border  = Color(0xFF1A1A2E);
-const _text    = Color(0xFF1A1A2E);
-const _muted   = Color(0xFF555550);
-const _shadow  = Color(0x661A1A2E);
-const _gold    = Color(0xFFFFD600);
-const _correct = Color(0xFF00C48C);
-const _red     = Color(0xFFFF3C00);
-const _amber   = Color(0xFFFF9500);
-const _green   = Color(0xFF00C48C);
-const _blue    = Color(0xFF0099FF);
+// ── Paleta ────────────────────────────────────────────────
+const _accent   = Color(0xFF5B4FD8);
+const _bg       = Color(0xFFF0EDE8);
+const _card     = Color(0xFFE8E4DC);
+const _border   = Color(0xFF1A1A2E);
+const _text     = Color(0xFF1A1A2E);
+const _muted    = Color(0xFF88887D);
+const _shadow   = Color(0x8C1A1A2E);
+const _gold     = Color(0xFFF59E0B);
+const _correct  = Color(0xFF1D9E75);
+const _red      = Color(0xFFFF3C00);
+const _amber    = Color(0xFFFF9500);
+const _blue     = Color(0xFF0099FF);
 
 class AwardsSection extends ConsumerWidget {
   const AwardsSection({super.key});
@@ -25,7 +24,6 @@ class AwardsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final awards = ref.watch(worldCupProvider).predictions.awards;
 
-    // Agrupar por categoría visual
     final individual = kAwardsConfig.where((a) =>
         ['topScorer', 'topAssist', 'goldenBall', 'bestYoungPlayer', 'goldenGlove'].contains(a.key)).toList();
     final teams = kAwardsConfig.where((a) =>
@@ -68,15 +66,10 @@ class _SectionHeader extends StatelessWidget {
         children: [
           Container(width: 4, height: 14, color: color),
           const SizedBox(width: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 2,
-              color: _text,
-            ),
-          ),
+          Text(title,
+              style: const TextStyle(
+                fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 2, color: _text,
+              )),
         ],
       ),
     );
@@ -108,6 +101,7 @@ class _AwardInputRowState extends ConsumerState<_AwardInputRow> {
     if (old.value != widget.value && _ctrl.text != widget.value) {
       _ctrl.text = widget.value;
       _ctrl.selection = TextSelection.collapsed(offset: widget.value.length);
+      setState(() {});
     }
   }
 
@@ -121,7 +115,7 @@ class _AwardInputRowState extends ConsumerState<_AwardInputRow> {
     switch (widget.config.iconVariant) {
       case 'gold':  return _gold;
       case 'blue':  return _blue;
-      case 'green': return _green;
+      case 'green': return _correct;
       case 'red':   return _red;
       case 'amber': return _amber;
       default:      return _accent;
@@ -130,16 +124,16 @@ class _AwardInputRowState extends ConsumerState<_AwardInputRow> {
 
   IconData get _icon {
     switch (widget.config.key) {
-      case 'topScorer':           return Icons.sports_soccer;
-      case 'topAssist':           return Icons.assistant;
-      case 'goldenBall':          return Icons.emoji_events;
-      case 'bestYoungPlayer':     return Icons.star;
-      case 'goldenGlove':         return Icons.back_hand;
-      case 'surpriseTeam':        return Icons.rocket_launch;
-      case 'disappointmentTeam':  return Icons.sentiment_dissatisfied;
-      case 'breakoutPlayer':      return Icons.bolt;
-      case 'disappointmentPlayer':return Icons.trending_down;
-      default:                    return Icons.sports;
+      case 'topScorer':            return Icons.sports_soccer;
+      case 'topAssist':            return Icons.assistant;
+      case 'goldenBall':           return Icons.emoji_events;
+      case 'bestYoungPlayer':      return Icons.star;
+      case 'goldenGlove':          return Icons.back_hand;
+      case 'surpriseTeam':         return Icons.rocket_launch;
+      case 'disappointmentTeam':   return Icons.sentiment_dissatisfied;
+      case 'breakoutPlayer':       return Icons.bolt;
+      case 'disappointmentPlayer': return Icons.trending_down;
+      default:                     return Icons.sports;
     }
   }
 
@@ -179,10 +173,7 @@ class _AwardInputRowState extends ConsumerState<_AwardInputRow> {
                     Text(
                       widget.config.label.toUpperCase(),
                       style: const TextStyle(
-                        fontSize: 8,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.5,
-                        color: _text,
+                        fontSize: 8, fontWeight: FontWeight.w900, letterSpacing: 1.5, color: _text,
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -235,7 +226,7 @@ class _AwardInputRowState extends ConsumerState<_AwardInputRow> {
                     ),
                     onChanged: (v) {
                       ref.read(worldCupProvider.notifier).updateAward(widget.config.key, v);
-                      setState(() {}); // rebuild para color de borde
+                      setState(() {});
                     },
                     textCapitalization: TextCapitalization.words,
                   ),
