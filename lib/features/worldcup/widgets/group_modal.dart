@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 const _accent   = Color(0xFF5B4FD8);
 const _correct  = Color(0xFF1D9E75);
 const _bg       = Color(0xFFF0EDE8);
-const _card     = Color(0xFFE8E4DC);
 const _border   = Color(0xFF1A1A2E);
 const _text     = Color(0xFF1A1A2E);
 const _muted    = Color(0xFF88887D);
@@ -43,107 +42,124 @@ class _GroupModal extends ConsumerWidget {
       [teams[0], teams[3]], [teams[1], teams[2]],
     ];
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.88,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      builder: (_, controller) => Container(
-        decoration: const BoxDecoration(
-          color: _bg,
-          border: Border(
-            top: BorderSide(color: _border, width: 2),
-            left: BorderSide(color: _border, width: 2),
-            right: BorderSide(color: _border, width: 2),
-          ),
-          boxShadow: [BoxShadow(color: _shadow, offset: Offset(0, -3), blurRadius: 0)],
+    return Theme(
+      data: Theme.of(context).copyWith(
+        scaffoldBackgroundColor: _bg,
+        canvasColor: _bg,
+        cardColor: _bg,
+        colorScheme: Theme.of(context).colorScheme.copyWith(
+          surface: _bg,
+          surfaceContainerHighest: _bg,
+          surfaceContainerHigh: _bg,
+          surfaceContainer: _bg,
+          surfaceContainerLow: _bg,
+          surfaceContainerLowest: _bg,
+          surfaceDim: _bg,
+          surfaceBright: _bg,
         ),
-        child: Column(
-          children: [
-            // ── Handle / header
-            Container(
-              width: double.infinity,
-              height: 44,
-              decoration: const BoxDecoration(
-                color: _accent,
-                border: Border(bottom: BorderSide(color: _border, width: 1.5)),
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'GRUPO ',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 2, color: Colors.white),
-                      ),
-                      Text(
-                        group,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 2, color: _gold),
-                      ),
-                    ],
-                  ),
-                  Positioned(
-                    right: 12,
-                    child: GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1),
-                        ),
-                        child: const Icon(Icons.close, size: 14, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+      ),
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.88,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, controller) => Container(
+          decoration: const BoxDecoration(
+            color: _bg,
+            border: Border(
+              top: BorderSide(color: _border, width: 2),
+              left: BorderSide(color: _border, width: 2),
+              right: BorderSide(color: _border, width: 2),
             ),
-
-            Expanded(
-              child: ListView(
-                controller: controller,
-                padding: EdgeInsets.zero,
-                children: [
-                  // ── Tabla del grupo
-                  _GroupTable(table: table, supabaseUrl: supabaseUrl),
-
-                  // ── Divisor sección partidos
-                  Container(
-                    height: 36,
-                    color: _bg,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    alignment: Alignment.centerLeft,
-                    child: Row(
+            boxShadow: [BoxShadow(color: _shadow, offset: Offset(0, -3), blurRadius: 0)],
+          ),
+          child: Column(
+            children: [
+              // ── Handle / header
+              Container(
+                width: double.infinity,
+                height: 44,
+                decoration: const BoxDecoration(
+                  color: _accent,
+                  border: Border(bottom: BorderSide(color: _border, width: 1.5)),
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(width: 4, height: 14, color: _accent),
-                        const SizedBox(width: 8),
                         const Text(
-                          'PREDICCIONES DE PARTIDOS',
-                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 2, color: _text),
+                          'GRUPO ',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 2, color: Colors.white),
+                        ),
+                        Text(
+                          group,
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 2, color: _gold),
                         ),
                       ],
                     ),
-                  ),
-                  const Divider(height: 1, thickness: 1, color: _border),
-
-                  // ── Lista de partidos
-                  ...List.generate(matches.length, (i) => _MatchRow(
-                    group: group,
-                    matchIdx: i,
-                    home: matches[i][0],
-                    away: matches[i][1],
-                    prediction: pred?.matches[i] ?? const MatchPrediction(),
-                    supabaseUrl: supabaseUrl,
-                  )),
-
-                  const SizedBox(height: 20),
-                ],
+                    Positioned(
+                      right: 12,
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1),
+                          ),
+                          child: const Icon(Icons.close, size: 14, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+
+              Expanded(
+                child: ListView(
+                  controller: controller,
+                  padding: EdgeInsets.zero,
+                  children: [
+                    // ── Tabla del grupo
+                    _GroupTable(table: table, supabaseUrl: supabaseUrl),
+
+                    // ── Divisor sección partidos
+                    Container(
+                      height: 36,
+                      color: _bg,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        children: [
+                          Container(width: 4, height: 14, color: _accent),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'PREDICCIONES DE PARTIDOS',
+                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 2, color: _text),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 1, thickness: 1, color: _border),
+
+                    // ── Lista de partidos
+                    ...List.generate(matches.length, (i) => _MatchRow(
+                      group: group,
+                      matchIdx: i,
+                      home: matches[i][0],
+                      away: matches[i][1],
+                      prediction: pred?.matches[i] ?? const MatchPrediction(),
+                      supabaseUrl: supabaseUrl,
+                    )),
+
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -293,7 +309,6 @@ class _MatchRowState extends ConsumerState<_MatchRow> {
   @override
   void didUpdateWidget(_MatchRow old) {
     super.didUpdateWidget(old);
-    // FIX: siempre llamar setState después de actualizar los controllers
     bool needsRebuild = false;
     if (old.prediction.homeScore != widget.prediction.homeScore &&
         _homeCtrl.text != widget.prediction.homeScore) {
@@ -375,7 +390,7 @@ class _MatchRowState extends ConsumerState<_MatchRow> {
                 focusNode: _homeFocus,
                 onChanged: (_) {
                   _update();
-                  setState(() {}); // rebuild borde
+                  setState(() {});
                   if (_homeCtrl.text.isNotEmpty) _awayFocus.requestFocus();
                 },
               ),
@@ -388,7 +403,7 @@ class _MatchRowState extends ConsumerState<_MatchRow> {
                 focusNode: _awayFocus,
                 onChanged: (_) {
                   _update();
-                  setState(() {}); // rebuild borde
+                  setState(() {});
                 },
               ),
             ],
@@ -449,14 +464,15 @@ class _ScoreInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final filled = controller.text.isNotEmpty;
     return Container(
       width: 36,
       height: 36,
       decoration: BoxDecoration(
-        color: controller.text.isNotEmpty ? _correct.withValues(alpha: 0.1) : _bg,
+        color: _bg,
         border: Border.all(
-          color: controller.text.isNotEmpty ? _correct : _border.withValues(alpha: 0.4),
-          width: 1,
+          color: filled ? _correct : _border.withValues(alpha: 0.4),
+          width: filled ? 1.5 : 1,
         ),
         boxShadow: const [BoxShadow(color: _shadow, offset: Offset(1, 1), blurRadius: 0)],
       ),
@@ -470,11 +486,13 @@ class _ScoreInput extends StatelessWidget {
         style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w900,
-          color: controller.text.isNotEmpty ? _correct : _text,
+          color: filled ? _correct : _text,
         ),
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
           counterText: '',
           border: InputBorder.none,
+          filled: true,
+          fillColor: _bg,
           contentPadding: EdgeInsets.zero,
         ),
         onChanged: onChanged,

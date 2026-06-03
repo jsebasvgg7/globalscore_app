@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import '../domain/worldcup_models.dart';
 
 const _accent  = Color(0xFF5B4FD8);
-const _bg      = Color(0xFFF0EDE8); // crema base
-const _card    = Color(0xFFE8E4DC); // crema oscura
+const _bg      = Color(0xFFF0EDE8);
 const _border  = Color(0xFF1A1A2E);
-const _text    = Color(0xFF1A1A2E);
 const _muted   = Color(0xFF88887D);
 const _shadow  = Color(0x8C1A1A2E);
 const _gold    = Color(0xFFF59E0B);
@@ -40,6 +38,7 @@ class GroupCardButton extends StatelessWidget {
         child: Container(
           height: 72,
           decoration: BoxDecoration(
+            color: _bg,                                              // ← fondo crema explícito
             border: Border.all(color: _border, width: 1.5),
             boxShadow: const [
               BoxShadow(color: _shadow, offset: Offset(2, 2), blurRadius: 0),
@@ -81,7 +80,7 @@ class GroupCardButton extends StatelessWidget {
               ),
             ),
 
-            // ── Escudos (4 flags) — fondo crema
+            // ── Escudos (4 flags)
             Expanded(
               child: Container(
                 color: _isComplete ? _accent.withValues(alpha: 0.06) : _bg,
@@ -97,7 +96,7 @@ class GroupCardButton extends StatelessWidget {
               ),
             ),
 
-            // ── Indicador progreso + flecha — fondo crema
+            // ── Indicador progreso + flecha
             Container(
               width: 52,
               decoration: BoxDecoration(
@@ -190,7 +189,6 @@ class _FlagPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // FIX: fondo crema en lugar de _card gris
       color: _bg,
       child: const Icon(Icons.flag, size: 14, color: _muted),
     );
