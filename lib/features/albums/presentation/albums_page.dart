@@ -1,73 +1,89 @@
-// lib/features/albums/presentation/albums_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../domain/albums_provider.dart';
 import '../domain/albums_model.dart';
 import 'pack_opening_modal.dart';
 
-// ── Paleta idéntica a stats ──────────────────────────────
+// ── Paleta ──────────────────────────────────────────────
 const _accent  = Color(0xFF2D0CFF);
-const _accentL = Color(0xFF7B61FF);
 const _gold    = Color(0xFFFFD600);
 const _bg      = Color(0xFFF5F0E8);
 const _card    = Color(0xFFEDE7DA);
 const _border  = Color(0xFF1A1A2E);
 const _text    = Color(0xFF1A1A2E);
-const _muted   = Color(0xFF555550);
-const _shadow  = Color(0x661A1A2E);
+const _muted   = Color(0xFF888880);
+const _shadow  = Color(0x301A1A2E);   // más suave
 
-// Colores por tipo de carta
-const _colorPlayer      = Color(0xFF5B4FD8);
-const _colorTeam        = Color(0xFF1D9E75);
-const _colorCompetition = Color(0xFFF59E0B);
-const _colorEvent       = Color(0xFFE55B5B);
+// Colores de álbum por tipo
+const _colorLeg   = Color(0xFF00B850);   // verde — Legendarios
+const _colorStars = Color(0xFF7B2DFF);   // morado — Estrellas
+const _colorCult  = Color(0xFFE07820);   // naranja — Culto
 
-Color _typeColor(String type) => switch (type) {
-      'player'      => _colorPlayer,
-      'team'        => _colorTeam,
-      'competition' => _colorCompetition,
-      'event'       => _colorEvent,
-      _             => _accent,
+Color _groupColor(String type) => switch (type) {
+      'legendary' => _colorLeg,
+      'stars'     => _colorStars,
+      _           => _colorCult,
     };
 
-String _typeLabel(String type) => switch (type) {
-      'player'      => 'JUG',
-      'team'        => 'EQU',
-      'competition' => 'COPA',
-      'event'       => 'EVT',
-      _             => '?',
-    };
-
-// ════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════
 //  PAGE
-// ════════════════════════════════════════════════════════════
-class AlbumsPage extends ConsumerWidget {
+// ════════════════════════════════════════════════════════
+class AlbumsPage extends ConsumerStatefulWidget {
   const AlbumsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AlbumsPage> createState() => _AlbumsPageState();
+}
+
+class _AlbumsPageState extends ConsumerState<AlbumsPage>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabs;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabs = TabController(length: 4, vsync: this);
+    _tabs.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final albumsAsync = ref.watch(albumsProvider);
-    final tab         = ref.watch(albumsTabProvider);
 
     return Scaffold(
       backgroundColor: _bg,
       body: Column(
         children: [
-          _TopBar(tab: tab, ref: ref),
+          _TopBar(tabs: _tabs),
           Expanded(
             child: albumsAsync.when(
               loading: () => const Center(
                 child: CircularProgressIndicator(color: _accent, strokeWidth: 2),
               ),
-              error: (e, st) => Center(
+              error: (e, _) => Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Text('Error: $e',
                       style: const TextStyle(color: Colors.red, fontSize: 11)),
                 ),
               ),
-              data: (model) => _AlbumsBody(model: model, tab: tab),
+              data: (model) => TabBarView(
+                controller: _tabs,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _ResumenTab(model: model),
+                  _ColeccionTab(model: model),
+                  const _ProntoTab(label: 'SOBRES',   icon: Icons.mail_outline),
+                  const _ProntoTab(label: 'MISIONES', icon: Icons.star_outline),
+                ],
+              ),
             ),
           ),
         ],
@@ -76,47 +92,289 @@ class AlbumsPage extends ConsumerWidget {
   }
 }
 
-// ══ TOP BAR ══════════════════════════════════════════════
+// ════════════════════════════════════════════════════════
+//  TOP BAR
+// ════════════════════════════════════════════════════════
 class _TopBar extends StatelessWidget {
-  final String tab;
-  final WidgetRef ref;
-  const _TopBar({required this.tab, required this.ref});
+  final TabController tabs;
+  const _TopBar({required this.tabs});
+
+  static const _tabs = [
+    (Icons.grid_view,     'RESUMEN',    false),
+    (Icons.book_outlined, 'COLECCIÓN',  false),
+    (Icons.mail_outline,  'SOBRES',     true),
+    (Icons.star_outline,  'MISIONES',   true),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: const BoxDecoration(
         color: _bg,
         border: Border(bottom: BorderSide(color: _border, width: 1)),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(width: 6, height: 22, color: _gold),
-          const SizedBox(width: 8),
-          const Text(
-            'GLOBALALBUMS',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 2,
-              color: _text,
+          // Branding
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Row(
+              children: [
+                Container(width: 4, height: 20, color: _gold),
+                const SizedBox(width: 8),
+                const Text('GLOBALALBUMS',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900,
+                        letterSpacing: 2, color: _text)),
+                const Spacer(),
+                Icon(Icons.auto_stories, size: 15, color: _muted),
+              ],
             ),
           ),
-          const Spacer(),
+          // Tabs
+          SizedBox(
+            height: 34,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: _tabs.length,
+              itemBuilder: (context, i) {
+                final (icon, label, pronto) = _tabs[i];
+                final active = tabs.index == i;
+                return GestureDetector(
+                  onTap: () => tabs.animateTo(i),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    margin: const EdgeInsets.only(right: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: active ? _border : Colors.transparent,
+                      border: Border.all(
+                        color: active ? _border : _border.withValues(alpha: 0.25),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(icon, size: 11,
+                            color: active ? Colors.white : _muted),
+                        const SizedBox(width: 5),
+                        Text(label,
+                            style: TextStyle(
+                              fontSize: 9, fontWeight: FontWeight.w900,
+                              letterSpacing: 0.8,
+                              color: active ? Colors.white : _muted,
+                            )),
+                        if (pronto) ...[
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 3, vertical: 1),
+                            color: active
+                                ? _gold
+                                : _border.withValues(alpha: 0.12),
+                            child: Text('PRONTO',
+                                style: TextStyle(
+                                  fontSize: 5, fontWeight: FontWeight.w900,
+                                  color: active ? _border : _muted,
+                                )),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 2),
+        ],
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  TAB RESUMEN
+// ════════════════════════════════════════════════════════
+class _ResumenTab extends ConsumerWidget {
+  final AlbumsModel model;
+  const _ResumenTab({required this.model});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _ActiveAlbumCard(model: model),
+          _PackProgressCard(packs: model.packs),
+          _SobresCard(packs: model.packs),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Álbum activo ─────────────────────────────────────────
+class _ActiveAlbumCard extends StatelessWidget {
+  final AlbumsModel model;
+  const _ActiveAlbumCard({required this.model});
+
+  @override
+  Widget build(BuildContext context) {
+    final active = model.legendaryAlbums
+            .where((d) => model.progressFor(d.id)?.isCompleted != true)
+            .firstOrNull ??
+        model.legendaryAlbums.firstOrNull;
+
+    if (active == null) return const SizedBox.shrink();
+
+    final prog      = model.progressFor(active.id);
+    final unique    = prog?.uniqueCards ?? 0;
+    final required  = active.requiredUniquePlayers ?? 30;
+    final pct       = required > 0 ? (unique / required).clamp(0.0, 1.0) : 0.0;
+    final completed = prog?.isCompleted == true;
+    final acColor   = _groupColor(active.albumType);
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Color(0xFFE0D8CC), width: 1)),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Row: label + badge
           Row(
             children: [
-              for (final t in [
-                ('legendary', 'LEG'),
-                ('stars', 'STARS'),
-                ('cult', 'CULTO'),
-              ])
-                _TabPill(
-                  label: t.$2,
-                  active: tab == t.$1,
-                  onTap: () => ref.read(albumsTabProvider.notifier).set(t.$1),
+              const Text('ÁLBUM ACTIVO',
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5, color: _muted)),
+              const Spacer(),
+              _StatusBadge(completed: completed),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Row: info + libro 3D
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      active.name.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 22, fontWeight: FontWeight.w900,
+                        letterSpacing: -0.3, height: 1.1, color: _text,
+                      ),
+                    ),
+                    if (active.description != null) ...[
+                      const SizedBox(height: 3),
+                      Text(active.description!,
+                          style: const TextStyle(fontSize: 11, color: _muted)),
+                    ],
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        _StatBox(value: '$unique', label: 'FIGURITAS'),
+                        const SizedBox(width: 8),
+                        _StatBox(
+                            value: '${(pct * 100).round()}%',
+                            label: 'COMPLETADO',
+                            valueColor: _accent),
+                      ],
+                    ),
+                  ],
                 ),
+              ),
+              const SizedBox(width: 12),
+              _Book3D(color: acColor, albumType: active.albumType),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          // Barra de progreso
+          _ProgBar(pct: pct, color: acColor),
+          const SizedBox(height: 8),
+
+          // Counter chip
+          _Chip(label: '$unique / $required figuritas'),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Progreso de sobres ───────────────────────────────────
+class _PackProgressCard extends StatelessWidget {
+  final AlbumPacks? packs;
+  const _PackProgressCard({required this.packs});
+
+  static const _ms = [
+    (0,  'Inicio'),
+    (10, 'Tu\nPremio'),
+    (20, 'Épico'),
+    (30, 'Élite'),
+    (40, 'TOP\nEspecial'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final opened   = packs?.totalPacksOpened ?? 0;
+    final boostRem = packs?.boostPacksRemaining ?? 0;
+    final nextIn   = boostRem > 0
+        ? boostRem
+        : (10 - (opened % 10)) % 10 == 0
+            ? 10
+            : (10 - (opened % 10)) % 10;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Color(0xFFE0D8CC), width: 1)),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('PROGRESO DE SOBRES',
+              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+                  letterSpacing: 2, color: _muted)),
+          const SizedBox(height: 20),
+
+          // Hitos
+          _HitosTrack(opened: opened, milestones: _ms),
+
+          const SizedBox(height: 20),
+          const Divider(height: 1, thickness: 1, color: Color(0xFFE8E0D0)),
+          const SizedBox(height: 14),
+
+          // Boost row
+          Row(
+            children: [
+              const Text('PRÓXIMO BOOST',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5, color: _text)),
+              const SizedBox(width: 8),
+              const Text('cada 10 sobres',
+                  style: TextStyle(fontSize: 10, color: _muted)),
+              const Spacer(),
+              Text('$nextIn',
+                  style: const TextStyle(
+                      fontSize: 26, fontWeight: FontWeight.w900,
+                      height: 1, color: _accent)),
+              const SizedBox(width: 4),
+              const Text('sobres\nrestantes',
+                  style: TextStyle(fontSize: 8, color: _muted, height: 1.3)),
             ],
           ),
         ],
@@ -125,46 +383,328 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-class _TabPill extends StatelessWidget {
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  const _TabPill({required this.label, required this.active, required this.onTap});
+class _HitosTrack extends StatelessWidget {
+  final int opened;
+  final List<(int, String)> milestones;
+  const _HitosTrack({required this.opened, required this.milestones});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        margin: const EdgeInsets.only(left: 5),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: active ? _gold : _bg,
-          border: Border.all(color: _border, width: 1),
-          boxShadow: active
-              ? [const BoxShadow(color: _shadow, offset: Offset(1, 1), blurRadius: 0)]
-              : [],
+    return Column(
+      children: [
+        // Círculos + líneas
+        Row(
+          children: [
+            for (int i = 0; i < milestones.length; i++) ...[
+              _HitoCircle(
+                  value: milestones[i].$1,
+                  reached: opened >= milestones[i].$1),
+              if (i < milestones.length - 1)
+                Expanded(
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(
+                        begin: 0,
+                        end: _seg(i, opened)),
+                    duration: const Duration(milliseconds: 700),
+                    curve: Curves.easeOut,
+                    builder: (_, v, __) => Stack(
+                      alignment: Alignment.centerLeft,
+                      children: [
+                        Container(
+                            height: 2,
+                            color: _border.withValues(alpha: 0.12)),
+                        FractionallySizedBox(
+                          widthFactor: v,
+                          child: Container(height: 2, color: _accent),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ],
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1,
-            color: active ? _border : _text,
+        const SizedBox(height: 8),
+        // Labels
+        Row(
+          children: [
+            for (int i = 0; i < milestones.length; i++) ...[
+              SizedBox(
+                width: 36,
+                child: Text(
+                  milestones[i].$2,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 7,
+                    fontWeight: opened >= milestones[i].$1
+                        ? FontWeight.w800
+                        : FontWeight.w500,
+                    color:
+                        opened >= milestones[i].$1 ? _accent : _muted,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+              if (i < milestones.length - 1) const Expanded(child: SizedBox()),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  double _seg(int i, int opened) {
+    final start = milestones[i].$1;
+    final end   = milestones[i + 1].$1;
+    if (end == 0) return 0;
+    if (opened <= start) return 0;
+    if (opened >= end)   return 1;
+    return (opened - start) / (end - start);
+  }
+}
+
+class _HitoCircle extends StatelessWidget {
+  final int value;
+  final bool reached;
+  const _HitoCircle({required this.value, required this.reached});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: reached ? _accent : _bg,
+        border: Border.all(
+          color: reached ? _accent : _border.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
+        boxShadow: reached
+            ? [const BoxShadow(color: _shadow, offset: Offset(1, 1))]
+            : [],
+      ),
+      alignment: Alignment.center,
+      child: reached
+          ? const Icon(Icons.check, size: 16, color: Colors.white)
+          : Text('$value',
+              style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  color: _border.withValues(alpha: 0.3))),
+    );
+  }
+}
+
+// ── Sobres disponibles ───────────────────────────────────
+class _SobresCard extends ConsumerWidget {
+  final AlbumPacks? packs;
+  const _SobresCard({required this.packs});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final available = packs?.packsAvailable ?? 0;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFE0D8CC), width: 1),
+        boxShadow: const [
+          BoxShadow(color: _shadow, offset: Offset(3, 3), blurRadius: 0),
+        ],
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header row
+          Row(
+            children: [
+              const Text('SOBRES DISPONIBLES',
+                  style: TextStyle(
+                      fontSize: 9, fontWeight: FontWeight.w900,
+                      letterSpacing: 2, color: _muted)),
+              const SizedBox(width: 8),
+              // Contador badge
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: available > 0 ? _accent : _card,
+                  border: Border.all(color: _border, width: 1),
+                ),
+                child: Text('$available',
+                    style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        color: available > 0 ? Colors.white : _muted)),
+              ),
+            ],
           ),
-        ),
+          const SizedBox(height: 12),
+
+          // Contenido
+          Row(
+            children: [
+              // Sobres apilados
+              _PackStack(count: available.clamp(0, 4)),
+              const SizedBox(width: 14),
+              // Texto
+              Expanded(
+                child: Text(
+                  available > 0
+                      ? 'Tienes $available sobres listos para abrir.'
+                      : 'Gana resultados exactos para obtener sobres.',
+                  style: const TextStyle(fontSize: 11, color: _text,
+                      fontFamily: 'monospace'),
+                ),
+              ),
+            ],
+          ),
+
+          if (available > 0) ...[
+            const SizedBox(height: 14),
+            GestureDetector(
+              onTap: () => showPackOpeningModal(context, ref),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                decoration: BoxDecoration(
+                  color: _accent,
+                  border: Border.all(color: _border, width: 1.5),
+                  boxShadow: const [
+                    BoxShadow(color: _shadow, offset: Offset(3, 3)),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.inventory_2_outlined,
+                        color: Colors.white, size: 16),
+                    SizedBox(width: 8),
+                    Text('ABRIR SOBRES',
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w900,
+                            letterSpacing: 2, color: Colors.white)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
 }
 
-// ══ BODY ════════════════════════════════════════════════
-class _AlbumsBody extends StatelessWidget {
+class _PackStack extends StatelessWidget {
+  final int count;
+  const _PackStack({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    if (count == 0) {
+      return Container(
+        width: 56, height: 70,
+        decoration: BoxDecoration(
+          color: _card,
+          border: Border.all(color: _border.withValues(alpha: 0.2), width: 1),
+        ),
+        child: const Icon(Icons.inbox_outlined, size: 24, color: _muted),
+      );
+    }
+    return SizedBox(
+      width: 56 + (count - 1) * 6.0,
+      height: 72,
+      child: Stack(
+        children: [
+          for (int i = count - 1; i >= 0; i--)
+            Positioned(
+              left: i * 6.0,
+              top: (count - 1 - i) * 2.0,
+              child: _PackEnv(index: i),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PackEnv extends StatelessWidget {
+  final int index;
+  const _PackEnv({required this.index});
+
+  static const _colors = [
+    _accent,
+    Color(0xFF1A0CA8),
+    Color(0xFF4A3AFF),
+    Color(0xFF7B61FF),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _colors[index % _colors.length];
+    return Container(
+      width: 54,
+      height: 68,
+      decoration: BoxDecoration(
+        color: color,
+        border: Border.all(color: _border, width: 1),
+        boxShadow: [
+          BoxShadow(
+              color: _border.withValues(alpha: 0.15),
+              offset: const Offset(1, 1))
+        ],
+      ),
+      child: Stack(
+        children: [
+          CustomPaint(
+            size: const Size(54, 18),
+            painter: _FlapPainter(color: Color.fromARGB(
+              255,
+              (color.red * 0.6).round(),
+              (color.green * 0.6).round(),
+              (color.blue * 0.6).round(),
+            )),
+          ),
+          Align(
+            alignment: const Alignment(0, 0.3),
+            child: Icon(Icons.auto_awesome,
+                color: Colors.white.withValues(alpha: 0.3), size: 18),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FlapPainter extends CustomPainter {
+  final Color color;
+  const _FlapPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()..color = color..style = PaintingStyle.fill;
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, 4)
+      ..lineTo(size.width / 2, 15)
+      ..lineTo(0, 4)
+      ..close();
+    canvas.drawPath(path, p);
+  }
+
+  @override
+  bool shouldRepaint(_FlapPainter o) => o.color != color;
+}
+
+// ════════════════════════════════════════════════════════
+//  TAB COLECCIÓN
+// ════════════════════════════════════════════════════════
+class _ColeccionTab extends StatelessWidget {
   final AlbumsModel model;
-  final String tab;
-  const _AlbumsBody({required this.model, required this.tab});
+  const _ColeccionTab({required this.model});
 
   @override
   Widget build(BuildContext context) {
@@ -172,246 +712,269 @@ class _AlbumsBody extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _PacksHero(packs: model.packs),
-          const _Divider(),
-          _SectionHeader(label: 'MIS ESTADÍSTICAS', color: _accent),
-          _StatsStrip(model: model),
-          const _Divider(),
-          _SectionHeader(
-            label: switch (tab) {
-              'legendary' => 'ÁLBUMES LEGENDARIOS',
-              'stars'     => 'COLECCIÓN ESTRELLAS',
-              _           => 'ÁLBUMES DE CULTO',
-            },
-            color: _gold,
+          _ColStats(model: model),
+          // "TUS COLECCIONES" header
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: const Text('TUS COLECCIONES',
+                style: TextStyle(
+                    fontSize: 9, fontWeight: FontWeight.w900,
+                    letterSpacing: 2, color: _muted)),
           ),
-          _AlbumList(
-            definitions: switch (tab) {
-              'legendary' => model.legendaryAlbums,
-              'stars'     => model.starsAlbums,
-              _           => model.cultAlbums,
-            },
+          _ColGroup(
+            title: 'LEGENDARIOS',
+            albumType: 'legendary',
+            definitions: model.legendaryAlbums,
             model: model,
           ),
-          const _Divider(),
-          _SectionHeader(label: 'COLECCIÓN RECIENTE', color: _accentL),
-          _RecentCards(items: model.collection.take(12).toList()),
-          const SizedBox(height: 16),
+          _ColGroup(
+            title: 'ESTRELLAS',
+            albumType: 'stars',
+            definitions: model.starsAlbums,
+            model: model,
+          ),
+          _ColGroup(
+            title: 'DE CULTO',
+            albumType: 'cult',
+            definitions: model.cultAlbums,
+            model: model,
+          ),
+          // Sobres flotante al final
+          _SobresCardSmall(model: model),
+          const SizedBox(height: 24),
         ],
       ),
     );
   }
 }
 
-// ══ PACKS HERO ══════════════════════════════════════════
-class _PacksHero extends ConsumerWidget {
-  final AlbumPacks? packs;
-  const _PacksHero({required this.packs});
+// ── Stats globales ────────────────────────────────────────
+class _ColStats extends StatelessWidget {
+  final AlbumsModel model;
+  const _ColStats({required this.model});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final available = packs?.packsAvailable ?? 0;
-    final boost     = packs?.boostActive == true;
+  Widget build(BuildContext context) {
+    final totalAlbums = model.definitions.length;
+    final completed   = model.definitions
+        .where((d) => model.progressFor(d.id)?.isCompleted == true)
+        .length;
+    int totalReq = 0, totalGot = 0;
+    for (final d in model.definitions) {
+      totalReq += d.requiredUniquePlayers ?? 0;
+      totalGot += model.progressFor(d.id)?.uniqueCards ?? 0;
+    }
+    final pct = totalReq > 0 ? (totalGot / totalReq).clamp(0.0, 1.0) : 0.0;
 
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: _border, width: 1)),
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
-      child: Row(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _PackIcon(boostActive: boost),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'SOBRES DISPONIBLES',
-                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 2, color: _muted),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '$available',
-                  style: const TextStyle(
-                    fontSize: 52,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -3,
-                    height: 1,
-                    color: _accent,
-                  ),
-                ),
-                if (boost) ...[
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: _gold,
-                      border: Border.all(color: _border, width: 1),
-                      boxShadow: const [BoxShadow(color: _shadow, offset: Offset(1, 1))],
-                    ),
-                    child: Text(
-                      '⚡ BOOST ACTIVO · ${packs!.boostPacksRemaining} restantes',
-                      style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: _border),
-                    ),
-                  ),
-                ] else ...[
-                  const SizedBox(height: 4),
-                  _BoostProgress(packs: packs),
+          // Header
+          Row(
+            children: [
+              const Text('TU COLECCIÓN',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900,
+                      letterSpacing: 1, color: _text)),
+              const Spacer(),
+              _SmallBtn(label: 'VER TODO', onTap: () {}),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // 4 stats con iconos, estilo imagen 2
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Álbumes activos — grande a la izquierda
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('$totalAlbums',
+                      style: const TextStyle(
+                          fontSize: 38, fontWeight: FontWeight.w900,
+                          letterSpacing: -2, height: 1, color: _accent)),
+                  const Text('ÁLBUMES\nACTIVOS',
+                      style: TextStyle(
+                          fontSize: 8, fontWeight: FontWeight.w700,
+                          color: _muted, height: 1.3)),
                 ],
-              ],
-            ),
+              ),
+              const SizedBox(width: 16),
+              // Grid 2x2 de los demás stats
+              Expanded(
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _ColStatCell(
+                            icon: Icons.style_outlined,
+                            iconColor: _accent,
+                            value: '${model.totalUniqueCards}',
+                            label: 'FIGURITAS\nCONSEGUIDAS',
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _ColStatCell(
+                            icon: Icons.check_box_outlined,
+                            iconColor: _text,
+                            value: '${(pct * 100).round()}%',
+                            label: 'PROGRESO\nGLOBAL',
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _ColStatCell(
+                            icon: Icons.star_outline,
+                            iconColor: _gold,
+                            value: '$completed',
+                            label: 'COMPLE-\nTADOS',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          // ← lanza el modal; el modal maneja toda la lógica de apertura
-          _OpenButton(
-            available: available,
-            onTap: available > 0
-                ? () => showPackOpeningModal(context, ref)
-                : null,
-          ),
+
+          const SizedBox(height: 12),
+
+          // Barra global
+          _ProgBar(pct: pct, color: _accent),
         ],
       ),
     );
   }
 }
 
-class _PackIcon extends StatelessWidget {
-  final bool boostActive;
-  const _PackIcon({required this.boostActive});
+class _ColStatCell extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String value;
+  final String label;
+  const _ColStatCell(
+      {required this.icon, required this.iconColor,
+       required this.value, required this.label});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 64,
-      height: 80,
-      decoration: BoxDecoration(
-        color: boostActive ? _gold : _accent,
-        border: Border.all(color: _border, width: 1.5),
-        boxShadow: const [BoxShadow(color: _shadow, offset: Offset(2, 2), blurRadius: 0)],
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          const Icon(Icons.auto_awesome, color: Colors.white, size: 28),
-          if (boostActive)
-            const Positioned(
-              top: 4,
-              right: 4,
-              child: Text('⚡', style: TextStyle(fontSize: 12)),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BoostProgress extends StatelessWidget {
-  final AlbumPacks? packs;
-  const _BoostProgress({required this.packs});
-
-  @override
-  Widget build(BuildContext context) {
-    final progress = packs?.barProgress ?? 0;
-    final threshold = packs?.barThreshold ?? 10;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'BOOST EN $progress/$threshold sobres',
-          style: const TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: _muted),
-        ),
+        Icon(icon, size: 14, color: iconColor),
         const SizedBox(height: 3),
-        TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: progress / threshold),
-          duration: const Duration(milliseconds: 600),
-          curve: Curves.easeOut,
-          builder: (_, v, __) => Container(
-            height: 6,
-            decoration: BoxDecoration(border: Border.all(color: _border, width: 1)),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: v,
-              child: Container(color: _gold),
-            ),
-          ),
-        ),
+        Text(value,
+            style: const TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w900,
+                height: 1, color: _text)),
+        const SizedBox(height: 2),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 7, fontWeight: FontWeight.w700,
+                color: _muted, height: 1.3)),
       ],
     );
   }
 }
 
-class _OpenButton extends StatelessWidget {
-  final int available;
-  final VoidCallback? onTap;
-  const _OpenButton({required this.available, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = available > 0;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 100),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: enabled ? _accent : _muted,
-          border: Border.all(color: _border, width: 1),
-          boxShadow: enabled
-              ? [const BoxShadow(color: _shadow, offset: Offset(2, 2), blurRadius: 0)]
-              : [],
-        ),
-        child: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.play_arrow, color: Colors.white, size: 20),
-            SizedBox(height: 2),
-            Text(
-              'ABRIR',
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ══ STATS STRIP 3 cols ═══════════════════════════════════
-class _StatsStrip extends StatelessWidget {
+// ── Grupo de colección ───────────────────────────────────
+class _ColGroup extends StatelessWidget {
+  final String title;
+  final String albumType;
+  final List<AlbumDefinition> definitions;
   final AlbumsModel model;
-  const _StatsStrip({required this.model});
+  const _ColGroup({
+    required this.title, required this.albumType,
+    required this.definitions, required this.model,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (definitions.isEmpty) return const SizedBox.shrink();
+
+    final color = _groupColor(albumType);
+    final completed = definitions
+        .where((d) => model.progressFor(d.id)?.isCompleted == true)
+        .length;
+    final pct = definitions.isEmpty ? 0.0 : completed / definitions.length;
+
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: _border, width: 1)),
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFE0D8CC), width: 1),
+        boxShadow: const [
+          BoxShadow(color: _shadow, offset: Offset(3, 3), blurRadius: 0),
+        ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _StatCell(
-            label: 'ÚNICAS',
-            value: '${model.totalUniqueCards}',
-            color: _accent,
-            borderRight: true,
-          ),
-          _StatCell(
-            label: 'TOTAL COPIAS',
-            value: '${model.totalCopies}',
-            color: _text,
-            borderRight: true,
-          ),
-          _StatCell(
-            label: 'GOAT ★',
-            value: '${model.goatCards}',
-            color: _gold,
-            borderRight: false,
+          // Libro 3D
+          _BookCover3D(color: color, albumType: albumType),
+          // Contenido
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Tipo con color
+                  Text(title,
+                      style: TextStyle(
+                          fontSize: 10, fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5, color: color)),
+                  const SizedBox(height: 2),
+                  Text('${definitions.length} ÁLBUMES',
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w900,
+                          color: _text)),
+                  const SizedBox(height: 8),
+                  // Chips check/lock + botón >
+                  Row(
+                    children: [
+                      ...definitions.map((d) => _CheckChip(
+                            completed: model.progressFor(d.id)?.isCompleted == true,
+                            color: color,
+                          )),
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () => context.push(
+                            '/albums/${definitions.first.id}'),
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: _bg,
+                            border: Border.all(color: _border, width: 1),
+                            boxShadow: const [
+                              BoxShadow(
+                                  color: _shadow, offset: Offset(1, 1))
+                            ],
+                          ),
+                          child: const Icon(Icons.chevron_right,
+                              size: 14, color: _text),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Barra de completados
+                  _ProgBar(pct: pct, color: color),
+                  const SizedBox(height: 4),
+                  Text('$completed / ${definitions.length} COMPLETADOS',
+                      style: const TextStyle(
+                          fontSize: 8, fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3, color: _muted)),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -419,430 +982,614 @@ class _StatsStrip extends StatelessWidget {
   }
 }
 
-class _StatCell extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-  final bool borderRight;
-  const _StatCell({required this.label, required this.value, required this.color, required this.borderRight});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-        decoration: BoxDecoration(
-          color: _bg,
-          border: Border(
-            right: borderRight ? const BorderSide(color: _border, width: 1) : BorderSide.none,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label,
-                style: const TextStyle(
-                    fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 1.5, color: _muted)),
-            const SizedBox(height: 4),
-            Text(value,
-                style: TextStyle(
-                    fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -1, height: 1, color: color)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ══ ALBUM LIST ═══════════════════════════════════════════
-class _AlbumList extends StatelessWidget {
-  final List<AlbumDefinition> definitions;
+// ── Card sobres pequeño (pie de colección) ───────────────
+class _SobresCardSmall extends ConsumerWidget {
   final AlbumsModel model;
-  const _AlbumList({required this.definitions, required this.model});
+  const _SobresCardSmall({required this.model});
 
   @override
-  Widget build(BuildContext context) {
-    if (definitions.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(32),
-        child: Center(
-          child: Text('Sin álbumes en esta categoría',
-              style: TextStyle(fontSize: 12, color: _muted)),
-        ),
-      );
-    }
-
-    return Column(
-      children: definitions
-          .map((def) => _AlbumRow(def: def, progress: model.progressFor(def.id)))
-          .toList(),
-    );
-  }
-}
-
-class _AlbumRow extends StatelessWidget {
-  final AlbumDefinition def;
-  final AlbumProgress? progress;
-  const _AlbumRow({required this.def, this.progress});
-
-  @override
-  Widget build(BuildContext context) {
-    final unique     = progress?.uniqueCards ?? 0;
-    final required   = def.requiredUniquePlayers ?? 0;
-    final pct        = required > 0 ? (unique / required).clamp(0.0, 1.0) : 0.0;
-    final completed  = progress?.isCompleted == true;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final available = model.packs?.packsAvailable ?? 0;
+    if (available == 0) return const SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 0),
       decoration: BoxDecoration(
-        color: completed ? const Color(0xFFF5F0D0) : _bg,
-        border: const Border(bottom: BorderSide(color: _border, width: 1)),
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFE0D8CC), width: 1),
+        boxShadow: const [
+          BoxShadow(color: _shadow, offset: Offset(3, 3), blurRadius: 0)
+        ],
       ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
-          // Badge tipo álbum
+          // Mini libro
           Container(
-            width: 38,
-            height: 38,
+            width: 42,
+            height: 52,
             decoration: BoxDecoration(
-              color: _albumColor(def.albumType),
+              color: _accent,
               border: Border.all(color: _border, width: 1),
-              boxShadow: const [BoxShadow(color: _shadow, offset: Offset(1, 1))],
+              boxShadow: const [BoxShadow(color: _shadow, offset: Offset(2, 2))],
             ),
-            alignment: Alignment.center,
-            child: Text(
-              _albumIcon(def.albumType),
-              style: const TextStyle(fontSize: 18),
-            ),
+            child: const Icon(Icons.auto_awesome,
+                color: Colors.white, size: 18),
           ),
           const SizedBox(width: 12),
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(def.name,
-                          style: const TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.w700, color: _text)),
-                    ),
-                    if (completed)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: _gold,
-                          border: Border.all(color: _border, width: 1),
-                        ),
-                        child: const Text('✓',
-                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: _border)),
-                      ),
-                  ],
+          // Badge + texto
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 14, height: 14,
+                decoration: const BoxDecoration(
+                  color: Colors.red, shape: BoxShape.circle,
                 ),
-                if (def.description != null) ...[
-                  const SizedBox(height: 2),
-                  Text(def.description!,
-                      style: const TextStyle(fontSize: 10, color: _muted),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
+              ),
+              Positioned(
+                left: -4, top: -4,
+                child: Container(
+                  width: 22, height: 22,
+                  decoration: BoxDecoration(
+                    color: _accent,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text('$available',
+                      style: const TextStyle(
+                          fontSize: 8, fontWeight: FontWeight.w900,
+                          color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Tienes sobres listos para abrir.',
+              style: const TextStyle(
+                  fontSize: 10, color: _text,
+                  fontFamily: 'monospace'),
+            ),
+          ),
+          const SizedBox(width: 10),
+          GestureDetector(
+            onTap: () => showPackOpeningModal(context, ref),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: _accent,
+                border: Border.all(color: _border, width: 1),
+                boxShadow: const [
+                  BoxShadow(color: _shadow, offset: Offset(2, 2))
                 ],
-                const SizedBox(height: 6),
-                // Progress bar
-                Row(
-                  children: [
-                    Expanded(
-                      child: TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0, end: pct),
-                        duration: const Duration(milliseconds: 700),
-                        curve: Curves.easeOut,
-                        builder: (_, v, __) => Container(
-                          height: 6,
-                          decoration: BoxDecoration(border: Border.all(color: _border, width: 1)),
-                          child: FractionallySizedBox(
-                            alignment: Alignment.centerLeft,
-                            widthFactor: v,
-                            child: Container(color: _albumColor(def.albumType)),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.inventory_2_outlined,
+                      color: Colors.white, size: 12),
+                  SizedBox(width: 4),
+                  Text('ABRIR SOBRES',
+                      style: TextStyle(
+                          fontSize: 8, fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5, color: Colors.white)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  TAB PRÓXIMAMENTE
+// ════════════════════════════════════════════════════════
+class _ProntoTab extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  const _ProntoTab({required this.label, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 72, height: 72,
+            decoration: BoxDecoration(
+              color: _card,
+              border: Border.all(color: _border, width: 1.5),
+              boxShadow: const [
+                BoxShadow(color: _shadow, offset: Offset(3, 3))
+              ],
+            ),
+            child: Icon(icon, size: 30, color: _muted),
+          ),
+          const SizedBox(height: 16),
+          Text(label,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900,
+                  letterSpacing: 2, color: _text)),
+          const SizedBox(height: 6),
+          const Text('Próximamente',
+              style: TextStyle(fontSize: 11, color: _muted)),
+        ],
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  WIDGETS COMPARTIDOS
+// ════════════════════════════════════════════════════════
+
+// Libro 3D del álbum activo (resumen)
+class _Book3D extends StatelessWidget {
+  final Color color;
+  final String albumType;
+  const _Book3D({required this.color, required this.albumType});
+
+  @override
+  Widget build(BuildContext context) {
+    final spine = Color.fromARGB(
+      255,
+      (color.red * 0.5).round(),
+      (color.green * 0.5).round(),
+      (color.blue * 0.5).round(),
+    );
+    return SizedBox(
+      width: 90,
+      height: 112,
+      child: Stack(
+        children: [
+          // Sombra
+          Positioned(
+            left: 6, top: 6,
+            child: Container(width: 82, height: 104, color: _shadow),
+          ),
+          // Lomo
+          Positioned(
+            left: 0, top: 2,
+            child: Container(width: 10, height: 102, color: spine),
+          ),
+          // Tapa
+          Positioned(
+            left: 8, top: 0,
+            child: Container(
+              width: 82, height: 104,
+              decoration: BoxDecoration(
+                color: color,
+                border: Border.all(color: _border, width: 1.5),
+              ),
+              child: Stack(
+                children: [
+                  // Temporada top-left
+                  Positioned(
+                    top: 6, left: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 2),
+                      color: _border.withValues(alpha: 0.4),
+                      child: const Text('TEMPORADA 25+26',
+                          style: TextStyle(
+                              fontSize: 5, fontWeight: FontWeight.w900,
+                              color: Colors.white, letterSpacing: 0.5)),
+                    ),
+                  ),
+                  // Marcador rojo
+                  const Positioned(
+                    top: 0,
+                    child: Center(
+                      child: SizedBox(
+                        width: 82,
+                        child: Center(
+                          child: SizedBox(
+                            width: 10,
+                            height: 24,
+                            child: ColoredBox(color: Color(0xFFCC2222)),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      required > 0 ? '$unique/$required' : '-',
-                      style: const TextStyle(
-                          fontSize: 10, fontWeight: FontWeight.w700, color: _text),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _albumColor(String type) => switch (type) {
-        'legendary' => _gold,
-        'stars'     => _accent,
-        _           => _accentL,
-      };
-
-  String _albumIcon(String type) => switch (type) {
-        'legendary' => '👑',
-        'stars'     => '⭐',
-        _           => '🎭',
-      };
-}
-
-// ══ RECENT CARDS GRID ════════════════════════════════════
-class _RecentCards extends StatelessWidget {
-  final List<AlbumCollectionItem> items;
-  const _RecentCards({required this.items});
-
-  @override
-  Widget build(BuildContext context) {
-    if (items.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(32),
-        child: Center(
-          child: Text('Aún no tienes cartas',
-              style: TextStyle(fontSize: 12, color: _muted)),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          childAspectRatio: 0.72,
-        ),
-        itemCount: items.length,
-        itemBuilder: (_, i) => _MiniCard(item: items[i]),
-      ),
-    );
-  }
-}
-
-class _MiniCard extends StatelessWidget {
-  final AlbumCollectionItem item;
-  const _MiniCard({required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    final card   = item.card;
-    final type   = card?.cardType ?? 'player';
-    final stars  = card?.significanceLevel ?? 1;
-    final isGoat = card?.isGoat == true;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: _card,
-        border: Border.all(
-          color: _frameColor(item.frameLevel),
-          width: isGoat ? 2 : 1,
-        ),
-        boxShadow: isGoat
-            ? [BoxShadow(color: _gold.withValues(alpha: 0.5), offset: const Offset(0, 0), blurRadius: 8)]
-            : [const BoxShadow(color: _shadow, offset: Offset(1, 1))],
-      ),
-      child: Stack(
-        children: [
-          // Gradiente de tipo
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    _typeColor(type).withValues(alpha: 0.15),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Imagen o placeholder
-          if (card?.imagePath != null)
-            Positioned.fill(
-              child: Image.network(
-                card!.imagePath!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _CardPlaceholder(type: type),
-              ),
-            )
-          else
-            _CardPlaceholder(type: type),
-
-          // Info overlay bottom
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
-              color: _border.withValues(alpha: 0.75),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    card?.name ?? '',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 7,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: 0.3,
-                    ),
                   ),
-                  Row(
-                    children: [
-                      Text(
-                        _typeLabel(type),
-                        style: TextStyle(
-                          fontSize: 6,
-                          fontWeight: FontWeight.w900,
-                          color: _typeColor(type),
+                  // Icono central con círculo
+                  Center(
+                    child: Container(
+                      width: 42, height: 42,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.45),
+                          width: 1.5,
                         ),
                       ),
-                      const Spacer(),
-                      _StarDots(level: stars),
-                    ],
+                      child: Icon(
+                        switch (albumType) {
+                          'legendary' => Icons.stars,
+                          'stars'     => Icons.star,
+                          _           => Icons.theater_comedy,
+                        },
+                        color: Colors.white, size: 20,
+                      ),
+                    ),
+                  ),
+                  // Label ÉLITE + counter
+                  Positioned(
+                    bottom: 8, left: 0, right: 0,
+                    child: Column(
+                      children: [
+                        const Text('ÉLITE',
+                            style: TextStyle(
+                                fontSize: 8, fontWeight: FontWeight.w900,
+                                letterSpacing: 2, color: Colors.white)),
+                        const SizedBox(height: 2),
+                        Text('18 / 30 ITEMS',
+                            style: TextStyle(
+                                fontSize: 6,
+                                color:
+                                    Colors.white.withValues(alpha: 0.6))),
+                      ],
+                    ),
+                  ),
+                  // Barra progress bottom
+                  Positioned(
+                    bottom: 0, left: 0, right: 0,
+                    child: Container(
+                      height: 4,
+                      color: Colors.black.withValues(alpha: 0.2),
+                      child: const FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: 0.6,
+                        child: ColoredBox(color: Colors.white54),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
 
-          // Badge de copias duplicadas
-          if (item.isDuplicate)
-            Positioned(
-              top: 4,
-              right: 4,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
-                color: _border,
-                child: Text(
-                  'x${item.copies}',
-                  style: const TextStyle(
-                      fontSize: 7, fontWeight: FontWeight.w900, color: Colors.white),
-                ),
+// Portada libro 3D para colección
+class _BookCover3D extends StatelessWidget {
+  final Color color;
+  final String albumType;
+  const _BookCover3D({required this.color, required this.albumType});
+
+  @override
+  Widget build(BuildContext context) {
+    final spine = Color.fromARGB(
+      255,
+      (color.red * 0.45).round(),
+      (color.green * 0.45).round(),
+      (color.blue * 0.45).round(),
+    );
+    // Color de borde dorado
+    const gold = Color(0xFFD4A820);
+
+    return SizedBox(
+      width: 80,
+      height: 110,
+      child: Stack(
+        children: [
+          // Sombra
+          Positioned(
+            left: 4, top: 4,
+            child: Container(
+              width: 74, height: 104,
+              color: _border.withValues(alpha: 0.12),
+            ),
+          ),
+          // Lomo
+          Positioned(
+            left: 0, top: 0,
+            child: Container(
+              width: 10, height: 104,
+              decoration: BoxDecoration(
+                color: spine,
+                border: Border.all(color: _border, width: 0.5),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(6, (_) => Container(
+                  width: 4, height: 4,
+                  decoration: const BoxDecoration(
+                    color: Colors.white24,
+                    shape: BoxShape.circle,
+                  ),
+                )),
               ),
             ),
+          ),
+          // Tapa frontal
+          Positioned(
+            left: 8, top: 0,
+            child: Container(
+              width: 72, height: 104,
+              decoration: BoxDecoration(
+                color: color,
+                border: Border.all(color: _border, width: 1.5),
+              ),
+              child: Stack(
+                children: [
+                  // Marco dorado interior
+                  Positioned(
+                    left: 4, top: 4, right: 4, bottom: 4,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: gold, width: 1),
+                      ),
+                    ),
+                  ),
+                  // Marcador rojo
+                  Positioned(
+                    top: 0,
+                    left: 0, right: 0,
+                    child: Center(
+                      child: Container(
+                        width: 8, height: 20,
+                        color: const Color(0xFFCC2222),
+                      ),
+                    ),
+                  ),
+                  // Icono central
+                  Center(
+                    child: Container(
+                      width: 36, height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.4),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Icon(
+                        switch (albumType) {
+                          'legendary' => Icons.bolt,
+                          'stars'     => Icons.star,
+                          _           => Icons.public,
+                        },
+                        color: Colors.white, size: 18,
+                      ),
+                    ),
+                  ),
+                  // Label bottom
+                  Positioned(
+                    bottom: 10, left: 0, right: 0,
+                    child: Text(
+                      switch (albumType) {
+                        'legendary' => 'ÉLITE',
+                        'stars'     => 'STARS',
+                        _           => 'CULT',
+                      },
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          fontSize: 7, fontWeight: FontWeight.w900,
+                          letterSpacing: 2, color: Colors.white),
+                    ),
+                  ),
+                  // Counter bottom
+                  Positioned(
+                    bottom: 2, left: 0, right: 0,
+                    child: Center(
+                      child: Text('LOT',
+                          style: TextStyle(
+                              fontSize: 6,
+                              color: Colors.white.withValues(alpha: 0.5))),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Esquinas doradas
+          Positioned(
+            left: 4, top: 0,
+            child: Container(width: 8, height: 1, color: gold),
+          ),
+          Positioned(
+            left: 4, bottom: 0,
+            child: Container(width: 8, height: 1, color: gold),
+          ),
+          Positioned(
+            right: 0, top: 0,
+            child: Container(width: 8, height: 1, color: gold),
+          ),
+          Positioned(
+            right: 0, bottom: 0,
+            child: Container(width: 8, height: 1, color: gold),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-          // Halo GOAT
-          if (isGoat)
-            Positioned(
-              top: 4,
-              left: 4,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                color: _gold,
-                child: const Text('GOAT',
-                    style: TextStyle(fontSize: 6, fontWeight: FontWeight.w900, color: _border)),
+// Barra de progreso animada
+class _ProgBar extends StatelessWidget {
+  final double pct;
+  final Color color;
+  const _ProgBar({required this.pct, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: pct.clamp(0.0, 1.0)),
+      duration: const Duration(milliseconds: 800),
+      curve: Curves.easeOut,
+      builder: (_, v, __) => Stack(
+        alignment: Alignment.centerRight,
+        children: [
+          Container(
+            height: 10,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8E0D0),
+              border: Border.all(color: _border.withValues(alpha: 0.25), width: 1),
+            ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FractionallySizedBox(
+                widthFactor: v,
+                child: Container(color: color),
+              ),
+            ),
+          ),
+          if (v > 0.06)
+            Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: Text(
+                '${(v * 100).round()}%',
+                style: const TextStyle(
+                    fontSize: 7, fontWeight: FontWeight.w900,
+                    color: Colors.white),
               ),
             ),
         ],
       ),
     );
   }
-
-  Color _frameColor(String level) => switch (level) {
-        'silver'    => const Color(0xFFB0B0B0),
-        'gold'      => _gold,
-        'legendary' => const Color(0xFFBF5AF2),
-        _           => _border,
-      };
 }
 
-class _CardPlaceholder extends StatelessWidget {
-  final String type;
-  const _CardPlaceholder({required this.type});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      alignment: Alignment.center,
-      color: _typeColor(type).withValues(alpha: 0.1),
-      child: Icon(
-        switch (type) {
-          'player'      => Icons.person,
-          'team'        => Icons.shield,
-          'competition' => Icons.emoji_events,
-          _             => Icons.history_edu,
-        },
-        color: _typeColor(type).withValues(alpha: 0.5),
-        size: 28,
-      ),
-    );
-  }
-}
-
-class _StarDots extends StatelessWidget {
-  final int level;
-  const _StarDots({required this.level});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(
-        5,
-        (i) => Container(
-          width: 4,
-          height: 4,
-          margin: const EdgeInsets.only(left: 1),
-          decoration: BoxDecoration(
-            color: i < level ? _gold : _muted.withValues(alpha: 0.3),
-            shape: BoxShape.circle,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ══ HELPERS ═════════════════════════════════════════════
-class _Divider extends StatelessWidget {
-  const _Divider();
-
-  @override
-  Widget build(BuildContext context) =>
-      const Divider(height: 1, thickness: 1, color: _border);
-}
-
-class _SectionHeader extends StatelessWidget {
+// Stat box del álbum activo
+class _StatBox extends StatelessWidget {
+  final String value;
   final String label;
-  final Color color;
-  const _SectionHeader({required this.label, required this.color});
+  final Color valueColor;
+  const _StatBox(
+      {required this.value, required this.label, this.valueColor = _text});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        color: _card,
-        border: Border(bottom: BorderSide(color: _border, width: 1)),
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+      decoration: BoxDecoration(
+        color: _bg,
+        border: Border.all(color: _border, width: 1),
+        boxShadow: const [BoxShadow(color: _shadow, offset: Offset(2, 2))],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(width: 4, height: 16, color: color),
-          const SizedBox(width: 8),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 28, fontWeight: FontWeight.w900,
+                  letterSpacing: -1, height: 1, color: valueColor)),
           Text(label,
               style: const TextStyle(
-                  fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2, color: _text)),
+                  fontSize: 8, fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5, color: _muted)),
         ],
+      ),
+    );
+  }
+}
+
+// Chip contador / label
+class _Chip extends StatelessWidget {
+  final String label;
+  const _Chip({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: _bg,
+        border: Border.all(color: _border, width: 1),
+        boxShadow: const [BoxShadow(color: _shadow, offset: Offset(1, 1))],
+      ),
+      child: Text(label,
+          style: const TextStyle(
+              fontSize: 10, fontWeight: FontWeight.w700, color: _text)),
+    );
+  }
+}
+
+// Check/lock chip para álbumes de colección
+class _CheckChip extends StatelessWidget {
+  final bool completed;
+  final Color color;
+  const _CheckChip({required this.completed, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 26, height: 26,
+      margin: const EdgeInsets.only(right: 4),
+      decoration: BoxDecoration(
+        color: completed ? color : const Color(0xFFE8E0D0),
+        border: Border.all(
+          color: completed ? _border : _border.withValues(alpha: 0.2),
+          width: 1,
+        ),
+        boxShadow: completed
+            ? [const BoxShadow(color: _shadow, offset: Offset(1, 1))]
+            : [],
+      ),
+      child: Icon(
+        completed ? Icons.check : Icons.lock,
+        size: completed ? 14 : 12,
+        color: completed ? Colors.white : _muted,
+      ),
+    );
+  }
+}
+
+// Badge activo/completado
+class _StatusBadge extends StatelessWidget {
+  final bool completed;
+  const _StatusBadge({required this.completed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: completed ? const Color(0xFF00C48C) : _gold,
+        border: Border.all(color: _border, width: 1),
+        boxShadow: const [BoxShadow(color: _shadow, offset: Offset(1, 1))],
+      ),
+      child: Text(
+        completed ? 'COMPLETADO' : 'ACTIVO',
+        style: const TextStyle(
+            fontSize: 8, fontWeight: FontWeight.w900,
+            letterSpacing: 1, color: _border),
+      ),
+    );
+  }
+}
+
+// Botón outline pequeño
+class _SmallBtn extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _SmallBtn({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: _bg,
+          border: Border.all(color: _border, width: 1),
+          boxShadow: const [BoxShadow(color: _shadow, offset: Offset(1, 1))],
+        ),
+        child: Text(label,
+            style: const TextStyle(
+                fontSize: 9, fontWeight: FontWeight.w900,
+                letterSpacing: 0.5, color: _text)),
       ),
     );
   }
