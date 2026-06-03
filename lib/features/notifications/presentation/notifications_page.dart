@@ -28,23 +28,6 @@ class NotificationsPage extends ConsumerStatefulWidget {
 }
 
 class _NotificationsPageState extends ConsumerState<NotificationsPage> {
-  @override
-  void initState() {
-    super.initState();
-    // Ocultar bottom nav al entrar
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(hideBottomNavProvider.notifier).hide();
-    });
-  }
-
-  @override
-  void dispose() {
-    // Restaurar bottom nav al salir
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(hideBottomNavProvider.notifier).show();
-    });
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
