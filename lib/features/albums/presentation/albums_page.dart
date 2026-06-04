@@ -15,19 +15,15 @@ abstract class Ds {
   static const Color bg        = Color(0xFFF5F2EC);
   static const Color bgSection = Color(0xFFEFEBE3);
   static const Color bgCard    = Color(0xFFE8E3D8);
-
-  // Borders más cálidos/suaves — menos saturación que negro puro
   static const Color ink       = Color(0xFF1C1A2E);
   static const Color border    = Color(0xFF2D2A40);
   static const Color borderSub = Color(0xFFCBC6BA);
   static const Color muted     = Color(0xFF7A7268);
-
   static const Color accent    = Color(0xFF5B4FD8);
   static const Color accentDim = Color(0xFF4A40C0);
   static const Color gold      = Color(0xFFFFD600);
-
   // Sombra 3D — tono oscuro cálido, no negro puro
-  static const Color shadow3d  = Color(0xFF1E1B30);
+  static const Color shadow3d  = Color.fromARGB(255, 48, 45, 65);
 
   static const String font = 'DM Mono';
 }
@@ -132,13 +128,6 @@ class _AlbumsBody extends ConsumerWidget {
   }
 }
 
-// ════════════════════════════════════════════════════════════
-//  TABS BAR — barra unificada con borde completo
-//  • Contenedor único: borde 2px + sombra offset 0,3
-//  • Tab ACTIVO: fondo morado, texto blanco, borde derecho 1.5px
-//  • Tab INACTIVO: fondo crema, texto Ds.muted
-//  • Divisores entre inactivos más sutiles
-// ════════════════════════════════════════════════════════════
 class _TabsBar extends StatelessWidget {
   const _TabsBar();
 
@@ -149,8 +138,8 @@ class _TabsBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Ds.bg,
         border: Border.all(color: Ds.border, width: 2),
-        boxShadow: const [
-          BoxShadow(color: Ds.shadow3d, offset: Offset(0, 3), blurRadius: 0),
+        boxShadow: [
+          BoxShadow(color: Color(0xFFB0AAA0), offset: Offset(4, 4), blurRadius: 0),
         ],
       ),
       child: IntrinsicHeight(

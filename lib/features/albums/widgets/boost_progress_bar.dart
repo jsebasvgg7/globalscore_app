@@ -26,18 +26,9 @@ class BoostProgressBar extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Ds.bg,
-        border: Border.fromBorderSide(
-          BorderSide(
-            color: Ds.border,
-            width: 2,
-          ),
-        ),
+        border: Border.fromBorderSide(BorderSide(color: Ds.border, width: 2)),
         boxShadow: [
-          BoxShadow(
-            color: Color(0x22000000),
-            offset: Offset(3, 3),
-            blurRadius: 0,
-          ),
+          BoxShadow(color: Color(0xFFB0AAA0), offset: Offset(4, 4), blurRadius: 0),
         ],
       ),
       child: Padding(

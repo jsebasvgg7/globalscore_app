@@ -2,14 +2,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../presentation/albums_page.dart' show Ds;
 
-// ════════════════════════════════════════════════════════════
-//  PACK CARD — v5 referencia exacta
-//  • Contenedor delgado (header + franja con sobres)
-//  • Sobres cortados/desbordando por el borde inferior
-//  • Sin línea divisoria arriba de los sobres
-//  • Stack diagonal compacto pegado al borde izquierdo
-// ════════════════════════════════════════════════════════════
-
 class PackCard extends StatelessWidget {
   final int packsAvailable;
   final VoidCallback onOpen;
@@ -20,11 +12,9 @@ class PackCard extends StatelessWidget {
     required this.onOpen,
   });
 
-  // Alto visible del sobre dentro de la card (se corta abajo)
   static const double _cardBodyHeight = 100.0;
-  // Alto total del sobre — más alto que la franja → desborda
-  static const double _envelopeH = 120.0;
-  static const double _envelopeW = 76.0;
+  static const double _envelopeH = 95.0;
+  static const double _envelopeW = 58.0;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +23,7 @@ class PackCard extends StatelessWidget {
         color: Ds.bg,
         border: Border.fromBorderSide(BorderSide(color: Ds.border, width: 2)),
         boxShadow: [
-          BoxShadow(color: Ds.shadow3d, offset: Offset(4, 4), blurRadius: 0),
+          BoxShadow(color: Color(0xFFB0AAA0), offset: Offset(4, 4), blurRadius: 0),
         ],
       ),
       child: Column(
@@ -43,7 +33,6 @@ class PackCard extends StatelessWidget {
           // ── Header ───────────────────────────────────
           Container(
             decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Ds.border, width: 1.5)),
             ),
             child: Row(
               children: [
@@ -69,11 +58,10 @@ class PackCard extends StatelessWidget {
           SizedBox(
             height: _cardBodyHeight,
             child: ClipRect(
-              // clipBehavior: Clip.hardEdge corta el desborde inferior
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  // Sobres: se alinean al fondo y desbordan hacia abajo
+                  const SizedBox(width: 10),
                   _PacksStack(
                     count: packsAvailable.clamp(0, 5),
                     envelopeW: _envelopeW,
@@ -119,10 +107,6 @@ class PackCard extends StatelessWidget {
     );
   }
 }
-
-// ── Stack diagonal pegado al borde inferior ──────────────
-// Los sobres se posicionan alineados bottom, el stack
-// es tan alto como la card → el exceso queda fuera del ClipRect
 class _PacksStack extends StatelessWidget {
   final int count;
   final double envelopeW;
@@ -136,9 +120,8 @@ class _PacksStack extends StatelessWidget {
     required this.visibleH,
   });
 
-  static const double _dx = 11.0; // offset horizontal entre capas
-  static const double _dy = 7.0;  // offset vertical entre capas (sube hacia la izq)
-  // Leve rotación en abanico para los sobres traseros
+  static const double _dx = 11.0;
+  static const double _dy = 7.0;
   static const _rotations = [-0.07, -0.04, -0.015, 0.01, 0.0];
 
   @override
@@ -160,14 +143,12 @@ class _PacksStack extends StatelessWidget {
       height: visibleH,
       child: Stack(
         alignment: Alignment.bottomLeft,
-        clipBehavior: Clip.none, // permite desborde
+        clipBehavior: Clip.none,
         children: [
           for (int i = 0; i < count; i++)
             Positioned(
-              // Frente (i == count-1) en left:0, bottom:0
-              // Fondos van a la derecha y más arriba
               left: (count - 1 - i) * _dx,
-              bottom: -(envelopeH - visibleH) + (count - 1 - i) * _dy,
+              bottom: -(envelopeH - visibleH) - 28 + (count - 1 - i) * _dy,
               child: Transform.rotate(
                 angle: _rotations[i % _rotations.length],
                 alignment: Alignment.bottomCenter,
@@ -184,8 +165,6 @@ class _PacksStack extends StatelessWidget {
     );
   }
 }
-
-// ── Sobre individual — degradado navy + borde glow + líneas ──
 class _EnvelopeCard extends StatelessWidget {
   final double width;
   final double height;
