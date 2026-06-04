@@ -160,7 +160,7 @@ class _PacksStack extends StatelessWidget {
                 ),
               ),
             ),
-        ],
+        ], 
       ),
     );
   }

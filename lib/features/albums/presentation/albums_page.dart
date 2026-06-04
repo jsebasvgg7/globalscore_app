@@ -131,7 +131,7 @@ class _AlbumsBodyState extends ConsumerState<_AlbumsBody>
 // ════════════════════════════════════════════════════════════
 //  TAB RESUMEN
 // ════════════════════════════════════════════════════════════
-class _ResumenTab extends StatelessWidget {
+class _ResumenTab extends ConsumerWidget {
   final AlbumsModel      model;
   final AlbumDefinition? activeAlbum;
   final AlbumProgress?   prog;
@@ -139,7 +139,7 @@ class _ResumenTab extends StatelessWidget {
   final int              unique;
   final int              required;
   final VoidCallback     onVerColeccion;
-
+ 
   const _ResumenTab({
     required this.model,
     required this.activeAlbum,
@@ -149,16 +149,16 @@ class _ResumenTab extends StatelessWidget {
     required this.required,
     required this.onVerColeccion,
   });
-
+ 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 14),
-
+ 
           if (activeAlbum != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -172,9 +172,9 @@ class _ResumenTab extends StatelessWidget {
                 isCompleted: prog?.isCompleted ?? false,
               ),
             ),
-
+ 
           const SizedBox(height: 14),
-
+ 
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: BoostProgressBar(
@@ -183,20 +183,19 @@ class _ResumenTab extends StatelessWidget {
               totalPacksOpened:    model.packs?.totalPacksOpened ?? 0,
             ),
           ),
-
+ 
           const SizedBox(height: 14),
-
+ 
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: PackCard(
               packsAvailable: model.packs?.packsAvailable ?? 0,
-              onOpen: () => showPackOpeningModal(context, context as dynamic),
+              onOpen: () => showPackOpeningModal(context, ref),  // ← ref correcto
             ),
           ),
-
+ 
           const SizedBox(height: 14),
-
-          // Acceso rápido a colección
+ 
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: GestureDetector(
