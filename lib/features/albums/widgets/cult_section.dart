@@ -5,12 +5,6 @@ import '../domain/albums_model.dart';
 import 'album_book_card.dart';
 import 'album_panel_modal.dart';
 
-// ════════════════════════════════════════════════════════════
-//  CULT SECTION
-//  React equiv: CultAlbumsSection
-//  3 álbumes: equipos históricos, copas históricas, eventos históricos
-// ════════════════════════════════════════════════════════════
-
 const Map<String, _CultMeta> _cultMeta = {
   'cult_teams': _CultMeta(
     id: 'cult_teams',

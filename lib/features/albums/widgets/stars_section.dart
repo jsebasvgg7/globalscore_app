@@ -5,12 +5,6 @@ import '../domain/albums_model.dart';
 import 'album_book_card.dart';
 import 'album_panel_modal.dart';
 
-// ════════════════════════════════════════════════════════════
-//  STARS SECTION
-//  React equiv: StarCollectionSection
-//  5 álbumes por nivel de rareza (1★ → 5★ GOAT)
-// ════════════════════════════════════════════════════════════
-
 const Map<int, _StarMeta> _starMeta = {
   1: _StarMeta(
     level: 1,

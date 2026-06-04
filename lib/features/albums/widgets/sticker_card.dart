@@ -2,11 +2,6 @@ import 'package:flutter/material.dart';
 import '../presentation/albums_page.dart' show GsColors;
 import '../domain/albums_model.dart';
 
-// ════════════════════════════════════════════════════════════
-//  STICKER CARD
-//  Carta individual usada en album_panel_modal, stars y cult
-// ════════════════════════════════════════════════════════════
-
 class StickerCard extends StatelessWidget {
   final int index;
   final AlbumCard? card;

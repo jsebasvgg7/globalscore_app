@@ -4,11 +4,6 @@ import '../domain/albums_model.dart';
 import 'album_book_card.dart';
 import 'album_panel_modal.dart';
 
-// ════════════════════════════════════════════════════════════
-//  LEGENDARY ALBUMS SECTION
-//  Fila horizontal con 5 libros legendary desbloqueables
-// ════════════════════════════════════════════════════════════
-
 const _kLegendaryOrder = [
   'legendary_1',
   'legendary_2',

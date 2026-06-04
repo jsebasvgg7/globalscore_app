@@ -3,12 +3,6 @@ import '../presentation/albums_page.dart' show GsColors;
 import '../domain/albums_model.dart';
 import 'sticker_card.dart';
 
-// ════════════════════════════════════════════════════════════
-//  ALBUM PANEL MODAL
-//  React equiv: AlbumPanel (LegendaryAlbumsSection)
-//  Modal fullscreen: sidebar info + grid de stickers
-// ════════════════════════════════════════════════════════════
-
 void showAlbumPanel({
   required BuildContext context,
   required String albumId,

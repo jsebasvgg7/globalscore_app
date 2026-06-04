@@ -6,13 +6,6 @@ import 'legendary_section.dart';
 import 'stars_section.dart';
 import 'cult_section.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-// ════════════════════════════════════════════════════════════
-//  ALBUMS CAROUSEL
-//  React equiv: AlbumsCarousel
-//  Tabs legendary / stars / cult con flechas navegación
-// ════════════════════════════════════════════════════════════
-
 class AlbumsCarousel extends ConsumerWidget {
   final AlbumsModel model;
 
