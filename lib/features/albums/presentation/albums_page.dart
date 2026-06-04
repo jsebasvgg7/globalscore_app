@@ -16,17 +16,18 @@ abstract class Ds {
   static const Color bgSection = Color(0xFFEFEBE3);
   static const Color bgCard    = Color(0xFFE8E3D8);
 
-  static const Color ink       = Color(0xFF0D0D1A);
-  static const Color border    = Color(0xFF0D0D1A);
+  // Borders más cálidos/suaves — menos saturación que negro puro
+  static const Color ink       = Color(0xFF1C1A2E);
+  static const Color border    = Color(0xFF2D2A40);
   static const Color borderSub = Color(0xFFCBC6BA);
-  static const Color muted     = Color(0xFF777068);
+  static const Color muted     = Color(0xFF7A7268);
 
   static const Color accent    = Color(0xFF5B4FD8);
   static const Color accentDim = Color(0xFF4A40C0);
   static const Color gold      = Color(0xFFFFD600);
 
-  // Sombra offset neobrutalista — negra pura
-  static const Color shadow3d  = Color(0xFF0D0D1A);
+  // Sombra 3D — tono oscuro cálido, no negro puro
+  static const Color shadow3d  = Color(0xFF1E1B30);
 
   static const String font = 'DM Mono';
 }
@@ -132,7 +133,11 @@ class _AlbumsBody extends ConsumerWidget {
 }
 
 // ════════════════════════════════════════════════════════════
-//  TABS BAR — relieve neobrutalista
+//  TABS BAR — barra unificada con borde completo
+//  • Contenedor único: borde 2px + sombra offset 0,3
+//  • Tab ACTIVO: fondo morado, texto blanco, borde derecho 1.5px
+//  • Tab INACTIVO: fondo crema, texto Ds.muted
+//  • Divisores entre inactivos más sutiles
 // ════════════════════════════════════════════════════════════
 class _TabsBar extends StatelessWidget {
   const _TabsBar();
@@ -140,23 +145,54 @@ class _TabsBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      margin: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+      decoration: BoxDecoration(
         color: Ds.bg,
-        border: Border(
-          bottom: BorderSide(color: Ds.border, width: 2),
-        ),
-        // Sombra hacia abajo — separa el tab bar del contenido
-        boxShadow: [
+        border: Border.all(color: Ds.border, width: 2),
+        boxShadow: const [
           BoxShadow(color: Ds.shadow3d, offset: Offset(0, 3), blurRadius: 0),
         ],
       ),
-      child: Row(
-        children: [
-          _Tab(icon: Icons.grid_view,         label: 'RESUMEN',   active: true),
-          _Tab(icon: Icons.menu_book_outlined, label: 'COLECCIÓN', active: false, soon: true),
-          _Tab(icon: Icons.mail_outline,       label: 'SOBRES',    active: false, soon: true),
-          _Tab(icon: Icons.star_outline,       label: 'MISIONES',  active: false, soon: true),
-        ],
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: _Tab(
+                icon: Icons.grid_view_rounded,
+                label: 'RESUMEN',
+                active: true,
+              ),
+            ),
+            Container(width: 1.5, color: Ds.border),
+            Expanded(
+              child: _Tab(
+                icon: Icons.menu_book_outlined,
+                label: 'COLECCIÓN',
+                active: false,
+                soon: true,
+              ),
+            ),
+            Container(width: 1, color: Ds.borderSub),
+            Expanded(
+              child: _Tab(
+                icon: Icons.mail_outline,
+                label: 'SOBRES',
+                active: false,
+                soon: true,
+              ),
+            ),
+            Container(width: 1, color: Ds.borderSub),
+            Expanded(
+              child: _Tab(
+                icon: Icons.star_outline,
+                label: 'MISIONES',
+                active: false,
+                soon: true,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -178,40 +214,42 @@ class _Tab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
-      decoration: BoxDecoration(
-        color: active ? Ds.accent : Colors.transparent,
-        // Tab activo: borde inferior con color propio (anula borde global)
-        border: active
-            ? const Border(
-                bottom: BorderSide(color: Ds.accent, width: 2),
-              )
-            : null,
-      ),
+      color: active ? Ds.accent : Colors.transparent,
+      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // Ícono + label en fila
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 12, color: active ? Colors.white : Ds.muted),
+              Icon(
+                icon,
+                size: 10,
+                color: active ? Colors.white : Ds.muted,
+              ),
               const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontFamily: Ds.font,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.3,
-                  color: active ? Colors.white : Ds.muted,
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: Ds.font,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.2,
+                    color: active ? Colors.white : Ds.muted,
+                  ),
                 ),
               ),
             ],
           ),
-          if (soon)
+          // Badge PRONTO
+          if (soon) ...[
+            const SizedBox(height: 3),
             Container(
-              margin: const EdgeInsets.only(top: 2),
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
               decoration: BoxDecoration(
                 border: Border.all(color: Ds.borderSub, width: 0.8),
@@ -219,11 +257,15 @@ class _Tab extends StatelessWidget {
               child: const Text(
                 'PRONTO',
                 style: TextStyle(
-                  fontFamily: Ds.font, fontSize: 6,
-                  fontWeight: FontWeight.w700, color: Ds.muted, letterSpacing: 0.5,
+                  fontFamily: Ds.font,
+                  fontSize: 5.5,
+                  fontWeight: FontWeight.w700,
+                  color: Ds.muted,
+                  letterSpacing: 0.5,
                 ),
               ),
             ),
+          ],
         ],
       ),
     );

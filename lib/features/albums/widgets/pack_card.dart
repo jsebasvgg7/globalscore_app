@@ -1,12 +1,13 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../presentation/albums_page.dart' show Ds;
 
 // ════════════════════════════════════════════════════════════
-//  PACK CARD — v2 neobrutalista
-//  • Contenedor con borde 2px + sombra offset 4,4
-//  • Header con franja acento izquierda
-//  • Sobres cortados a la izquierda (Overflow visible, salen del borde)
-//  • Texto + botón en columna derecha
+//  PACK CARD — v5 referencia exacta
+//  • Contenedor delgado (header + franja con sobres)
+//  • Sobres cortados/desbordando por el borde inferior
+//  • Sin línea divisoria arriba de los sobres
+//  • Stack diagonal compacto pegado al borde izquierdo
 // ════════════════════════════════════════════════════════════
 
 class PackCard extends StatelessWidget {
@@ -18,6 +19,12 @@ class PackCard extends StatelessWidget {
     required this.packsAvailable,
     required this.onOpen,
   });
+
+  // Alto visible del sobre dentro de la card (se corta abajo)
+  static const double _cardBodyHeight = 100.0;
+  // Alto total del sobre — más alto que la franja → desborda
+  static const double _envelopeH = 120.0;
+  static const double _envelopeW = 76.0;
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +38,7 @@ class PackCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // ── Header ───────────────────────────────────
           Container(
@@ -39,13 +47,16 @@ class PackCard extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Container(width: 5, height: 38, color: Ds.accent),
+                Container(width: 5, height: 36, color: Ds.accent),
                 const SizedBox(width: 10),
                 const Text(
                   'SOBRES DISPONIBLES',
                   style: TextStyle(
-                    fontFamily: Ds.font, fontSize: 9,
-                    fontWeight: FontWeight.w900, letterSpacing: 2, color: Ds.muted,
+                    fontFamily: Ds.font,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                    color: Ds.muted,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -54,43 +65,53 @@ class PackCard extends StatelessWidget {
             ),
           ),
 
-          // ── Body ─────────────────────────────────────
+          // ── Body — franja delgada con overflow de sobres ──
           SizedBox(
-            height: 120,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Sobres cortados a la izquierda
-                _PacksPanel(count: packsAvailable.clamp(0, 5)),
+            height: _cardBodyHeight,
+            child: ClipRect(
+              // clipBehavior: Clip.hardEdge corta el desborde inferior
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Sobres: se alinean al fondo y desbordan hacia abajo
+                  _PacksStack(
+                    count: packsAvailable.clamp(0, 5),
+                    envelopeW: _envelopeW,
+                    envelopeH: _envelopeH,
+                    visibleH: _cardBodyHeight,
+                  ),
 
-                // Separador vertical
-                Container(width: 1.5, color: Ds.border),
+                  const SizedBox(width: 12),
 
-                // Texto + botón
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          packsAvailable > 0
-                              ? 'Tienes $packsAvailable ${packsAvailable == 1 ? 'sobre listo' : 'sobres listos'} para abrir.'
-                              : 'Sigue jugando para ganar más sobres.',
-                          style: const TextStyle(
-                            fontFamily: Ds.font, fontSize: 11,
-                            color: Ds.ink, height: 1.4,
+                  // Texto + botón centrados verticalmente
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 14, top: 10, bottom: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            packsAvailable > 0
+                                ? 'Tienes $packsAvailable ${packsAvailable == 1 ? 'sobre listo' : 'sobres listos'} para abrir.'
+                                : 'Sigue jugando para\nganar más sobres.',
+                            style: const TextStyle(
+                              fontFamily: Ds.font,
+                              fontSize: 11,
+                              color: Ds.ink,
+                              height: 1.4,
+                            ),
                           ),
-                        ),
-
-                        if (packsAvailable > 0)
-                          _OpenButton(onTap: onOpen),
-                      ],
+                          if (packsAvailable > 0) ...[
+                            const SizedBox(height: 10),
+                            _OpenButton(onTap: onOpen),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -99,156 +120,245 @@ class PackCard extends StatelessWidget {
   }
 }
 
-// ── Panel de sobres — cortados a la izquierda ─────────────
-// Los sobres se apilan y el panel tiene ancho fijo, el overflow
-// hace que parezcan salir del borde izquierdo
-class _PacksPanel extends StatelessWidget {
+// ── Stack diagonal pegado al borde inferior ──────────────
+// Los sobres se posicionan alineados bottom, el stack
+// es tan alto como la card → el exceso queda fuera del ClipRect
+class _PacksStack extends StatelessWidget {
   final int count;
-  const _PacksPanel({required this.count});
+  final double envelopeW;
+  final double envelopeH;
+  final double visibleH;
 
-  static const _colors = [
-    Ds.accent,
-    Color(0xFF1A0CA8),
-    Color(0xFF4A3AFF),
-    Color(0xFF7B61FF),
-    Color(0xFF9B83FF),
-  ];
+  const _PacksStack({
+    required this.count,
+    required this.envelopeW,
+    required this.envelopeH,
+    required this.visibleH,
+  });
+
+  static const double _dx = 11.0; // offset horizontal entre capas
+  static const double _dy = 7.0;  // offset vertical entre capas (sube hacia la izq)
+  // Leve rotación en abanico para los sobres traseros
+  static const _rotations = [-0.07, -0.04, -0.015, 0.01, 0.0];
 
   @override
   Widget build(BuildContext context) {
     if (count == 0) {
-      return Container(
-        width: 90,
-        color: Ds.bgCard,
+      return SizedBox(
+        width: envelopeW + 14,
+        height: visibleH,
         child: const Center(
           child: Icon(Icons.inbox_outlined, size: 32, color: Ds.muted),
         ),
       );
     }
 
-    // Ancho fijo del panel — los sobres se "recortan" en el borde izquierdo
-    return SizedBox(
-      width: 90,
-      child: ClipRect(
-        child: Stack(
-          children: [
-            // Fondo panel ligeramente más oscuro
-            Positioned.fill(child: Container(color: Ds.bgCard)),
-
-            // Sobres apilados — desplazados hacia izq para que se corten
-            for (int i = 0; i < count; i++)
-              Positioned(
-                left: -10 + i * 12.0,
-                top: 10 + (count - 1 - i) * 2.5,
-                child: _Envelope3D(color: _colors[i % _colors.length]),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Sobre con relieve 3D ──────────────────────────────────
-class _Envelope3D extends StatelessWidget {
-  final Color color;
-  const _Envelope3D({required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    // Color más oscuro para sombra lateral del sobre
-    final darkColor = Color.fromARGB(
-      255,
-      (color.red * 0.4).round(),
-      (color.green * 0.4).round(),
-      (color.blue * 0.4).round(),
-    );
+    final stackW = envelopeW + (count - 1) * _dx + 6;
 
     return SizedBox(
-      width: 62, height: 80,
+      width: stackW,
+      height: visibleH,
       child: Stack(
+        alignment: Alignment.bottomLeft,
+        clipBehavior: Clip.none, // permite desborde
         children: [
-          // Sombra lateral derecha del sobre (efecto volumen)
-          Positioned(
-            right: 0, top: 3,
-            child: Container(width: 5, height: 74, color: darkColor),
-          ),
-
-          // Cuerpo del sobre
-          Positioned(
-            left: 0, right: 5, top: 0, bottom: 3,
-            child: Container(
-              decoration: BoxDecoration(
-                color: color,
-                border: const Border.fromBorderSide(
-                  BorderSide(color: Ds.border, width: 1),
+          for (int i = 0; i < count; i++)
+            Positioned(
+              // Frente (i == count-1) en left:0, bottom:0
+              // Fondos van a la derecha y más arriba
+              left: (count - 1 - i) * _dx,
+              bottom: -(envelopeH - visibleH) + (count - 1 - i) * _dy,
+              child: Transform.rotate(
+                angle: _rotations[i % _rotations.length],
+                alignment: Alignment.bottomCenter,
+                child: _EnvelopeCard(
+                  width: envelopeW,
+                  height: envelopeH,
+                  isFront: i == count - 1,
+                  layerIndex: i,
                 ),
               ),
-              child: Stack(
-                children: [
-                  // Flap superior con triángulo
-                  CustomPaint(
-                    size: const Size(57, 22),
-                    painter: _FlapPainter(
-                      color: Color.fromARGB(
-                        255,
-                        (color.red * 0.55).round(),
-                        (color.green * 0.55).round(),
-                        (color.blue * 0.55).round(),
-                      ),
-                    ),
-                  ),
-                  // Línea separadora
-                  Positioned(
-                    top: 22, left: 0, right: 0,
-                    child: Container(
-                      height: 1,
-                      color: Colors.white.withValues(alpha: 0.1),
-                    ),
-                  ),
-                  // Icono central
-                  const Align(
-                    alignment: Alignment(0, 0.5),
-                    child: Icon(Icons.auto_awesome,
-                      color: Colors.white24, size: 18),
-                  ),
-                ],
-              ),
             ),
-          ),
-
-          // Sombra inferior
-          Positioned(
-            left: 0, right: 5, bottom: 0,
-            child: Container(height: 4, color: darkColor),
-          ),
         ],
       ),
     );
   }
 }
 
-class _FlapPainter extends CustomPainter {
-  final Color color;
-  const _FlapPainter({required this.color});
+// ── Sobre individual — degradado navy + borde glow + líneas ──
+class _EnvelopeCard extends StatelessWidget {
+  final double width;
+  final double height;
+  final bool isFront;
+  final int layerIndex;
+
+  const _EnvelopeCard({
+    required this.width,
+    required this.height,
+    required this.isFront,
+    required this.layerIndex,
+  });
+
   @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawPath(
-      Path()
-        ..moveTo(0, 0)
-        ..lineTo(size.width, 0)
-        ..lineTo(size.width, 6)
-        ..lineTo(size.width / 2, 18)
-        ..lineTo(0, 6)
-        ..close(),
-      Paint()..color = color,
+  Widget build(BuildContext context) {
+    final opacity = isFront ? 1.0 : (0.50 + layerIndex * 0.13).clamp(0.0, 0.92);
+
+    return Opacity(
+      opacity: opacity,
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: CustomPaint(
+          painter: _EnvelopePainter(isFront: isFront),
+          child: Stack(
+            children: [
+              // Escudo central con glow
+              Center(child: _ShieldGlow(isFront: isFront)),
+              // Destello esquina
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Icon(
+                  Icons.auto_awesome,
+                  color: Colors.white.withValues(alpha: isFront ? 0.40 : 0.15),
+                  size: 7,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
-  @override
-  bool shouldRepaint(_FlapPainter o) => o.color != color;
 }
 
-// ── Badge contador con relieve ────────────────────────────
+class _EnvelopePainter extends CustomPainter {
+  final bool isFront;
+  const _EnvelopePainter({required this.isFront});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(4));
+
+    // Sombra suave
+    final shadowPaint = Paint()
+      ..color = const Color(0xFF1E1B30).withValues(alpha: 0.45)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect.translate(3, 4), const Radius.circular(4)),
+      shadowPaint,
+    );
+
+    // Fondo degradado navy
+    final bgPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: isFront
+            ? const [Color(0xFF3826C8), Color(0xFF1E1680), Color(0xFF0D0B3A)]
+            : const [Color(0xFF2A1E9A), Color(0xFF140F5C), Color(0xFF0A0832)],
+      ).createShader(rect);
+    canvas.drawRRect(rrect, bgPaint);
+
+    // Líneas diagonales
+    final linePaint = Paint()
+      ..color = Colors.white.withValues(alpha: isFront ? 0.06 : 0.03)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+    for (double x = -size.height; x < size.width + size.height; x += 13) {
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x + size.height * math.tan(math.pi / 4.2), size.height),
+        linePaint,
+      );
+    }
+
+    // Borde exterior
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..color = const Color(0xFF2D2A40)
+        ..strokeWidth = 1.5
+        ..style = PaintingStyle.stroke,
+    );
+
+    // Borde interior luminoso
+    final inner = Rect.fromLTWH(3, 3, size.width - 6, size.height - 6);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(inner, const Radius.circular(2)),
+      Paint()
+        ..color = const Color(0xFF7B6FFF).withValues(alpha: isFront ? 0.55 : 0.25)
+        ..strokeWidth = 1.0
+        ..style = PaintingStyle.stroke,
+    );
+
+    // Línea horizontal decorativa
+    final hY = size.height * 0.27;
+    canvas.drawLine(
+      Offset(6, hY),
+      Offset(size.width - 6, hY),
+      Paint()
+        ..color = Colors.white.withValues(alpha: isFront ? 0.09 : 0.04)
+        ..strokeWidth = 0.8,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_EnvelopePainter old) => old.isFront != isFront;
+}
+
+class _ShieldGlow extends StatelessWidget {
+  final bool isFront;
+  const _ShieldGlow({required this.isFront});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF5B4FD8).withValues(alpha: isFront ? 0.50 : 0.20),
+                blurRadius: 16,
+                spreadRadius: 6,
+              ),
+            ],
+          ),
+        ),
+        Icon(
+          Icons.shield_outlined,
+          color: Colors.white.withValues(alpha: isFront ? 0.80 : 0.40),
+          size: isFront ? 36 : 32,
+        ),
+        Positioned(
+          top: 6,
+          child: Container(
+            width: 5,
+            height: 5,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: isFront ? 0.55 : 0.20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.white.withValues(alpha: 0.35),
+                  blurRadius: 5,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Badge contador ────────────────────────────────────────
 class _CountBadge extends StatelessWidget {
   final int count;
   const _CountBadge({required this.count});
@@ -256,7 +366,8 @@ class _CountBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 30, height: 24,
+      width: 30,
+      height: 24,
       decoration: BoxDecoration(
         color: count > 0 ? Ds.accent : Ds.bgCard,
         border: const Border.fromBorderSide(
@@ -270,7 +381,8 @@ class _CountBadge extends StatelessWidget {
       child: Text(
         '$count',
         style: TextStyle(
-          fontFamily: Ds.font, fontSize: 11,
+          fontFamily: Ds.font,
+          fontSize: 11,
           fontWeight: FontWeight.w900,
           color: count > 0 ? Colors.white : Ds.muted,
         ),
@@ -279,7 +391,7 @@ class _CountBadge extends StatelessWidget {
   }
 }
 
-// ── Botón ABRIR SOBRES con sombra 3D ─────────────────────
+// ── Botón ABRIR SOBRES ────────────────────────────────────
 class _OpenButton extends StatefulWidget {
   final VoidCallback onTap;
   const _OpenButton({required this.onTap});
@@ -313,7 +425,10 @@ class _OpenButtonState extends State<_OpenButton> {
               ? null
               : const [
                   BoxShadow(
-                    color: Ds.shadow3d, offset: Offset(3, 3), blurRadius: 0),
+                    color: Ds.shadow3d,
+                    offset: Offset(3, 3),
+                    blurRadius: 0,
+                  ),
                 ],
         ),
         padding: const EdgeInsets.symmetric(vertical: 11),
@@ -325,8 +440,11 @@ class _OpenButtonState extends State<_OpenButton> {
             Text(
               'ABRIR SOBRES',
               style: TextStyle(
-                fontFamily: Ds.font, fontSize: 11,
-                fontWeight: FontWeight.w900, letterSpacing: 2, color: Colors.white,
+                fontFamily: Ds.font,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+                color: Colors.white,
               ),
             ),
           ],
