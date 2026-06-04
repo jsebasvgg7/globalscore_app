@@ -9,145 +9,255 @@ import '../widgets/albums_carousel.dart';
 import '../widgets/pack_opening_modal.dart';
 
 // ════════════════════════════════════════════════════════════
-//  ALBUMS PAGE — maniquí puro, solo orquesta widgets
+//  DESIGN TOKENS — imagen 2 como referencia definitiva
+//  Neobrutalista: fondo crema, morado puro, sombras negras
+//  marcadas, sin border-radius, relieve 3D por layering
 // ════════════════════════════════════════════════════════════
+abstract class Ds {
+  // Fondos
+  static const Color bg        = Color(0xFFF5F2EC); // crema general
+  static const Color bgSection = Color(0xFFEFEBE3); // sección ligeramente más oscuro
+  static const Color bgCard    = Color(0xFFE8E3D8); // cards
 
+  // Ink / bordes
+  static const Color ink       = Color(0xFF0D0D1A); // negro casi puro
+  static const Color border    = Color(0xFF0D0D1A); // bordes neobrutalistas
+  static const Color borderSub = Color(0xFFCBC6BA); // separadores suaves
+  static const Color muted     = Color(0xFF777068); // texto secundario
+
+  // Acento principal — morado del boceto
+  static const Color accent    = Color(0xFF5B4FD8);
+  static const Color accentDim = Color(0xFF4A40C0);
+  static const Color gold      = Color(0xFFFFD600);
+
+  // Sombra 3D neobrutalista
+  static const Color shadow3d  = Color(0xFF0D0D1A);
+
+  static const String font = 'DM Mono';
+}
+
+// ════════════════════════════════════════════════════════════
+//  ALBUMS PAGE
+// ════════════════════════════════════════════════════════════
 class AlbumsPage extends ConsumerWidget {
   const AlbumsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final albumsAsync = ref.watch(albumsProvider);
-
     return albumsAsync.when(
-      loading: () => const _AlbumsLoading(),
-      error: (e, _) => _AlbumsError(message: e.toString()),
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: Ds.accent, strokeWidth: 2),
+      ),
+      error: (e, _) => Center(
+        child: Text('Error: $e',
+            style: const TextStyle(color: Colors.red, fontSize: 11)),
+      ),
       data: (model) => _AlbumsBody(model: model),
     );
   }
 }
 
-// ── Loading ───────────────────────────────────────────────
-class _AlbumsLoading extends StatelessWidget {
-  const _AlbumsLoading();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(
-        color: GsColors.accent,
-        strokeWidth: 2,
-      ),
-    );
-  }
-}
-
-// ── Error ─────────────────────────────────────────────────
-class _AlbumsError extends StatelessWidget {
-  final String message;
-  const _AlbumsError({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(
-          'Error: $message',
-          style: const TextStyle(color: Colors.red, fontSize: 11),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Body principal ────────────────────────────────────────
 class _AlbumsBody extends ConsumerWidget {
   final AlbumsModel model;
   const _AlbumsBody({required this.model});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Álbum legendario activo (primero no completado)
     final activeAlbum = model.legendaryAlbums
             .where((d) => model.progressFor(d.id)?.isCompleted != true)
             .firstOrNull ??
         model.legendaryAlbums.firstOrNull;
 
-    final prog =
-        activeAlbum != null ? model.progressFor(activeAlbum.id) : null;
-    final unique = prog?.uniqueCards ?? 0;
+    final prog     = activeAlbum != null ? model.progressFor(activeAlbum.id) : null;
+    final unique   = prog?.uniqueCards ?? 0;
     final required = activeAlbum?.requiredUniquePlayers ?? 30;
-    final pct = required > 0 ? (unique / required).clamp(0.0, 1.0) : 0.0;
+    final pct      = required > 0 ? (unique / required).clamp(0.0, 1.0) : 0.0;
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // 1 — Álbum activo (libro 3D + stats + progreso)
-          if (activeAlbum != null)
-            ActiveAlbumHero(
-              albumId: activeAlbum.id,
-              name: activeAlbum.name,
-              description: activeAlbum.description,
-              pct: pct,
-              filled: unique,
-              total: required,
-              isCompleted: prog?.isCompleted ?? false,
+    return Container(
+      color: Ds.bg,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 1 — Tabs
+            const _TabsBar(),
+
+            const SizedBox(height: 12),
+
+            // 2 — Hero álbum activo (con relieve 3D)
+            if (activeAlbum != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: ActiveAlbumHero(
+                  albumId:     activeAlbum.id,
+                  name:        activeAlbum.name,
+                  description: activeAlbum.description,
+                  pct:         pct,
+                  filled:      unique,
+                  total:       required,
+                  isCompleted: prog?.isCompleted ?? false,
+                ),
+              ),
+
+            const SizedBox(height: 12),
+
+            // 3 — Progreso de sobres (con relieve)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: BoostProgressBar(
+                boostActive:         model.packs?.boostActive ?? false,
+                boostPacksRemaining: model.packs?.boostPacksRemaining ?? 0,
+                totalPacksOpened:    model.packs?.totalPacksOpened ?? 0,
+              ),
             ),
 
-          // 2 — Track de progreso de sobres + boost
-          BoostProgressBar(
-            boostActive: model.packs?.boostActive ?? false,
-            boostPacksRemaining: model.packs?.boostPacksRemaining ?? 0,
-            totalPacksOpened: model.packs?.totalPacksOpened ?? 0,
+            const SizedBox(height: 12),
+
+            // 4 — Sobres disponibles (con relieve)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: PackCard(
+                packsAvailable: model.packs?.packsAvailable ?? 0,
+                onOpen: () => showPackOpeningModal(context, ref),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // 5 — Carrusel colecciones
+            AlbumsCarousel(model: model),
+
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  TABS BAR — imagen 2: fondo oscuro, tab activo morado,
+//  iconos pequeños, PRONTO en badge
+// ════════════════════════════════════════════════════════════
+class _TabsBar extends StatelessWidget {
+  const _TabsBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Ds.border, width: 1.5),
+        ),
+      ),
+      child: Row(
+        children: [
+          _Tab(
+            icon: Icons.grid_view,
+            label: 'RESUMEN',
+            active: true,
           ),
-
-          const _SectionDivider(),
-
-          // 3 — Sobre 3D + botón abrir
-          PackCard(
-            packsAvailable: model.packs?.packsAvailable ?? 0,
-            onOpen: () => showPackOpeningModal(context, ref),
+          _Tab(
+            icon: Icons.menu_book_outlined,
+            label: 'COLECCIÓN',
+            active: false,
+            soon: true,
           ),
-
-          const _SectionDivider(),
-
-          // 4 — Carrusel legendary / stars / cult
-          AlbumsCarousel(model: model),
-
-          const SizedBox(height: 32),
+          _Tab(
+            icon: Icons.mail_outline,
+            label: 'SOBRES',
+            active: false,
+            soon: true,
+          ),
+          _Tab(
+            icon: Icons.star_outline,
+            label: 'MISIONES',
+            active: false,
+            soon: true,
+          ),
         ],
       ),
     );
   }
 }
 
-// ── Divisor de sección ────────────────────────────────────
-class _SectionDivider extends StatelessWidget {
-  const _SectionDivider();
+class _Tab extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool active;
+  final bool soon;
+
+  const _Tab({
+    required this.icon,
+    required this.label,
+    required this.active,
+    this.soon = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 1,
-      color: GsColors.border.withValues(alpha: 0.12),
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: active ? Ds.accent : Colors.transparent,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon,
+                  size: 12,
+                  color: active ? Colors.white : Ds.muted),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: Ds.font,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.3,
+                  color: active ? Colors.white : Ds.muted,
+                ),
+              ),
+            ],
+          ),
+          if (soon)
+            Container(
+              margin: const EdgeInsets.only(top: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                border: Border.all(color: Ds.borderSub, width: 0.8),
+              ),
+              child: const Text(
+                'PRONTO',
+                style: TextStyle(
+                  fontFamily: Ds.font,
+                  fontSize: 6,
+                  fontWeight: FontWeight.w700,
+                  color: Ds.muted,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
 
-// ════════════════════════════════════════════════════════════
-//  COLORES COMPARTIDOS
-// ════════════════════════════════════════════════════════════
+// ── Alias GsColors para compatibilidad con otros widgets ──
 abstract class GsColors {
-  static const Color cream  = Color(0xFFF0EDE8);
-  static const Color card   = Color(0xFFEDE7DA);
-  static const Color border = Color(0xFF1A1A2E);
-  static const Color accent = Color(0xFF5B4FD8);
-  static const Color gold   = Color(0xFFFFD600);
-  static const Color muted  = Color(0xFF88887D);
-  static const Color text   = Color(0xFF1A1A2E);
-  static const Color shadow = Color(0x661A1A2E);
-  static const String fontMono = 'DM Mono';
+  static const Color cream   = Ds.bgCard;
+  static const Color card    = Ds.bgSection;
+  static const Color border  = Ds.border;
+  static const Color text    = Ds.ink;
+  static const Color accent  = Ds.accent;
+  static const Color gold    = Ds.gold;
+  static const Color muted   = Ds.muted;
+  static const Color shadow  = Color(0x881A1A2E);
+  static const String fontMono = Ds.font;
 }

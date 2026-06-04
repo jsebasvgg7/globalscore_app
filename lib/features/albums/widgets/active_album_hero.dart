@@ -1,60 +1,64 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../presentation/albums_page.dart' show GsColors;
-import '../domain/albums_model.dart';
+import '../presentation/albums_page.dart' show Ds;
 
-// Paleta por album_id (spine / accent / coverBg)
-const Map<String, _AlbumMeta> _albumMeta = {
+// ════════════════════════════════════════════════════════════
+//  ACTIVE ALBUM HERO
+//  3D neobrutalista: contenedor con borde negro + sombra offset,
+//  libro 3D grande a la derecha con perspectiva/inclinación,
+//  stat boxes con sombra, barra corta (solo columna izquierda)
+// ════════════════════════════════════════════════════════════
+
+const Map<String, _AlbumMeta> _meta = {
   'legendary_1': _AlbumMeta(
     spine: Color(0xFF5b4fd8), spineAlt: Color(0xFF3d34a5),
     accent: Color(0xFFa599d9), coverBg: Color(0xFF1a1726),
-    shortLabel: 'LEG I', number: '01',
-    rarityLabel: 'FUNDADORES', tag: 'TEMP 25·26',
+    shortLabel: 'LEG I', rarityLabel: 'FUNDADORES',
+    tag: 'TEMP 25·26', number: '01',
   ),
   'legendary_2': _AlbumMeta(
     spine: Color(0xFF7c3aed), spineAlt: Color(0xFF5b1fbd),
     accent: Color(0xFFc4b5fd), coverBg: Color(0xFF160e2a),
-    shortLabel: 'LEG II', number: '02',
-    rarityLabel: 'LEYENDAS', tag: 'TEMP 25·26',
+    shortLabel: 'LEG II', rarityLabel: 'LEYENDAS',
+    tag: 'TEMP 25·26', number: '02',
   ),
   'legendary_3': _AlbumMeta(
     spine: Color(0xFF1D9E75), spineAlt: Color(0xFF0d6e50),
     accent: Color(0xFF34d399), coverBg: Color(0xFF0a1f18),
-    shortLabel: 'LEG III', number: '03',
-    rarityLabel: 'ÉLITE', tag: 'TEMP 25·26',
+    shortLabel: 'LEG III', rarityLabel: 'ÉLITE',
+    tag: 'TEMPORADA 25+26', number: '03',
   ),
   'legendary_4': _AlbumMeta(
     spine: Color(0xFFb45309), spineAlt: Color(0xFF7c3b00),
     accent: Color(0xFFf59e0b), coverBg: Color(0xFF1a1200),
-    shortLabel: 'LEG IV', number: '04',
-    rarityLabel: 'GOATS', tag: 'TEMP 25·26',
+    shortLabel: 'LEG IV', rarityLabel: 'GOATS',
+    tag: 'TEMP 25·26', number: '04',
   ),
   'legendary_5': _AlbumMeta(
     spine: Color(0xFF9d174d), spineAlt: Color(0xFF6b1130),
     accent: Color(0xFFf472b6), coverBg: Color(0xFF1a0e15),
-    shortLabel: 'LEG V', number: '05',
-    rarityLabel: 'INMORTALES', tag: 'ENDGAME',
+    shortLabel: 'LEG V', rarityLabel: 'INMORTALES',
+    tag: 'ENDGAME', number: '05',
   ),
 };
 
-const _AlbumMeta _defaultMeta = _AlbumMeta(
+const _AlbumMeta _def = _AlbumMeta(
   spine: Color(0xFF5b4fd8), spineAlt: Color(0xFF3d34a5),
   accent: Color(0xFFa599d9), coverBg: Color(0xFF1a1726),
-  shortLabel: 'ALB', number: '01',
-  rarityLabel: '', tag: '',
+  shortLabel: 'ALB', rarityLabel: '', tag: '', number: '01',
 );
 
 class _AlbumMeta {
   final Color spine, spineAlt, accent, coverBg;
-  final String shortLabel, number, rarityLabel, tag;
+  final String shortLabel, rarityLabel, tag, number;
   const _AlbumMeta({
     required this.spine, required this.spineAlt,
     required this.accent, required this.coverBg,
-    required this.shortLabel, required this.number,
-    required this.rarityLabel, required this.tag,
+    required this.shortLabel, required this.rarityLabel,
+    required this.tag, required this.number,
   });
 }
 
-// ── Widget público ────────────────────────────────────────
 class ActiveAlbumHero extends StatelessWidget {
   final String? albumId;
   final String? name;
@@ -77,92 +81,128 @@ class ActiveAlbumHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final meta = _albumMeta[albumId] ?? _defaultMeta;
+    final m = _meta[albumId] ?? _def;
 
+    // Contenedor principal con borde negro y sombra offset 3D
     return Container(
-      color: GsColors.cream,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+      decoration: BoxDecoration(
+        color: Ds.bg,
+        border: Border.all(color: Ds.border, width: 1.5),
+        boxShadow: const [
+          BoxShadow(
+            color: Ds.shadow3d,
+            offset: Offset(4, 4),
+            blurRadius: 0,
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Eyebrow + badge
-          Row(
-            children: [
-              const Text(
-                'ÁLBUM ACTIVO',
-                style: TextStyle(
-                  fontSize: 9, fontWeight: FontWeight.w900,
-                  letterSpacing: 1.5, color: GsColors.muted,
+          // ── Fila superior: eyebrow + badge ───────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+            child: Row(
+              children: [
+                const Text(
+                  'ÁLBUM ACTIVO',
+                  style: TextStyle(
+                    fontFamily: Ds.font,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 2,
+                    color: Ds.muted,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              _StatusBadge(completed: isCompleted),
-            ],
+                const Spacer(),
+                _ActiveBadge(completed: isCompleted),
+              ],
+            ),
           ),
-          const SizedBox(height: 14),
 
-          // Info + libro 3D
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Columna info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      (name ?? '—').toUpperCase(),
-                      style: const TextStyle(
-                        fontSize: 22, fontWeight: FontWeight.w900,
-                        letterSpacing: -0.3, height: 1.1, color: GsColors.text,
-                      ),
-                    ),
-                    if (description != null) ...[
-                      const SizedBox(height: 4),
+          // ── Fila central: info izquierda + libro derecho
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 0, 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Columna izquierda — ocupa ~55% del ancho
+                Expanded(
+                  flex: 55,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Título
                       Text(
-                        description!,
-                        style: const TextStyle(fontSize: 11, color: GsColors.muted),
+                        (name ?? '—').toUpperCase(),
+                        style: const TextStyle(
+                          fontFamily: Ds.font,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                          height: 1.05,
+                          color: Ds.ink,
+                        ),
                       ),
-                    ],
-                    const SizedBox(height: 16),
-                    // Stats: figuritas + % completado
-                    Row(
-                      children: [
-                        _StatBox(value: '$filled', label: 'FIGURITAS'),
-                        const SizedBox(width: 8),
-                        _StatBox(
-                          value: '${(pct * 100).round()}%',
-                          label: 'COMPLETADO',
-                          valueColor: meta.accent,
+                      if (description != null) ...[
+                        const SizedBox(height: 5),
+                        Text(
+                          description!,
+                          style: const TextStyle(
+                            fontFamily: Ds.font,
+                            fontSize: 10,
+                            color: Ds.muted,
+                            height: 1.3,
+                          ),
                         ),
                       ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              // Libro 3D
-              _Book3D(meta: meta, filled: filled, total: total, pct: pct),
-            ],
-          ),
+                      const SizedBox(height: 14),
 
-          const SizedBox(height: 16),
-          // Barra de progreso
-          _ProgressBar(pct: pct, color: meta.accent),
-          const SizedBox(height: 8),
-          // Contador
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _Chip(label: '$filled / $total figuritas'),
-              Text(
-                '${(pct * 100).round()}%',
-                style: TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w800,
-                  color: meta.accent,
+                      // Stat boxes — con sombra 3D
+                      Row(
+                        children: [
+                          _StatBox(
+                            value: '$filled',
+                            label: 'FIGURITAS',
+                          ),
+                          const SizedBox(width: 8),
+                          _StatBox(
+                            value: '${(pct * 100).round()}%',
+                            label: 'COMPLETADO',
+                            valueColor: m.accent,
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      // Barra de progreso (solo bajo la columna izquierda)
+                      _ProgressBar(pct: pct, color: m.accent),
+                      const SizedBox(height: 8),
+
+                      // Chip figuritas
+                      _FigChip(
+                        filled: filled,
+                        total: total,
+                        pct: pct,
+                        accent: m.accent,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+
+                // Columna derecha — libro 3D grande con perspectiva
+                Expanded(
+                  flex: 45,
+                  child: _Book3DPerspective(
+                    meta: m,
+                    filled: filled,
+                    total: total,
+                    pct: pct,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -170,13 +210,17 @@ class ActiveAlbumHero extends StatelessWidget {
   }
 }
 
-// ── Libro 3D ──────────────────────────────────────────────
-class _Book3D extends StatelessWidget {
+// ════════════════════════════════════════════════════════════
+//  LIBRO 3D CON PERSPECTIVA — efecto inclinación real
+//  Usa Transform con perspectiva para simular libro abierto
+//  en ángulo, igual que imagen 2
+// ════════════════════════════════════════════════════════════
+class _Book3DPerspective extends StatelessWidget {
   final _AlbumMeta meta;
   final int filled, total;
   final double pct;
 
-  const _Book3D({
+  const _Book3DPerspective({
     required this.meta,
     required this.filled,
     required this.total,
@@ -186,37 +230,94 @@ class _Book3D extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 92,
-      height: 116,
+      height: 200,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          // Sombra
+          // Sombra del libro (offset abajo-derecha)
           Positioned(
-            left: 6, top: 6,
+            left: 14, top: 14,
             child: Container(
-              width: 84, height: 108,
-              color: GsColors.border.withValues(alpha: 0.07),
+              width: 140, height: 175,
+              color: Ds.ink.withValues(alpha: 0.35),
             ),
           ),
-          // Páginas apiladas (efecto de profundidad)
-          for (int i = 2; i >= 0; i--)
-            Positioned(
-              right: i * 2.0, top: i * 1.0,
-              child: Container(
-                width: 10, height: 104,
-                color: const Color(0xFFD4CFC8).withValues(alpha: 0.6 - i * 0.15),
+
+          // Libro con Transform perspectiva — inclinado
+          Positioned(
+            left: 0, top: 0,
+            child: Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.001)   // perspectiva
+                ..rotateY(-0.22)           // inclinación eje Y
+                ..rotateX(0.06),           // leve inclinación eje X
+              child: _BookBody(
+                meta: meta,
+                filled: filled,
+                total: total,
+                pct: pct,
               ),
             ),
-          // Lomo
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BookBody extends StatelessWidget {
+  final _AlbumMeta meta;
+  final int filled, total;
+  final double pct;
+
+  const _BookBody({
+    required this.meta,
+    required this.filled,
+    required this.total,
+    required this.pct,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const bookW = 138.0;
+    const bookH = 174.0;
+    const spineW = 18.0;
+
+    return SizedBox(
+      width: bookW,
+      height: bookH,
+      child: Stack(
+        children: [
+          // ── Páginas apiladas (profundidad) ────────────
+          for (int i = 3; i >= 0; i--)
+            Positioned(
+              right: i * 3.0, top: i * 1.5,
+              child: Container(
+                width: 14, height: bookH - 4,
+                color: Color.lerp(
+                  const Color(0xFFD4CFC8),
+                  const Color(0xFFBBB5AD),
+                  i / 3,
+                )!.withValues(alpha: 0.7),
+              ),
+            ),
+
+          // ── Lomo (spine) ──────────────────────────────
           Positioned(
             left: 0, top: 0,
             child: Container(
-              width: 12, height: 104,
+              width: spineW, height: bookH,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [meta.spine, meta.spineAlt],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    meta.spine,
+                    meta.spineAlt,
+                    meta.spine.withValues(alpha: 0.7),
+                  ],
+                  stops: const [0, 0.6, 1],
                 ),
               ),
               alignment: Alignment.center,
@@ -225,90 +326,125 @@ class _Book3D extends StatelessWidget {
                 child: Text(
                   meta.shortLabel,
                   style: const TextStyle(
-                    fontFamily: GsColors.fontMono,
-                    fontSize: 6, fontWeight: FontWeight.w900,
-                    color: Colors.white70, letterSpacing: 1.5,
+                    fontFamily: Ds.font,
+                    fontSize: 7,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white70,
+                    letterSpacing: 2,
                   ),
                 ),
               ),
             ),
           ),
-          // Portada
+
+          // ── Portada principal ─────────────────────────
           Positioned(
-            left: 10, top: 0,
+            left: spineW - 1, top: 0,
             child: Container(
-              width: 82, height: 104,
+              width: bookW - spineW + 1,
+              height: bookH,
               decoration: BoxDecoration(
                 color: meta.coverBg,
-                border: Border.all(color: GsColors.border, width: 1.5),
+                border: Border.all(
+                  color: meta.accent.withValues(alpha: 0.5),
+                  width: 1,
+                ),
               ),
               child: Stack(
                 children: [
-                  // Tag temporada
+                  // Número álbum top-left
                   Positioned(
-                    top: 6, left: 6,
+                    top: 7, left: 7,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      color: GsColors.border.withValues(alpha: 0.4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 2),
+                      color: Colors.black38,
                       child: Text(
-                        meta.tag,
-                        style: const TextStyle(
-                          fontFamily: GsColors.fontMono,
-                          fontSize: 4.5, fontWeight: FontWeight.w900,
-                          color: Colors.white, letterSpacing: 0.5,
+                        meta.number,
+                        style: TextStyle(
+                          fontFamily: Ds.font,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          color: meta.accent,
                         ),
                       ),
                     ),
                   ),
-                  // Arte central: círculos + escudo
+
+                  // Tag temporada top-right
+                  Positioned(
+                    top: 7, right: 14,
+                    child: Text(
+                      meta.tag,
+                      style: const TextStyle(
+                        fontFamily: Ds.font,
+                        fontSize: 5,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white54,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+
+                  // Arte central con glow
                   Positioned.fill(
                     child: CustomPaint(
-                      painter: _BookArtPainter(accent: meta.accent),
+                      painter: _CoverArtPainter(accent: meta.accent),
                     ),
                   ),
-                  // Label rareza + contador
+
+                  // Label rareza
                   Positioned(
-                    bottom: 18, left: 0, right: 0,
-                    child: Column(
-                      children: [
-                        Text(
-                          meta.rarityLabel,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: GsColors.fontMono,
-                            fontSize: 6, fontWeight: FontWeight.w900,
-                            letterSpacing: 1.5, color: meta.accent,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '$filled / $total',
-                          style: TextStyle(
-                            fontSize: 7,
-                            color: meta.accent.withValues(alpha: 0.6),
-                          ),
-                        ),
-                      ],
+                    bottom: 28, left: 0, right: 0,
+                    child: Text(
+                      meta.rarityLabel,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: Ds.font,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
+                        color: meta.accent,
+                      ),
                     ),
                   ),
-                  // Barra progreso inferior
+
+                  // Contador items
+                  Positioned(
+                    bottom: 16, left: 0, right: 0,
+                    child: Text(
+                      '$filled / $total ITEMS',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: Ds.font,
+                        fontSize: 7,
+                        color: meta.accent.withValues(alpha: 0.6),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+
+                  // Barra inferior
                   Positioned(
                     bottom: 0, left: 0, right: 0,
                     child: Container(
-                      height: 4,
-                      color: Colors.black26,
+                      height: 5,
+                      color: Colors.black38,
                       child: FractionallySizedBox(
                         alignment: Alignment.centerLeft,
                         widthFactor: pct.clamp(0.0, 1.0),
-                        child: Container(color: meta.accent.withValues(alpha: 0.7)),
+                        child: Container(
+                            color: meta.accent.withValues(alpha: 0.9)),
                       ),
                     ),
                   ),
-                  // Broche lateral
+
+                  // Broche lateral derecho
                   Positioned(
                     right: 0, top: 0, bottom: 0,
-                    child: _BookClasp(color: meta.accent),
+                    child: _Clasp(color: meta.accent),
                   ),
+
                   // Esquinas doradas
                   ..._GoldCorners.all,
                 ],
@@ -321,155 +457,125 @@ class _Book3D extends StatelessWidget {
   }
 }
 
-class _BookArtPainter extends CustomPainter {
+// ── Arte de portada con glow radial ──────────────────────
+class _CoverArtPainter extends CustomPainter {
   final Color accent;
-  const _BookArtPainter({required this.accent});
+  const _CoverArtPainter({required this.accent});
 
   @override
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
-    final cy = size.height / 2 - 4;
-    final paint = Paint()
-      ..color = accent.withValues(alpha: 0.12)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.8;
+    final cy = size.height / 2 - 10;
 
-    for (final r in [32.0, 22.0, 14.0]) {
-      canvas.drawCircle(Offset(cx, cy), r, paint);
+    // Glow radial
+    final glow = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          accent.withValues(alpha: 0.18),
+          accent.withValues(alpha: 0.0),
+        ],
+      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: 55));
+    canvas.drawCircle(Offset(cx, cy), 55, glow);
+
+    // Círculos concéntricos
+    for (final r in [40.0, 28.0, 18.0, 10.0]) {
+      canvas.drawCircle(
+        Offset(cx, cy), r,
+        Paint()
+          ..color = accent.withValues(alpha: 0.13)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.8,
+      );
     }
 
-    // Escudo
-    final shieldPaint = Paint()
-      ..color = accent.withValues(alpha: 0.18)
+    // Escudo central
+    final fill = Paint()
+      ..color = accent.withValues(alpha: 0.15)
       ..style = PaintingStyle.fill;
-    final shieldStroke = Paint()
-      ..color = accent.withValues(alpha: 0.5)
+    final stroke = Paint()
+      ..color = accent.withValues(alpha: 0.7)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
+      ..strokeWidth = 1.2;
 
     final path = Path()
-      ..moveTo(cx, cy - 16)
-      ..lineTo(cx + 12, cy - 10)
-      ..lineTo(cx + 12, cy + 2)
-      ..quadraticBezierTo(cx + 12, cy + 14, cx, cy + 20)
-      ..quadraticBezierTo(cx - 12, cy + 14, cx - 12, cy + 2)
-      ..lineTo(cx - 12, cy - 10)
+      ..moveTo(cx, cy - 20)
+      ..lineTo(cx + 15, cy - 12)
+      ..lineTo(cx + 15, cy + 3)
+      ..quadraticBezierTo(cx + 15, cy + 18, cx, cy + 26)
+      ..quadraticBezierTo(cx - 15, cy + 18, cx - 15, cy + 3)
+      ..lineTo(cx - 15, cy - 12)
       ..close();
+    canvas.drawPath(path, fill);
+    canvas.drawPath(path, stroke);
 
-    canvas.drawPath(path, shieldPaint);
-    canvas.drawPath(path, shieldStroke);
-
-    // Punto central
+    // Punto central brillante
     canvas.drawCircle(
-      Offset(cx, cy + 2),
-      3,
-      Paint()..color = accent.withValues(alpha: 0.4),
+      Offset(cx, cy + 3),
+      4,
+      Paint()
+        ..color = accent.withValues(alpha: 0.6)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
     );
+    canvas.drawCircle(Offset(cx, cy + 3), 2.5,
+        Paint()..color = accent.withValues(alpha: 0.9));
   }
 
   @override
-  bool shouldRepaint(_BookArtPainter old) => old.accent != accent;
+  bool shouldRepaint(_CoverArtPainter o) => o.accent != accent;
 }
 
-// ── Broche del libro ──────────────────────────────────────
-class _BookClasp extends StatelessWidget {
-  final Color color;
-  const _BookClasp({required this.color});
+// ── Badge ACTIVO ──────────────────────────────────────────
+class _ActiveBadge extends StatelessWidget {
+  final bool completed;
+  const _ActiveBadge({required this.completed});
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 8,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(width: 3, height: 16, color: color.withValues(alpha: 0.5)),
-          Container(
-            width: 8, height: 8,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.3),
-              border: Border.all(color: color, width: 0.8),
-            ),
-          ),
-          Container(width: 3, height: 16, color: color.withValues(alpha: 0.5)),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(
+        color: completed ? const Color(0xFF00C48C) : Ds.gold,
+        boxShadow: const [
+          BoxShadow(color: Ds.shadow3d, offset: Offset(2, 2), blurRadius: 0),
         ],
       ),
-    );
-  }
-}
-
-// ── Esquinas doradas ──────────────────────────────────────
-abstract class _GoldCorners {
-  static const Color _gold = Color(0xFFD4A820);
-  static const _size = 6.0;
-  static const _thick = 1.0;
-
-  static List<Widget> get all => [
-    _corner(top: 3, left: 3),
-    _corner(top: 3, right: 3),
-    _corner(bottom: 3, left: 3),
-    _corner(bottom: 3, right: 3),
-  ];
-
-  static Widget _corner({
-    double? top, double? bottom, double? left, double? right,
-  }) {
-    return Positioned(
-      top: top, bottom: bottom, left: left, right: right,
-      child: SizedBox(
-        width: _size, height: _size,
-        child: CustomPaint(
-          painter: _CornerPainter(
-            top: top != null, left: left != null,
-          ),
+      child: Text(
+        completed ? 'COMPLETADO' : 'ACTIVO',
+        style: const TextStyle(
+          fontFamily: Ds.font,
+          fontSize: 9,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.5,
+          color: Ds.ink,
         ),
       ),
     );
   }
 }
 
-class _CornerPainter extends CustomPainter {
-  final bool top, left;
-  const _CornerPainter({required this.top, required this.left});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFFD4A820)
-      ..strokeWidth = _GoldCorners._thick
-      ..style = PaintingStyle.stroke;
-
-    final x = left ? 0.0 : size.width;
-    final y = top ? 0.0 : size.height;
-    final dx = left ? size.width : -size.width;
-    final dy = top ? size.height : -size.height;
-
-    canvas.drawLine(Offset(x, y), Offset(x + dx, y), paint);
-    canvas.drawLine(Offset(x, y), Offset(x, y + dy), paint);
-  }
-
-  @override
-  bool shouldRepaint(_CornerPainter old) => false;
-}
-
-// ── Stat box ──────────────────────────────────────────────
+// ── Stat box con sombra 3D ────────────────────────────────
 class _StatBox extends StatelessWidget {
   final String value, label;
   final Color valueColor;
   const _StatBox({
-    required this.value, required this.label,
-    this.valueColor = GsColors.text,
+    required this.value,
+    required this.label,
+    this.valueColor = Ds.ink,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+      padding: const EdgeInsets.fromLTRB(10, 8, 14, 8),
       decoration: BoxDecoration(
-        color: GsColors.card,
-        border: Border.all(color: GsColors.border, width: 1),
+        color: Ds.bg,
+        border: Border.all(color: Ds.border, width: 1.5),
         boxShadow: const [
-          BoxShadow(color: GsColors.shadow, offset: Offset(2, 2)),
+          BoxShadow(
+            color: Ds.shadow3d,
+            offset: Offset(3, 3),
+            blurRadius: 0,
+          ),
         ],
       ),
       child: Column(
@@ -478,16 +584,23 @@ class _StatBox extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontFamily: GsColors.fontMono,
-              fontSize: 26, fontWeight: FontWeight.w900,
-              letterSpacing: -1, height: 1, color: valueColor,
+              fontFamily: Ds.font,
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -1.5,
+              height: 1,
+              color: valueColor,
             ),
           ),
+          const SizedBox(height: 3),
           Text(
             label,
             style: const TextStyle(
-              fontSize: 8, fontWeight: FontWeight.w700,
-              letterSpacing: 0.5, color: GsColors.muted,
+              fontFamily: Ds.font,
+              fontSize: 7,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.8,
+              color: Ds.muted,
             ),
           ),
         ],
@@ -496,7 +609,7 @@ class _StatBox extends StatelessWidget {
   }
 }
 
-// ── Progress bar animada ──────────────────────────────────
+// ── Barra de progreso ─────────────────────────────────────
 class _ProgressBar extends StatelessWidget {
   final double pct;
   final Color color;
@@ -506,77 +619,149 @@ class _ProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: pct.clamp(0.0, 1.0)),
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 800),
       curve: Curves.easeOut,
-      builder: (_, v, __) => Container(
-        height: 10,
-        decoration: BoxDecoration(
-          color: const Color(0xFFE8E0D0),
-          border: Border.all(color: GsColors.border.withValues(alpha: 0.2), width: 1),
-        ),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: FractionallySizedBox(
-            widthFactor: v,
-            child: Container(color: color),
+      builder: (_, v, __) {
+        return Container(
+          height: 8,
+          decoration: BoxDecoration(
+            // Relieve: borde oscuro arriba/izq, claro abajo/der
+            border: Border(
+              top: BorderSide(color: Ds.ink.withValues(alpha: 0.3), width: 1),
+              left: BorderSide(color: Ds.ink.withValues(alpha: 0.3), width: 1),
+              bottom: BorderSide(color: Colors.white.withValues(alpha: 0.6), width: 1),
+              right: BorderSide(color: Colors.white.withValues(alpha: 0.6), width: 1),
+            ),
+            color: Ds.bgCard,
           ),
-        ),
+          child: FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: v,
+            child: Container(
+              decoration: BoxDecoration(
+                color: color,
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.4),
+                    blurRadius: 4,
+                    offset: const Offset(0, 0),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Chip figuritas ────────────────────────────────────────
+class _FigChip extends StatelessWidget {
+  final int filled, total;
+  final double pct;
+  final Color accent;
+  const _FigChip({
+    required this.filled,
+    required this.total,
+    required this.pct,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: Ds.bg,
+        border: Border.all(color: Ds.border, width: 1.5),
+        boxShadow: const [
+          BoxShadow(color: Ds.shadow3d, offset: Offset(2, 2), blurRadius: 0),
+        ],
+      ),
+      child: Row(
+        children: [
+          Text(
+            '$filled / $total figuritas',
+            style: const TextStyle(
+              fontFamily: Ds.font,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: Ds.ink,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            '${(pct * 100).round()}%',
+            style: TextStyle(
+              fontFamily: Ds.font,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              color: accent,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// ── Chip ──────────────────────────────────────────────────
-class _Chip extends StatelessWidget {
-  final String label;
-  const _Chip({required this.label});
-
+// ── Broche ────────────────────────────────────────────────
+class _Clasp extends StatelessWidget {
+  final Color color;
+  const _Clasp({required this.color});
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: GsColors.card,
-        border: Border.all(color: GsColors.border, width: 1),
-        boxShadow: const [
-          BoxShadow(color: GsColors.shadow, offset: Offset(1, 1)),
+    return SizedBox(
+      width: 9,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(width: 3, height: 18, color: color.withValues(alpha: 0.5)),
+          Container(
+            width: 9, height: 9,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.3),
+              border: Border.all(color: color, width: 1),
+            ),
+          ),
+          Container(width: 3, height: 18, color: color.withValues(alpha: 0.5)),
         ],
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontFamily: GsColors.fontMono,
-          fontSize: 10, fontWeight: FontWeight.w700, color: GsColors.text,
-        ),
       ),
     );
   }
 }
 
-// ── Status badge ──────────────────────────────────────────
-class _StatusBadge extends StatelessWidget {
-  final bool completed;
-  const _StatusBadge({required this.completed});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: completed ? const Color(0xFF00C48C) : GsColors.gold,
-        border: Border.all(color: GsColors.border, width: 1),
-        boxShadow: const [
-          BoxShadow(color: GsColors.shadow, offset: Offset(1, 1)),
-        ],
-      ),
-      child: Text(
-        completed ? 'COMPLETADO' : 'ACTIVO',
-        style: const TextStyle(
-          fontFamily: GsColors.fontMono,
-          fontSize: 8, fontWeight: FontWeight.w900,
-          letterSpacing: 1, color: GsColors.border,
+abstract class _GoldCorners {
+  static const _sz = 7.0;
+  static List<Widget> get all => [
+    _c(top: 4, left: 4), _c(top: 4, right: 4),
+    _c(bottom: 4, left: 4), _c(bottom: 4, right: 4),
+  ];
+  static Widget _c({double? top, double? bottom, double? left, double? right}) =>
+      Positioned(
+        top: top, bottom: bottom, left: left, right: right,
+        child: SizedBox(
+          width: _sz, height: _sz,
+          child: CustomPaint(painter: _CP(top: top != null, left: left != null)),
         ),
-      ),
-    );
+      );
+}
+
+class _CP extends CustomPainter {
+  final bool top, left;
+  const _CP({required this.top, required this.left});
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = const Color(0xFFD4A820)
+      ..strokeWidth = 1.4
+      ..style = PaintingStyle.stroke;
+    final x = left ? 0.0 : size.width;
+    final y = top ? 0.0 : size.height;
+    canvas.drawLine(Offset(x, y), Offset(x + (left ? size.width : -size.width), y), p);
+    canvas.drawLine(Offset(x, y), Offset(x, y + (top ? size.height : -size.height)), p);
   }
+  @override
+  bool shouldRepaint(_CP o) => false;
 }

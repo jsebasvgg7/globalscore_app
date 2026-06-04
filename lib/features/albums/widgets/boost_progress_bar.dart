@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
-import '../presentation/albums_page.dart' show GsColors;
+import '../presentation/albums_page.dart' show Ds;
 
 // ════════════════════════════════════════════════════════════
 //  BOOST PROGRESS BAR
-//  React equiv: BoostProgressBar
-//  Track de hitos + tarjeta de estado boost
+//  Boceto: fondo blanco, título muted small caps,
+//  nodos cuadrados pequeños morados con check blanco,
+//  línea delgada entre nodos, labels debajo en 2 líneas,
+//  fila boost: icono cuadrado amarillo + texto + número grande
 // ════════════════════════════════════════════════════════════
+
 class BoostProgressBar extends StatelessWidget {
   final bool boostActive;
   final int boostPacksRemaining;
@@ -18,55 +21,55 @@ class BoostProgressBar extends StatelessWidget {
     required this.totalPacksOpened,
   });
 
-  static const _packsPerBoost = 10;
+  static const _perBoost = 10;
 
+  // Exactamente como el boceto
   static const _milestones = [
-    (0, 'Inicio', ''),
-    (10, '10', 'Premium'),
-    (20, '20', 'Épico'),
-    (30, '30', 'Élite'),
-    (40, 'TOP', 'Especial'),
+    _Milestone(threshold: 0,  top: 'Inicio',   bottom: ''),
+    _Milestone(threshold: 10, top: '10',        bottom: 'Tu Premio'),
+    _Milestone(threshold: 20, top: '20',        bottom: 'Épico'),
+    _Milestone(threshold: 30, top: '30',        bottom: 'Élite'),
+    _Milestone(threshold: 40, top: 'TOP',       bottom: 'Especial'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final packsThisCycle = totalPacksOpened % _packsPerBoost;
-    final trackPct = boostActive
-        ? 1.0
-        : (packsThisCycle / _packsPerBoost).clamp(0.0, 1.0);
-
+    final cycle     = totalPacksOpened % _perBoost;
     final remaining = boostActive
         ? boostPacksRemaining
-        : _packsPerBoost - packsThisCycle;
+        : _perBoost - cycle;
 
     return Container(
-      color: GsColors.cream,
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
+      color: Ds.bg,
+      padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Título ───────────────────────────────────
           const Text(
             'PROGRESO DE SOBRES',
             style: TextStyle(
-              fontSize: 9, fontWeight: FontWeight.w900,
-              letterSpacing: 2, color: GsColors.muted,
+              fontFamily: Ds.font,
+              fontSize: 8,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 2,
+              color: Ds.muted,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
 
-          // ── Track con hitos ───────────────────────────
-          _MilestonesTrack(
+          // ── Track ────────────────────────────────────
+          _Track(
             packsOpened: totalPacksOpened,
-            trackPct: trackPct,
             milestones: _milestones,
           ),
 
-          const SizedBox(height: 20),
-          const Divider(height: 1, thickness: 1, color: Color(0xFFE8E0D0)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
+          Container(height: 1, color: Ds.border),
+          const SizedBox(height: 14),
 
-          // ── Boost status row ──────────────────────────
-          _BoostStatusRow(
+          // ── Estado boost ─────────────────────────────
+          _BoostRow(
             boostActive: boostActive,
             remaining: remaining,
           ),
@@ -76,56 +79,56 @@ class BoostProgressBar extends StatelessWidget {
   }
 }
 
-// ── Track de hitos ────────────────────────────────────────
-class _MilestonesTrack extends StatelessWidget {
-  final int packsOpened;
-  final double trackPct;
-  final List<(int, String, String)> milestones;
-
-  const _MilestonesTrack({
-    required this.packsOpened,
-    required this.trackPct,
-    required this.milestones,
+// ── Milestone data ────────────────────────────────────────
+class _Milestone {
+  final int threshold;
+  final String top, bottom;
+  const _Milestone({
+    required this.threshold,
+    required this.top,
+    required this.bottom,
   });
+}
 
-  double _segmentFill(int i) {
+// ── Track completo ────────────────────────────────────────
+class _Track extends StatelessWidget {
+  final int packsOpened;
+  final List<_Milestone> milestones;
+
+  const _Track({required this.packsOpened, required this.milestones});
+
+  double _fill(int i) {
     if (i >= milestones.length - 1) return 0;
-    final start = milestones[i].$1;
-    final end = milestones[i + 1].$1;
-    if (end == 0) return 0;
-    if (packsOpened <= start) return 0;
-    if (packsOpened >= end) return 1;
-    return (packsOpened - start) / (end - start);
+    final s = milestones[i].threshold;
+    final e = milestones[i + 1].threshold;
+    if (e == 0 || packsOpened <= s) return 0;
+    if (packsOpened >= e) return 1;
+    return (packsOpened - s) / (e - s);
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Círculos + líneas
+        // Fila nodos + conectores
         Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             for (int i = 0; i < milestones.length; i++) ...[
-              _MilestoneNode(
-                value: milestones[i].$1,
-                reached: packsOpened >= milestones[i].$1,
-              ),
+              _Node(reached: packsOpened >= milestones[i].threshold),
               if (i < milestones.length - 1)
                 Expanded(
                   child: TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0, end: _segmentFill(i)),
-                    duration: const Duration(milliseconds: 700),
+                    tween: Tween(begin: 0.0, end: _fill(i)),
+                    duration: const Duration(milliseconds: 600),
                     curve: Curves.easeOut,
                     builder: (_, v, __) => Stack(
                       alignment: Alignment.centerLeft,
                       children: [
-                        Container(
-                          height: 3,
-                          color: GsColors.border.withValues(alpha: 0.12),
-                        ),
+                        Container(height: 2, color: Ds.border),
                         FractionallySizedBox(
                           widthFactor: v,
-                          child: Container(height: 3, color: GsColors.accent),
+                          child: Container(height: 2, color: Ds.accent),
                         ),
                       ],
                     ),
@@ -134,35 +137,36 @@ class _MilestonesTrack extends StatelessWidget {
             ],
           ],
         ),
-        const SizedBox(height: 10),
-        // Labels
+        const SizedBox(height: 8),
+        // Fila labels — alineados bajo cada nodo
         Row(
           children: [
             for (int i = 0; i < milestones.length; i++) ...[
               SizedBox(
-                width: 36,
+                width: 38,
                 child: Column(
                   children: [
                     Text(
-                      milestones[i].$2,
+                      milestones[i].top,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontFamily: GsColors.fontMono,
+                        fontFamily: Ds.font,
                         fontSize: 8,
-                        fontWeight: packsOpened >= milestones[i].$1
-                            ? FontWeight.w800
-                            : FontWeight.w500,
-                        color: packsOpened >= milestones[i].$1
-                            ? GsColors.accent
-                            : GsColors.muted,
+                        fontWeight: FontWeight.w900,
+                        color: packsOpened >= milestones[i].threshold
+                            ? Ds.accent
+                            : Ds.muted,
                       ),
                     ),
-                    if (milestones[i].$3.isNotEmpty)
+                    if (milestones[i].bottom.isNotEmpty)
                       Text(
-                        milestones[i].$3,
+                        milestones[i].bottom,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                          fontSize: 7, color: GsColors.muted,
+                          fontFamily: Ds.font,
+                          fontSize: 7,
+                          color: Ds.muted,
+                          height: 1.2,
                         ),
                       ),
                   ],
@@ -177,72 +181,60 @@ class _MilestonesTrack extends StatelessWidget {
   }
 }
 
-class _MilestoneNode extends StatelessWidget {
-  final int value;
+// ── Nodo cuadrado — boceto: morado sólido con ✓ blanco ───
+class _Node extends StatelessWidget {
   final bool reached;
-  const _MilestoneNode({required this.value, required this.reached});
+  const _Node({required this.reached});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 36, height: 36,
-      decoration: BoxDecoration(
-        color: reached ? GsColors.accent : GsColors.cream,
+      width: 38,
+      height: 38,
+      color: reached ? Ds.accent : Ds.bg,
+      foregroundDecoration: BoxDecoration(
         border: Border.all(
-          color: reached
-              ? GsColors.accent
-              : GsColors.border.withValues(alpha: 0.25),
-          width: 1.5,
+          color: reached ? Ds.accent : Ds.border,
+          width: 1,
         ),
-        boxShadow: reached
-            ? const [BoxShadow(color: GsColors.shadow, offset: Offset(2, 2))]
-            : null,
       ),
       alignment: Alignment.center,
       child: reached
-          ? const Icon(Icons.check, size: 16, color: Colors.white)
-          : Text(
-              '$value',
-              style: TextStyle(
-                fontFamily: GsColors.fontMono,
-                fontSize: 10, fontWeight: FontWeight.w900,
-                color: GsColors.border.withValues(alpha: 0.3),
-              ),
-            ),
+          ? const Icon(Icons.check, size: 20, color: Colors.white)
+          : null,
     );
   }
 }
 
 // ── Fila estado boost ─────────────────────────────────────
-class _BoostStatusRow extends StatelessWidget {
+// Boceto: cuadrado amarillo con rayo | "BOOST ACTIVO / +25%" | "3 / 5 sobres"
+class _BoostRow extends StatelessWidget {
   final bool boostActive;
   final int remaining;
-  const _BoostStatusRow({required this.boostActive, required this.remaining});
+
+  const _BoostRow({required this.boostActive, required this.remaining});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Icono boost
+        // Icono cuadrado
         Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(
-            color: boostActive
-                ? GsColors.gold
-                : GsColors.card,
-            border: Border.all(color: GsColors.border, width: 1),
-            boxShadow: boostActive
-                ? const [BoxShadow(color: GsColors.shadow, offset: Offset(1, 1))]
-                : null,
+          width: 38, height: 38,
+          color: boostActive ? Ds.gold : Ds.bgCard,
+          foregroundDecoration: BoxDecoration(
+            border: Border.all(color: Ds.border, width: 1),
           ),
+          alignment: Alignment.center,
           child: Icon(
             boostActive ? Icons.bolt : Icons.bolt_outlined,
-            size: 18,
-            color: boostActive ? GsColors.border : GsColors.muted,
+            size: 22,
+            color: boostActive ? Ds.ink : Ds.muted,
           ),
         ),
         const SizedBox(width: 12),
+
         // Textos
         Expanded(
           child: Column(
@@ -251,36 +243,53 @@ class _BoostStatusRow extends StatelessWidget {
               Text(
                 boostActive ? 'BOOST ACTIVO' : 'PRÓXIMO BOOST',
                 style: const TextStyle(
-                  fontFamily: GsColors.fontMono,
-                  fontSize: 10, fontWeight: FontWeight.w900,
-                  letterSpacing: 0.5, color: GsColors.text,
+                  fontFamily: Ds.font,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.3,
+                  color: Ds.ink,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
-                boostActive
-                    ? '+25% probabilidades'
-                    : 'cada 10 sobres',
-                style: const TextStyle(fontSize: 10, color: GsColors.muted),
+                boostActive ? '+25% probabilidades' : 'cada 10 sobres',
+                style: const TextStyle(
+                  fontFamily: Ds.font,
+                  fontSize: 10,
+                  color: Ds.muted,
+                ),
               ),
             ],
           ),
         ),
-        // Número grande
-        Text(
-          '$remaining',
-          style: TextStyle(
-            fontFamily: GsColors.fontMono,
-            fontSize: 32, fontWeight: FontWeight.w900,
-            height: 1,
-            color: boostActive ? GsColors.gold : GsColors.accent,
+
+        // Número grande + label
+        // Boceto: número 3 muy grande dorado/morado, "/ 5 sobres" pequeño
+        RichText(
+          textAlign: TextAlign.right,
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: '$remaining',
+                style: TextStyle(
+                  fontFamily: Ds.font,
+                  fontSize: 36,
+                  fontWeight: FontWeight.w900,
+                  height: 1,
+                  color: boostActive ? Ds.gold : Ds.accent,
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 5),
         Text(
-          boostActive ? '/ 5\nsobres' : 'sobres\nrestan.',
+          boostActive ? '/ 5\nsobres' : 'sobres\nrestantes',
           style: const TextStyle(
-            fontSize: 9, color: GsColors.muted, height: 1.4,
+            fontFamily: Ds.font,
+            fontSize: 9,
+            color: Ds.muted,
+            height: 1.3,
           ),
         ),
       ],
