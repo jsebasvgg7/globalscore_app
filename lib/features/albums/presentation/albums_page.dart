@@ -337,7 +337,7 @@ class _TabsBar extends StatelessWidget {
                 index:      0,
                 controller: controller,
                 icon:       Icons.grid_view_rounded,
-                label:      'RESUMEN',
+                label:      'INICIO',
               ),
             ),
             Container(width: 1.5, color: Ds.border),

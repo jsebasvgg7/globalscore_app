@@ -217,11 +217,11 @@ class _CollectionHeader extends StatelessWidget {
                     width: 72,
                     padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
                     decoration: BoxDecoration(
-                      color: GsColors.bgCard,
+                      color: GsColors.bg,
                       border: Border.all(color: GsColors.borderSub, width: 1),
                       boxShadow: const [
                         BoxShadow(
-                          color: Color(0xFFB0AAA0),
+                          color: GsColors.shadow,
                           offset: Offset(2, 2),
                           blurRadius: 0,
                         ),
@@ -261,11 +261,11 @@ class _CollectionHeader extends StatelessWidget {
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: GsColors.bgCard,
+                        color: GsColors.bg,
                         border: Border.all(color: GsColors.borderSub, width: 1),
                         boxShadow: const [
                           BoxShadow(
-                            color: Color(0xFFB0AAA0),
+                            color: GsColors.shadow,
                             offset: Offset(2, 2),
                             blurRadius: 0,
                           ),
