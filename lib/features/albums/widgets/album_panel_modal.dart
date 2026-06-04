@@ -554,7 +554,7 @@ class _PageBtn extends StatelessWidget {
         ),
         child: Icon(
           icon, size: 14,
-          color: onTap != null ? Colors.white54 : Colors.white18,
+          color: onTap != null ? Colors.white54 : Colors.white.withValues(alpha: 0.18),
         ),
       ),
     );

@@ -11,6 +11,7 @@ import '../widgets/pack_opening_modal.dart';
 // ════════════════════════════════════════════════════════════
 //  ALBUMS PAGE — maniquí puro, solo orquesta widgets
 // ════════════════════════════════════════════════════════════
+
 class AlbumsPage extends ConsumerWidget {
   const AlbumsPage({super.key});
 
@@ -26,7 +27,7 @@ class AlbumsPage extends ConsumerWidget {
   }
 }
 
-// ── Loading state ─────────────────────────────────────────
+// ── Loading ───────────────────────────────────────────────
 class _AlbumsLoading extends StatelessWidget {
   const _AlbumsLoading();
 
@@ -41,7 +42,7 @@ class _AlbumsLoading extends StatelessWidget {
   }
 }
 
-// ── Error state ───────────────────────────────────────────
+// ── Error ─────────────────────────────────────────────────
 class _AlbumsError extends StatelessWidget {
   final String message;
   const _AlbumsError({required this.message});
@@ -73,7 +74,8 @@ class _AlbumsBody extends ConsumerWidget {
             .firstOrNull ??
         model.legendaryAlbums.firstOrNull;
 
-    final prog = activeAlbum != null ? model.progressFor(activeAlbum.id) : null;
+    final prog =
+        activeAlbum != null ? model.progressFor(activeAlbum.id) : null;
     final unique = prog?.uniqueCards ?? 0;
     final required = activeAlbum?.requiredUniquePlayers ?? 30;
     final pct = required > 0 ? (unique / required).clamp(0.0, 1.0) : 0.0;
@@ -82,7 +84,7 @@ class _AlbumsBody extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Widget 1: Álbum activo (libro 3D + stats + progreso) ──
+          // 1 — Álbum activo (libro 3D + stats + progreso)
           if (activeAlbum != null)
             ActiveAlbumHero(
               albumId: activeAlbum.id,
@@ -94,7 +96,7 @@ class _AlbumsBody extends ConsumerWidget {
               isCompleted: prog?.isCompleted ?? false,
             ),
 
-          // ── Widget 2: Track de progreso de sobres + boost ──────
+          // 2 — Track de progreso de sobres + boost
           BoostProgressBar(
             boostActive: model.packs?.boostActive ?? false,
             boostPacksRemaining: model.packs?.boostPacksRemaining ?? 0,
@@ -103,7 +105,7 @@ class _AlbumsBody extends ConsumerWidget {
 
           const _SectionDivider(),
 
-          // ── Widget 3: Sobre 3D + botón abrir ──────────────────
+          // 3 — Sobre 3D + botón abrir
           PackCard(
             packsAvailable: model.packs?.packsAvailable ?? 0,
             onOpen: () => showPackOpeningModal(context, ref),
@@ -111,7 +113,7 @@ class _AlbumsBody extends ConsumerWidget {
 
           const _SectionDivider(),
 
-          // ── Widget 4: Carrusel legendary / stars / cult ────────
+          // 4 — Carrusel legendary / stars / cult
           AlbumsCarousel(model: model),
 
           const SizedBox(height: 32),
@@ -121,6 +123,7 @@ class _AlbumsBody extends ConsumerWidget {
   }
 }
 
+// ── Divisor de sección ────────────────────────────────────
 class _SectionDivider extends StatelessWidget {
   const _SectionDivider();
 
@@ -135,7 +138,7 @@ class _SectionDivider extends StatelessWidget {
 }
 
 // ════════════════════════════════════════════════════════════
-//  COLORES COMPARTIDOS (importados por todos los widgets)
+//  COLORES COMPARTIDOS
 // ════════════════════════════════════════════════════════════
 abstract class GsColors {
   static const Color cream  = Color(0xFFF0EDE8);
