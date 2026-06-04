@@ -9,28 +9,23 @@ import '../widgets/albums_carousel.dart';
 import '../widgets/pack_opening_modal.dart';
 
 // ════════════════════════════════════════════════════════════
-//  DESIGN TOKENS — imagen 2 como referencia definitiva
-//  Neobrutalista: fondo crema, morado puro, sombras negras
-//  marcadas, sin border-radius, relieve 3D por layering
+//  DESIGN TOKENS — neobrutalista crema + morado + sombras
 // ════════════════════════════════════════════════════════════
 abstract class Ds {
-  // Fondos
-  static const Color bg        = Color(0xFFF5F2EC); // crema general
-  static const Color bgSection = Color(0xFFEFEBE3); // sección ligeramente más oscuro
-  static const Color bgCard    = Color(0xFFE8E3D8); // cards
+  static const Color bg        = Color(0xFFF5F2EC);
+  static const Color bgSection = Color(0xFFEFEBE3);
+  static const Color bgCard    = Color(0xFFE8E3D8);
 
-  // Ink / bordes
-  static const Color ink       = Color(0xFF0D0D1A); // negro casi puro
-  static const Color border    = Color(0xFF0D0D1A); // bordes neobrutalistas
-  static const Color borderSub = Color(0xFFCBC6BA); // separadores suaves
-  static const Color muted     = Color(0xFF777068); // texto secundario
+  static const Color ink       = Color(0xFF0D0D1A);
+  static const Color border    = Color(0xFF0D0D1A);
+  static const Color borderSub = Color(0xFFCBC6BA);
+  static const Color muted     = Color(0xFF777068);
 
-  // Acento principal — morado del boceto
   static const Color accent    = Color(0xFF5B4FD8);
   static const Color accentDim = Color(0xFF4A40C0);
   static const Color gold      = Color(0xFFFFD600);
 
-  // Sombra 3D neobrutalista
+  // Sombra offset neobrutalista — negra pura
   static const Color shadow3d  = Color(0xFF0D0D1A);
 
   static const String font = 'DM Mono';
@@ -83,12 +78,12 @@ class _AlbumsBody extends ConsumerWidget {
             // 1 — Tabs
             const _TabsBar(),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
 
-            // 2 — Hero álbum activo (con relieve 3D)
+            // 2 — Hero álbum activo
             if (activeAlbum != null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: ActiveAlbumHero(
                   albumId:     activeAlbum.id,
                   name:        activeAlbum.name,
@@ -100,11 +95,11 @@ class _AlbumsBody extends ConsumerWidget {
                 ),
               ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
 
-            // 3 — Progreso de sobres (con relieve)
+            // 3 — Progreso de sobres
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               child: BoostProgressBar(
                 boostActive:         model.packs?.boostActive ?? false,
                 boostPacksRemaining: model.packs?.boostPacksRemaining ?? 0,
@@ -112,18 +107,18 @@ class _AlbumsBody extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
 
-            // 4 — Sobres disponibles (con relieve)
+            // 4 — Sobres disponibles
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               child: PackCard(
                 packsAvailable: model.packs?.packsAvailable ?? 0,
                 onOpen: () => showPackOpeningModal(context, ref),
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
 
             // 5 — Carrusel colecciones
             AlbumsCarousel(model: model),
@@ -137,8 +132,7 @@ class _AlbumsBody extends ConsumerWidget {
 }
 
 // ════════════════════════════════════════════════════════════
-//  TABS BAR — imagen 2: fondo oscuro, tab activo morado,
-//  iconos pequeños, PRONTO en badge
+//  TABS BAR — relieve neobrutalista
 // ════════════════════════════════════════════════════════════
 class _TabsBar extends StatelessWidget {
   const _TabsBar();
@@ -147,35 +141,21 @@ class _TabsBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
+        color: Ds.bg,
         border: Border(
-          bottom: BorderSide(color: Ds.border, width: 1.5),
+          bottom: BorderSide(color: Ds.border, width: 2),
         ),
+        // Sombra hacia abajo — separa el tab bar del contenido
+        boxShadow: [
+          BoxShadow(color: Ds.shadow3d, offset: Offset(0, 3), blurRadius: 0),
+        ],
       ),
       child: Row(
         children: [
-          _Tab(
-            icon: Icons.grid_view,
-            label: 'RESUMEN',
-            active: true,
-          ),
-          _Tab(
-            icon: Icons.menu_book_outlined,
-            label: 'COLECCIÓN',
-            active: false,
-            soon: true,
-          ),
-          _Tab(
-            icon: Icons.mail_outline,
-            label: 'SOBRES',
-            active: false,
-            soon: true,
-          ),
-          _Tab(
-            icon: Icons.star_outline,
-            label: 'MISIONES',
-            active: false,
-            soon: true,
-          ),
+          _Tab(icon: Icons.grid_view,         label: 'RESUMEN',   active: true),
+          _Tab(icon: Icons.menu_book_outlined, label: 'COLECCIÓN', active: false, soon: true),
+          _Tab(icon: Icons.mail_outline,       label: 'SOBRES',    active: false, soon: true),
+          _Tab(icon: Icons.star_outline,       label: 'MISIONES',  active: false, soon: true),
         ],
       ),
     );
@@ -198,9 +178,15 @@ class _Tab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
       decoration: BoxDecoration(
         color: active ? Ds.accent : Colors.transparent,
+        // Tab activo: borde inferior con color propio (anula borde global)
+        border: active
+            ? const Border(
+                bottom: BorderSide(color: Ds.accent, width: 2),
+              )
+            : null,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -209,9 +195,7 @@ class _Tab extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon,
-                  size: 12,
-                  color: active ? Colors.white : Ds.muted),
+              Icon(icon, size: 12, color: active ? Colors.white : Ds.muted),
               const SizedBox(width: 4),
               Text(
                 label,
@@ -235,11 +219,8 @@ class _Tab extends StatelessWidget {
               child: const Text(
                 'PRONTO',
                 style: TextStyle(
-                  fontFamily: Ds.font,
-                  fontSize: 6,
-                  fontWeight: FontWeight.w700,
-                  color: Ds.muted,
-                  letterSpacing: 0.5,
+                  fontFamily: Ds.font, fontSize: 6,
+                  fontWeight: FontWeight.w700, color: Ds.muted, letterSpacing: 0.5,
                 ),
               ),
             ),
