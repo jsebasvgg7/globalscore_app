@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import '../presentation/albums_page.dart' show GsColors;
 
 // ════════════════════════════════════════════════════════════
-//  ALBUM BOOK CARD
-//  Tarjeta libro clickeable — usada en legendary, stars, cult
+//  ALBUM BOOK CARD — diseño 3D con lomo, páginas y sombra
 // ════════════════════════════════════════════════════════════
 
 class AlbumBookCard extends StatefulWidget {
@@ -21,7 +20,7 @@ class AlbumBookCard extends StatefulWidget {
   final bool locked;
   final bool completed;
   final VoidCallback? onTap;
-  final Widget? coverIllustration; // SVG o CustomPaint personalizado
+  final Widget? coverIllustration;
 
   const AlbumBookCard({
     super.key,
@@ -63,17 +62,14 @@ class _AlbumBookCardState extends State<AlbumBookCard> {
         transform: _pressed && !widget.locked
             ? (Matrix4.identity()..translate(2.0, 2.0))
             : Matrix4.identity(),
-        width: 110,
+        width: 120,
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Libro ────────────────────────────────────
-            _BookBody(widget: widget),
-
-            const SizedBox(height: 8),
-
-            // ── Barra de progreso ─────────────────────
-            _ProgressBlock(widget: widget),
+            _Book3D(w: widget),
+            const SizedBox(height: 10),
+            _ProgressBlock(w: widget),
           ],
         ),
       ),
@@ -81,85 +77,188 @@ class _AlbumBookCardState extends State<AlbumBookCard> {
   }
 }
 
-// ── Cuerpo del libro ──────────────────────────────────────
-class _BookBody extends StatelessWidget {
-  final AlbumBookCard widget;
-  const _BookBody({required this.widget});
+// ════════════════════════════════════════════════════════════
+//  LIBRO 3D
+// ════════════════════════════════════════════════════════════
+class _Book3D extends StatelessWidget {
+  final AlbumBookCard w;
+  const _Book3D({required this.w});
+
+  static const double _bookH    = 160.0;
+  static const double _coverW   = 96.0;
+  static const double _spineW   = 18.0;
+  static const double _pagesW   = 10.0; // grosor visible de hojas
+  static const double _shadowOff = 6.0;
 
   @override
   Widget build(BuildContext context) {
+    final totalW = _spineW + _coverW + _pagesW + _shadowOff;
+
     return SizedBox(
-      height: 150,
+      width: totalW,
+      height: _bookH + _shadowOff,
       child: Stack(
         children: [
-          // Sombra base
+
+          // ── Sombra debajo del libro ───────────────────
           Positioned(
-            left: 6, top: 6,
+            left: _spineW + _shadowOff,
+            top: _shadowOff,
             child: Container(
-              width: 103, height: 144,
-              color: GsColors.border.withValues(alpha: 0.3),
+              width: _coverW,
+              height: _bookH,
+              color: const Color(0xFF1A1A2E).withValues(alpha: 0.35),
             ),
           ),
 
-          // Páginas laterales (efecto profundidad)
-          for (int i = 2; i >= 0; i--)
+          // ── Páginas al lado derecho (pila de hojas) ───
+          // Capas múltiples para efecto de grosor real
+          for (int i = 5; i >= 0; i--)
             Positioned(
-              right: i * 2.5, top: i * 1.0,
+              left: _spineW + _coverW - 2 + i * 1.6,
+              top: i * 0.6,
               child: Container(
-                width: 12, height: 140,
-                color: const Color(0xFFD4CFC8).withValues(alpha: 0.5 - i * 0.12),
+                width: 6,
+                height: _bookH - i * 0.6,
+                decoration: BoxDecoration(
+                  color: _pageColor(i),
+                  border: i == 0
+                      ? Border(
+                          right: BorderSide(
+                            color: const Color(0xFFB0A898).withValues(alpha: 0.6),
+                            width: 0.5,
+                          ),
+                        )
+                      : null,
+                ),
               ),
             ),
 
-          // Lomo
+          // ── Lomo del libro ────────────────────────────
           Positioned(
-            left: 0, top: 0,
+            left: 0,
+            top: 0,
             child: Container(
-              width: 14, height: 140,
+              width: _spineW,
+              height: _bookH,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [widget.spine, widget.spineAlt],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  stops: const [0.0, 0.3, 0.7, 1.0],
+                  colors: [
+                    w.spineAlt.withValues(alpha: 0.7),
+                    w.spine,
+                    w.spine.withValues(alpha: 0.85),
+                    w.spineAlt.withValues(alpha: 0.5),
+                  ],
                 ),
               ),
-              alignment: Alignment.center,
-              child: RotatedBox(
-                quarterTurns: 3,
-                child: Text(
-                  widget.shortLabel,
-                  style: const TextStyle(
-                    fontFamily: GsColors.fontMono,
-                    fontSize: 7,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white70,
-                    letterSpacing: 1.5,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Marca de ribete superior
+                  Container(
+                    height: 3,
+                    margin: const EdgeInsets.only(top: 6, left: 3, right: 3),
+                    color: Colors.white.withValues(alpha: 0.15),
                   ),
-                ),
+                  // Texto del lomo rotado
+                  RotatedBox(
+                    quarterTurns: 3,
+                    child: Text(
+                      w.shortLabel,
+                      style: const TextStyle(
+                        fontFamily: GsColors.fontMono,
+                        fontSize: 7,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                  ),
+                  // Ribete inferior + detalle dorado
+                  Column(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        margin: const EdgeInsets.only(bottom: 2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.transparent,
+                          border: Border.all(
+                            color: const Color(0xFFD4A820).withValues(alpha: 0.7),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        height: 3,
+                        margin: const EdgeInsets.only(bottom: 6, left: 3, right: 3),
+                        color: Colors.white.withValues(alpha: 0.15),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
 
-          // Portada
+          // ── Portada principal ─────────────────────────
           Positioned(
-            left: 12, top: 0,
+            left: _spineW,
+            top: 0,
             child: Container(
-              width: 98, height: 140,
+              width: _coverW,
+              height: _bookH,
               decoration: BoxDecoration(
-                color: widget.coverBg,
-                border: Border.all(color: GsColors.border, width: 1.5),
+                color: w.coverBg,
+                border: Border.all(
+                  color: w.spine.withValues(alpha: 0.5),
+                  width: 1,
+                ),
               ),
               child: Stack(
                 children: [
-                  // Tag temporada
+                  // Gradiente de textura sobre portada
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            w.accent.withValues(alpha: 0.08),
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.15),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Arte central (ilustración o arte bloqueado)
+                  Positioned.fill(
+                    top: 20,
+                    bottom: 16,
+                    child: w.locked
+                        ? _LockedArt(accent: w.accent)
+                        : (w.coverIllustration ?? _GenericArt(accent: w.accent)),
+                  ),
+
+                  // Tag temporada (top-left)
                   Positioned(
-                    top: 7, left: 7,
+                    top: 6, left: 6,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 4, vertical: 2),
-                      color: GsColors.border.withValues(alpha: 0.6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        borderRadius: BorderRadius.zero,
+                      ),
                       child: Text(
-                        widget.tag,
+                        w.tag,
                         style: const TextStyle(
                           fontFamily: GsColors.fontMono,
                           fontSize: 5,
@@ -171,60 +270,81 @@ class _BookBody extends StatelessWidget {
                     ),
                   ),
 
-                  // Número top-right
+                  // Número (top-right)
                   Positioned(
-                    top: 7, right: 14,
+                    top: 6, right: 8,
                     child: Text(
-                      widget.number,
+                      w.number,
                       style: TextStyle(
                         fontFamily: GsColors.fontMono,
                         fontSize: 9,
                         fontWeight: FontWeight.w900,
-                        color: widget.accent.withValues(alpha: 0.6),
+                        color: w.accent.withValues(alpha: 0.7),
                       ),
                     ),
                   ),
 
-                  // Arte de la portada (ilustración personalizada o genérica)
-                  Positioned.fill(
-                    child: widget.locked
-                        ? _LockedArt(accent: widget.accent)
-                        : widget.coverIllustration ??
-                            _GenericArt(accent: widget.accent),
-                  ),
-
-                  // Barra progreso inferior
-                  Positioned(
-                    bottom: 0, left: 0, right: 0,
-                    child: Container(
-                      height: 4,
-                      color: Colors.black38,
-                      child: FractionallySizedBox(
-                        alignment: Alignment.centerLeft,
-                        widthFactor: widget.pct.clamp(0.0, 1.0),
-                        child: Container(
-                            color: widget.accent.withValues(alpha: 0.8)),
-                      ),
+                  // Badge estado (ACTIVO / DONE)
+                  if (!w.locked)
+                    Positioned(
+                      top: 20, left: 6,
+                      child: _StatusBadge(completed: w.completed),
                     ),
-                  ),
 
-                  // Broche lateral
-                  Positioned(
-                    right: 0, top: 0, bottom: 0,
-                    child: _Clasp(color: widget.accent),
-                  ),
-
-                  // Esquinas doradas
+                  // Esquinas doradas decorativas
                   ..._GoldCorners.all,
 
-                  // Badge ACTIVO o COMPLETADO
-                  if (widget.completed || (!widget.locked && !widget.completed))
-                    Positioned(
-                      top: 24, left: 7,
-                      child: _StatusBadge(
-                          completed: widget.completed, locked: widget.locked),
+                  // Barra de progreso en la parte inferior
+                  Positioned(
+                    bottom: 0, left: 0, right: 0,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Línea divisoria
+                        Container(
+                          height: 1,
+                          color: Colors.white.withValues(alpha: 0.08),
+                        ),
+                        Container(
+                          height: 5,
+                          color: Colors.black.withValues(alpha: 0.4),
+                          child: FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: w.pct.clamp(0.0, 1.0),
+                            child: Container(color: w.accent),
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+
+                  // Broche lateral derecho
+                  Positioned(
+                    right: 0, top: 0, bottom: 0,
+                    child: _Clasp(color: w.accent),
+                  ),
                 ],
+              ),
+            ),
+          ),
+
+          // ── Reflejo/highlight en el lomo (luz lateral) ─
+          Positioned(
+            left: _spineW - 3,
+            top: 0,
+            child: Container(
+              width: 3,
+              height: _bookH,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.18),
+                    Colors.white.withValues(alpha: 0.05),
+                    Colors.white.withValues(alpha: 0.12),
+                  ],
+                ),
               ),
             ),
           ),
@@ -232,19 +352,24 @@ class _BookBody extends StatelessWidget {
       ),
     );
   }
+
+  // Color de cada capa de páginas
+  Color _pageColor(int layer) {
+    final base = const Color(0xFFE8E3D8);
+    final dark = const Color(0xFFB8B2AA);
+    final t = layer / 5.0;
+    return Color.lerp(base, dark, t)!.withValues(alpha: 0.9 - layer * 0.05);
+  }
 }
 
-// ── Arte genérico (escudo + círculos) ─────────────────────
+// ── Arte genérico ─────────────────────────────────────────
 class _GenericArt extends StatelessWidget {
   final Color accent;
   const _GenericArt({required this.accent});
 
   @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _GenericArtPainter(accent: accent),
-    );
-  }
+  Widget build(BuildContext context) =>
+      CustomPaint(painter: _GenericArtPainter(accent: accent));
 }
 
 class _GenericArtPainter extends CustomPainter {
@@ -254,41 +379,42 @@ class _GenericArtPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
-    final cy = size.height / 2 - 8;
-    final paint = Paint()
+    final cy = size.height / 2;
+
+    // Glow
+    final glow = Paint()
+      ..shader = RadialGradient(
+        colors: [accent.withValues(alpha: 0.18), accent.withValues(alpha: 0.0)],
+      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: 36));
+    canvas.drawCircle(Offset(cx, cy), 36, glow);
+
+    final ring = Paint()
       ..color = accent.withValues(alpha: 0.12)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.8;
-
-    for (final r in [28.0, 20.0, 13.0]) {
-      canvas.drawCircle(Offset(cx, cy), r, paint);
+    for (final r in [30.0, 22.0, 14.0]) {
+      canvas.drawCircle(Offset(cx, cy), r, ring);
     }
 
     final shieldFill = Paint()
       ..color = accent.withValues(alpha: 0.14)
       ..style = PaintingStyle.fill;
     final shieldStroke = Paint()
-      ..color = accent.withValues(alpha: 0.5)
+      ..color = accent.withValues(alpha: 0.55)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
     final path = Path()
-      ..moveTo(cx, cy - 14)
-      ..lineTo(cx + 10, cy - 8)
-      ..lineTo(cx + 10, cy + 2)
-      ..quadraticBezierTo(cx + 10, cy + 12, cx, cy + 18)
-      ..quadraticBezierTo(cx - 10, cy + 12, cx - 10, cy + 2)
-      ..lineTo(cx - 10, cy - 8)
+      ..moveTo(cx, cy - 16)
+      ..lineTo(cx + 12, cy - 9)
+      ..lineTo(cx + 12, cy + 2)
+      ..quadraticBezierTo(cx + 12, cy + 14, cx, cy + 20)
+      ..quadraticBezierTo(cx - 12, cy + 14, cx - 12, cy + 2)
+      ..lineTo(cx - 12, cy - 9)
       ..close();
 
     canvas.drawPath(path, shieldFill);
     canvas.drawPath(path, shieldStroke);
-
-    canvas.drawCircle(
-      Offset(cx, cy + 2),
-      2.5,
-      Paint()..color = accent.withValues(alpha: 0.5),
-    );
   }
 
   @override
@@ -305,11 +431,10 @@ class _LockedArt extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const SizedBox(height: 20),
         Icon(
           Icons.lock_outline,
-          size: 28,
-          color: Colors.white.withValues(alpha: 0.2),
+          size: 32,
+          color: Colors.white.withValues(alpha: 0.18),
         ),
         const SizedBox(height: 6),
         Text(
@@ -318,7 +443,7 @@ class _LockedArt extends StatelessWidget {
             fontFamily: GsColors.fontMono,
             fontSize: 6,
             fontWeight: FontWeight.w900,
-            color: Colors.white.withValues(alpha: 0.2),
+            color: Colors.white.withValues(alpha: 0.18),
             letterSpacing: 1,
           ),
         ),
@@ -327,51 +452,48 @@ class _LockedArt extends StatelessWidget {
   }
 }
 
-// ── Bloque de progreso inferior ───────────────────────────
+// ── Bloque de progreso debajo del libro ───────────────────
 class _ProgressBlock extends StatelessWidget {
-  final AlbumBookCard widget;
-  const _ProgressBlock({required this.widget});
+  final AlbumBookCard w;
+  const _ProgressBlock({required this.w});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 110,
+      width: 120,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Etiqueta
           Text(
-            widget.shortLabel,
+            w.shortLabel,
             style: TextStyle(
               fontFamily: GsColors.fontMono,
               fontSize: 8,
               fontWeight: FontWeight.w900,
-              color: widget.accent,
+              color: w.accent,
+              letterSpacing: 0.5,
             ),
           ),
-          const SizedBox(height: 3),
-          // Barra
-          Container(
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
-              border: Border.all(
-                  color: GsColors.border.withValues(alpha: 0.2), width: 0.5),
-            ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: widget.pct.clamp(0.0, 1.0),
-              child: Container(color: widget.accent),
-            ),
+          const SizedBox(height: 4),
+          Stack(
+            children: [
+              Container(
+                height: 5,
+                color: GsColors.border.withValues(alpha: 0.15),
+              ),
+              FractionallySizedBox(
+                widthFactor: w.pct.clamp(0.0, 1.0),
+                child: Container(height: 5, color: w.accent),
+              ),
+            ],
           ),
-          const SizedBox(height: 3),
-          // Contador
+          const SizedBox(height: 4),
           Text(
-            '${widget.filled} / ${widget.total}',
+            '${w.filled} / ${w.total}',
             style: TextStyle(
               fontFamily: GsColors.fontMono,
               fontSize: 7,
-              color: Colors.white.withValues(alpha: 0.4),
+              color: GsColors.muted,
             ),
           ),
         ],
@@ -392,15 +514,22 @@ class _Clasp extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(width: 3, height: 14, color: color.withValues(alpha: 0.4)),
+          Container(
+              width: 2, height: 18,
+              color: color.withValues(alpha: 0.35)),
           Container(
             width: 8, height: 8,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.25),
-              border: Border.all(color: color, width: 0.8),
+              color: color.withValues(alpha: 0.2),
+              border: Border.all(
+                color: color.withValues(alpha: 0.7),
+                width: 0.8,
+              ),
             ),
           ),
-          Container(width: 3, height: 14, color: color.withValues(alpha: 0.4)),
+          Container(
+              width: 2, height: 18,
+              color: color.withValues(alpha: 0.35)),
         ],
       ),
     );
@@ -410,18 +539,15 @@ class _Clasp extends StatelessWidget {
 // ── Status badge ──────────────────────────────────────────
 class _StatusBadge extends StatelessWidget {
   final bool completed;
-  final bool locked;
-  const _StatusBadge({required this.completed, required this.locked});
+  const _StatusBadge({required this.completed});
 
   @override
   Widget build(BuildContext context) {
-    if (locked) return const SizedBox.shrink();
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       color: completed
-          ? const Color(0xFF00C48C).withValues(alpha: 0.85)
-          : GsColors.gold.withValues(alpha: 0.85),
+          ? const Color(0xFF00C48C).withValues(alpha: 0.9)
+          : GsColors.gold.withValues(alpha: 0.9),
       child: Text(
         completed ? 'DONE' : 'ACTIVO',
         style: const TextStyle(
@@ -438,28 +564,27 @@ class _StatusBadge extends StatelessWidget {
 
 // ── Esquinas doradas ──────────────────────────────────────
 abstract class _GoldCorners {
-  static const _size = 7.0;
+  static const _size = 8.0;
 
   static List<Widget> get all => [
-        _corner(top: 4, left: 4),
-        _corner(top: 4, right: 4),
+        _corner(top: 4,    left: 4),
+        _corner(top: 4,    right: 4),
         _corner(bottom: 4, left: 4),
         _corner(bottom: 4, right: 4),
       ];
 
   static Widget _corner({
     double? top, double? bottom, double? left, double? right,
-  }) {
-    return Positioned(
-      top: top, bottom: bottom, left: left, right: right,
-      child: SizedBox(
-        width: _size, height: _size,
-        child: CustomPaint(
-          painter: _CornerPainter(top: top != null, left: left != null),
+  }) =>
+      Positioned(
+        top: top, bottom: bottom, left: left, right: right,
+        child: SizedBox(
+          width: _size, height: _size,
+          child: CustomPaint(
+            painter: _CornerPainter(top: top != null, left: left != null),
+          ),
         ),
-      ),
-    );
-  }
+      );
 }
 
 class _CornerPainter extends CustomPainter {
@@ -470,16 +595,14 @@ class _CornerPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = const Color(0xFFD4A820)
-      ..strokeWidth = 1.2
+      ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 
     final x = left ? 0.0 : size.width;
     final y = top ? 0.0 : size.height;
-    final dx = left ? size.width : -size.width;
-    final dy = top ? size.height : -size.height;
 
-    canvas.drawLine(Offset(x, y), Offset(x + dx, y), paint);
-    canvas.drawLine(Offset(x, y), Offset(x, y + dy), paint);
+    canvas.drawLine(Offset(x, y), Offset(x + (left ? size.width : -size.width), y), paint);
+    canvas.drawLine(Offset(x, y), Offset(x, y + (top ? size.height : -size.height)), paint);
   }
 
   @override

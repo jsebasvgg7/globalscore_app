@@ -61,7 +61,6 @@ class _AlbumsBodyState extends ConsumerState<_AlbumsBody>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
-  // Índices de tabs
   static const _kResumen   = 0;
   static const _kColeccion = 1;
 
@@ -95,15 +94,10 @@ class _AlbumsBodyState extends ConsumerState<_AlbumsBody>
       color: Ds.bg,
       child: Column(
         children: [
-          // ── Tabs ────────────────────────────────────────
           _TabsBar(
             controller: _tabController,
-            onColeccionTap: () {
-              setState(() => _tabController.animateTo(_kColeccion));
-            },
+            onColeccionTap: () => _tabController.animateTo(_kColeccion),
           ),
-
-          // ── Contenido por tab ────────────────────────────
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -111,15 +105,13 @@ class _AlbumsBodyState extends ConsumerState<_AlbumsBody>
               children: [
                 // Tab 0: RESUMEN
                 _ResumenTab(
-                  model: model,
-                  activeAlbum: activeAlbum,
-                  prog: prog,
-                  pct: pct,
-                  unique: unique,
-                  required: required,
-                  onVerColeccion: () {
-                    _tabController.animateTo(_kColeccion);
-                  },
+                  model:        model,
+                  activeAlbum:  activeAlbum,
+                  prog:         prog,
+                  pct:          pct,
+                  unique:       unique,
+                  required:     required,
+                  onVerColeccion: () => _tabController.animateTo(_kColeccion),
                 ),
                 // Tab 1: COLECCIÓN
                 _ColeccionTab(model: model),
@@ -136,15 +128,17 @@ class _AlbumsBodyState extends ConsumerState<_AlbumsBody>
   }
 }
 
-// ── Tab RESUMEN ───────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+//  TAB RESUMEN
+// ════════════════════════════════════════════════════════════
 class _ResumenTab extends StatelessWidget {
-  final AlbumsModel model;
+  final AlbumsModel      model;
   final AlbumDefinition? activeAlbum;
-  final AlbumProgress? prog;
-  final double pct;
-  final int unique;
-  final int required;
-  final VoidCallback onVerColeccion;
+  final AlbumProgress?   prog;
+  final double           pct;
+  final int              unique;
+  final int              required;
+  final VoidCallback     onVerColeccion;
 
   const _ResumenTab({
     required this.model,
@@ -165,7 +159,6 @@ class _ResumenTab extends StatelessWidget {
         children: [
           const SizedBox(height: 14),
 
-          // Hero álbum activo
           if (activeAlbum != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -182,7 +175,6 @@ class _ResumenTab extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // Progreso de sobres
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: BoostProgressBar(
@@ -194,7 +186,6 @@ class _ResumenTab extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // Sobres disponibles
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: PackCard(
@@ -216,10 +207,7 @@ class _ResumenTab extends StatelessWidget {
                   color: Ds.bgCard,
                   border: Border.all(color: Ds.border, width: 1.5),
                   boxShadow: const [
-                    BoxShadow(
-                      color: Color(0xFFB0AAA0),
-                      offset: Offset(3, 3),
-                    ),
+                    BoxShadow(color: Color(0xFFB0AAA0), offset: Offset(3, 3)),
                   ],
                 ),
                 child: Row(
@@ -250,7 +238,9 @@ class _ResumenTab extends StatelessWidget {
   }
 }
 
-// ── Tab COLECCIÓN ─────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+//  TAB COLECCIÓN
+// ════════════════════════════════════════════════════════════
 class _ColeccionTab extends StatelessWidget {
   final AlbumsModel model;
   const _ColeccionTab({required this.model});
@@ -263,28 +253,8 @@ class _ColeccionTab extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 14),
-          // Título de sección
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Container(width: 3, height: 16, color: Ds.accent),
-                const SizedBox(width: 8),
-                const Text(
-                  'TUS COLECCIONES',
-                  style: TextStyle(
-                    fontFamily: Ds.font,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
-                    color: Ds.ink,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Las 3 categorías de álbumes
+          // AlbumsCollectionView incluye header "TU COLECCIÓN" + stats
+          // + sección "TUS COLECCIONES" con las 3 categorías
           AlbumsCollectionView(model: model),
         ],
       ),
@@ -292,7 +262,9 @@ class _ColeccionTab extends StatelessWidget {
   }
 }
 
-// ── Pantalla próximamente ─────────────────────────────────
+// ════════════════════════════════════════════════════════════
+//  COMING SOON
+// ════════════════════════════════════════════════════════════
 class _ComingSoon extends StatelessWidget {
   final String label;
   const _ComingSoon({required this.label});
@@ -341,7 +313,7 @@ class _ComingSoon extends StatelessWidget {
 // ════════════════════════════════════════════════════════════
 class _TabsBar extends StatelessWidget {
   final TabController controller;
-  final VoidCallback onColeccionTap;
+  final VoidCallback  onColeccionTap;
 
   const _TabsBar({required this.controller, required this.onColeccionTap});
 
@@ -353,11 +325,7 @@ class _TabsBar extends StatelessWidget {
         color: Ds.bg,
         border: Border.all(color: Ds.border, width: 2),
         boxShadow: const [
-          BoxShadow(
-            color: Color(0xFFB0AAA0),
-            offset: Offset(4, 4),
-            blurRadius: 0,
-          ),
+          BoxShadow(color: Color(0xFFB0AAA0), offset: Offset(4, 4), blurRadius: 0),
         ],
       ),
       child: IntrinsicHeight(
@@ -366,39 +334,39 @@ class _TabsBar extends StatelessWidget {
           children: [
             Expanded(
               child: _Tab(
-                index: 0,
+                index:      0,
                 controller: controller,
-                icon: Icons.grid_view_rounded,
-                label: 'RESUMEN',
+                icon:       Icons.grid_view_rounded,
+                label:      'RESUMEN',
               ),
             ),
             Container(width: 1.5, color: Ds.border),
             Expanded(
               child: _Tab(
-                index: 1,
+                index:      1,
                 controller: controller,
-                icon: Icons.menu_book_outlined,
-                label: 'COLECCIÓN',
+                icon:       Icons.menu_book_outlined,
+                label:      'COLECCIÓN',
               ),
             ),
             Container(width: 1, color: Ds.borderSub),
             Expanded(
               child: _Tab(
-                index: 2,
+                index:      2,
                 controller: controller,
-                icon: Icons.mail_outline,
-                label: 'SOBRES',
-                soon: true,
+                icon:       Icons.mail_outline,
+                label:      'SOBRES',
+                soon:       true,
               ),
             ),
             Container(width: 1, color: Ds.borderSub),
             Expanded(
               child: _Tab(
-                index: 3,
+                index:      3,
                 controller: controller,
-                icon: Icons.star_outline,
-                label: 'MISIONES',
-                soon: true,
+                icon:       Icons.star_outline,
+                label:      'MISIONES',
+                soon:       true,
               ),
             ),
           ],
@@ -409,11 +377,11 @@ class _TabsBar extends StatelessWidget {
 }
 
 class _Tab extends StatelessWidget {
-  final int index;
+  final int           index;
   final TabController controller;
-  final IconData icon;
-  final String label;
-  final bool soon;
+  final IconData      icon;
+  final String        label;
+  final bool          soon;
 
   const _Tab({
     required this.index,
@@ -442,11 +410,8 @@ class _Tab extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      icon,
-                      size: 10,
-                      color: active ? Colors.white : Ds.muted,
-                    ),
+                    Icon(icon, size: 10,
+                        color: active ? Colors.white : Ds.muted),
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
@@ -466,8 +431,7 @@ class _Tab extends StatelessWidget {
                 if (soon) ...[
                   const SizedBox(height: 3),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                     decoration: BoxDecoration(
                       border: Border.all(color: Ds.borderSub, width: 0.8),
                     ),
@@ -492,18 +456,21 @@ class _Tab extends StatelessWidget {
   }
 }
 
-// ── Alias GsColors para compatibilidad con otros widgets ──
+// ════════════════════════════════════════════════════════════
+//  ALIAS GsColors — compatibilidad con otros widgets
+// ════════════════════════════════════════════════════════════
 abstract class GsColors {
-  static const Color cream   = Ds.bgCard;
-  static const Color card    = Ds.bgSection;
-  static const Color bg      = Ds.bg;
-  static const Color bgCard  = Ds.bgCard;
-  static const Color border  = Ds.border;
+  static const Color cream     = Ds.bgCard;
+  static const Color card      = Ds.bgSection;
+  static const Color bg        = Ds.bg;
+  static const Color bgCard    = Ds.bgCard;
+  static const Color bgSection = Ds.bgSection;
+  static const Color border    = Ds.border;
   static const Color borderSub = Ds.borderSub;
-  static const Color text    = Ds.ink;
-  static const Color accent  = Ds.accent;
-  static const Color gold    = Ds.gold;
-  static const Color muted   = Ds.muted;
-  static const Color shadow  = Color(0x881A1A2E);
+  static const Color text      = Ds.ink;
+  static const Color accent    = Ds.accent;
+  static const Color gold      = Ds.gold;
+  static const Color muted     = Ds.muted;
+  static const Color shadow    = Color(0x881A1A2E);
   static const String fontMono = Ds.font;
 }

@@ -13,29 +13,33 @@ class AlbumsCollectionView extends ConsumerWidget {
   final AlbumsModel model;
   const AlbumsCollectionView({super.key, required this.model});
 
-  int _legendaryCompleted() {
-    return model.progressByAlbumId.values
-        .where((p) => p.albumId.startsWith('legendary') && p.isCompleted)
-        .length;
+  // ── Contadores por categoría ──────────────────────────
+  int _legendaryCompleted() => model.progressByAlbumId.values
+      .where((p) => p.albumId.startsWith('legendary') && p.isCompleted)
+      .length;
+
+  int _starsCompleted() => model.progressByAlbumId.values
+      .where((p) => p.albumId.startsWith('stars') && p.isCompleted)
+      .length;
+
+  int _cultCompleted() => model.progressByAlbumId.values
+      .where((p) => p.albumId.startsWith('cult') && p.isCompleted)
+      .length;
+
+  // ── Stats globales para el header ─────────────────────
+  int _totalFiguritas() => model.collection.fold(0, (s, c) => s + c.copies);
+
+  int _totalCompleted() =>
+      _legendaryCompleted() + _starsCompleted() + _cultCompleted();
+
+  double _globalProgress() {
+    const total = 5 + 5 + 3; // 13 álbumes
+    final completed = _totalCompleted();
+    return completed / total;
   }
 
-  int _starsCompleted() {
-    return model.progressByAlbumId.values
-        .where((p) => p.albumId.startsWith('stars') && p.isCompleted)
-        .length;
-  }
-
-  int _cultCompleted() {
-    return model.progressByAlbumId.values
-        .where((p) => p.albumId.startsWith('cult') && p.isCompleted)
-        .length;
-  }
-
-  // allCards construido desde model.allCards (si existe) o desde collection
   List<AlbumCard> _allCards() {
-    // Intenta usar model.allCards primero; si no existe, usa collection
     try {
-      // ignore: return_of_invalid_type
       return (model as dynamic).allCards as List<AlbumCard>;
     } catch (_) {}
     return model.collection
@@ -46,73 +50,96 @@ class AlbumsCollectionView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // ── Legendarios ──
-          _CategoryRow(
-            label: 'LEGENDARIOS',
-            subtitle: '5 ÁLBUMES',
-            accentColor: const Color(0xFFa599d9),
-            spineColor: const Color(0xFF5b4fd8),
-            coverBg: const Color(0xFF1a1726),
-            albumCount: 5,
-            completedCount: _legendaryCompleted(),
-            onTap: () => _openCategorySheet(
-              context: context,
-              ref: ref,
-              tab: 'legendary',
-              model: model,
-              allCards: _allCards(),
-            ),
-            coverChild: const _BoltPainterWidget(accent: Color(0xFF34d399)),
+    final totalCompleted = _totalCompleted();
+    final figuritas      = _totalFiguritas();
+    final globalPct      = _globalProgress();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // ── Header "TU COLECCIÓN" con stats ──────────────
+        _CollectionHeader(
+          figuritas:      figuritas,
+          globalPct:      globalPct,
+          completedCount: totalCompleted,
+        ),
+
+        const SizedBox(height: 14),
+
+        // ── Título sección ────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Container(width: 3, height: 14, color: GsColors.accent),
+              const SizedBox(width: 8),
+              const Text(
+                'TUS COLECCIONES',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
+                  color: GsColors.text,
+                ),
+              ),
+            ],
           ),
+        ),
 
-          const SizedBox(height: 10),
+        const SizedBox(height: 10),
 
-          // ── Estrellas ──
-          _CategoryRow(
-            label: 'ESTRELLAS',
-            subtitle: '5 ÁLBUMES',
-            accentColor: const Color(0xFFa599d9),
-            spineColor: const Color(0xFF7c3aed),
-            coverBg: const Color(0xFF160e2a),
-            albumCount: 5,
-            completedCount: _starsCompleted(),
-            onTap: () => _openCategorySheet(
-              context: context,
-              ref: ref,
-              tab: 'stars',
-              model: model,
-              allCards: _allCards(),
-            ),
-            coverChild: const _CrownPainterWidget(accent: Color(0xFFa599d9)),
+        // ── Filas de categoría ────────────────────────────
+        _CategoryRow(
+          label:          'LEGENDARIOS',
+          subtitle:       '5 ÁLBUMES',
+          accentColor:    const Color(0xFFa599d9),
+          spineColor:     const Color(0xFF5b4fd8),
+          coverBg:        const Color(0xFF1a1726),
+          albumCount:     5,
+          completedCount: _legendaryCompleted(),
+          coverChild:     const _BoltPainterWidget(accent: Color(0xFF34d399)),
+          onTap: () => _openCategorySheet(
+            context: context, ref: ref,
+            tab: 'legendary', model: model, allCards: _allCards(),
           ),
+        ),
 
-          const SizedBox(height: 10),
+        const SizedBox(height: 10),
 
-          // ── Culto ──
-          _CategoryRow(
-            label: 'DE CULTO',
-            subtitle: '3 ÁLBUMES',
-            accentColor: const Color(0xFFf59e0b),
-            spineColor: const Color(0xFFb45309),
-            coverBg: const Color(0xFF1a1200),
-            albumCount: 3,
-            completedCount: _cultCompleted(),
-            onTap: () => _openCategorySheet(
-              context: context,
-              ref: ref,
-              tab: 'cult',
-              model: model,
-              allCards: _allCards(),
-            ),
-            coverChild: const _GlobePainterWidget(accent: Color(0xFFf59e0b)),
+        _CategoryRow(
+          label:          'ESTRELLAS',
+          subtitle:       '5 ÁLBUMES',
+          accentColor:    const Color(0xFFa599d9),
+          spineColor:     const Color(0xFF7c3aed),
+          coverBg:        const Color(0xFF160e2a),
+          albumCount:     5,
+          completedCount: _starsCompleted(),
+          coverChild:     const _CrownPainterWidget(accent: Color(0xFFa599d9)),
+          onTap: () => _openCategorySheet(
+            context: context, ref: ref,
+            tab: 'stars', model: model, allCards: _allCards(),
           ),
-        ],
-      ),
+        ),
+
+        const SizedBox(height: 10),
+
+        _CategoryRow(
+          label:          'DE CULTO',
+          subtitle:       '3 ÁLBUMES',
+          accentColor:    const Color(0xFFf59e0b),
+          spineColor:     const Color(0xFFb45309),
+          coverBg:        const Color(0xFF1a1200),
+          albumCount:     3,
+          completedCount: _cultCompleted(),
+          coverChild:     const _GlobePainterWidget(accent: Color(0xFFf59e0b)),
+          onTap: () => _openCategorySheet(
+            context: context, ref: ref,
+            tab: 'cult', model: model, allCards: _allCards(),
+          ),
+        ),
+
+        const SizedBox(height: 8),
+      ],
     );
   }
 
@@ -133,10 +160,278 @@ class AlbumsCollectionView extends ConsumerWidget {
   }
 }
 
-// ── Bottom sheet con la sección expandida ─────────────────
+// ═══════════════════════════════════════════════════════════
+//  HEADER — "TU COLECCIÓN" — replica imagen 2
+//  Layout: título + VER TODO / fila horizontal 4 stats / barra
+// ═══════════════════════════════════════════════════════════
+class _CollectionHeader extends StatelessWidget {
+  final int    figuritas;
+  final double globalPct;
+  final int    completedCount;
+
+  const _CollectionHeader({
+    required this.figuritas,
+    required this.globalPct,
+    required this.completedCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pctInt      = (globalPct * 100).round();
+    final activeCount = 13 - completedCount;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: GsColors.bg,
+        border: Border.all(color: GsColors.border, width: 1.5),
+        boxShadow: const [
+          BoxShadow(color: GsColors.shadow, offset: Offset(3, 3)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+
+          // ── Fila título ───────────────────────────────
+          const Padding(
+            padding: EdgeInsets.fromLTRB(14, 12, 14, 0),
+            child: Text(
+              'TU COLECCIÓN',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1,
+                color: GsColors.text,
+              ),
+            ),
+          ),
+
+          // ── Fila de 4 stats horizontales ──────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+
+                  // STAT 1 — Álbumes activos (bloque bordeado propio)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: GsColors.bgCard,
+                          border: Border.all(
+                              color: GsColors.borderSub, width: 1),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '$activeCount',
+                              style: const TextStyle(
+                                fontSize: 30,
+                                fontWeight: FontWeight.w900,
+                                color: GsColors.accent,
+                                height: 1,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            const Text(
+                              'ÁLBUMES\nACTIVOS',
+                              style: TextStyle(
+                                fontSize: 7.5,
+                                fontWeight: FontWeight.w700,
+                                color: GsColors.muted,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Separador
+                  Container(width: 1, color: GsColors.borderSub),
+
+                  // STAT 2 — Figuritas (ícono en cuadro bordeado accent)
+                  Expanded(
+                    child: _HorizStat(
+                      iconWidget: _BorderedIcon(
+                        icon:        Icons.star,
+                        borderColor: GsColors.accent,
+                        iconColor:   GsColors.accent,
+                      ),
+                      value: '$figuritas',
+                      label: 'FIGURITAS\nCONSEGUIDAS',
+                    ),
+                  ),
+
+                  // Separador
+                  Container(width: 1, color: GsColors.borderSub),
+
+                  // STAT 3 — Progreso global (ícono check verde bordeado)
+                  Expanded(
+                    child: _HorizStat(
+                      iconWidget: _BorderedIcon(
+                        icon:        Icons.check,
+                        borderColor: const Color(0xFF22C55E),
+                        iconColor:   const Color(0xFF22C55E),
+                        filled:      true,
+                        fillColor:   const Color(0xFF22C55E),
+                        filledIconColor: Colors.white,
+                      ),
+                      value: '$pctInt%',
+                      label: 'PROGRESO\nGLOBAL',
+                    ),
+                  ),
+
+                  // Separador
+                  Container(width: 1, color: GsColors.borderSub),
+
+                  // STAT 4 — Completados (estrella naranja bordeada)
+                  Expanded(
+                    child: _HorizStat(
+                      iconWidget: _BorderedIcon(
+                        icon:        Icons.star_border,
+                        borderColor: const Color(0xFFf59e0b),
+                        iconColor:   const Color(0xFFf59e0b),
+                      ),
+                      value: '$completedCount',
+                      label: 'COMPLETADOS',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Barra de progreso + % ─────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
+            child: LinearProgressIndicator(
+              value: globalPct,
+              backgroundColor: GsColors.bgSection,
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(GsColors.accent),
+              minHeight: 7,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 4, 14, 12),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                '$pctInt%',
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  color: GsColors.accent,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Stat horizontal (ícono arriba + valor + label) ────────
+class _HorizStat extends StatelessWidget {
+  final Widget iconWidget;
+  final String value;
+  final String label;
+
+  const _HorizStat({
+    required this.iconWidget,
+    required this.value,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          iconWidget,
+          const SizedBox(height: 5),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              color: GsColors.text,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 7,
+              fontWeight: FontWeight.w600,
+              color: GsColors.muted,
+              height: 1.3,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Ícono en cuadro con borde de color (o relleno) ────────
+class _BorderedIcon extends StatelessWidget {
+  final IconData icon;
+  final Color    borderColor;
+  final Color    iconColor;
+  final bool     filled;
+  final Color?   fillColor;
+  final Color?   filledIconColor;
+
+  const _BorderedIcon({
+    required this.icon,
+    required this.borderColor,
+    required this.iconColor,
+    this.filled         = false,
+    this.fillColor,
+    this.filledIconColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 26,
+      height: 26,
+      decoration: BoxDecoration(
+        color: filled ? fillColor : Colors.transparent,
+        border: Border.all(color: borderColor, width: 1.5),
+      ),
+      child: Icon(
+        icon,
+        size: 14,
+        color: filled ? (filledIconColor ?? Colors.white) : iconColor,
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BOTTOM SHEET CON SECCIÓN EXPANDIDA
+// ═══════════════════════════════════════════════════════════
 class _CategorySheet extends StatelessWidget {
-  final String tab;
-  final AlbumsModel model;
+  final String       tab;
+  final AlbumsModel  model;
   final List<AlbumCard> allCards;
 
   const _CategorySheet({
@@ -147,9 +442,9 @@ class _CategorySheet extends StatelessWidget {
 
   String get _title => switch (tab) {
         'legendary' => 'LEGENDARIOS',
-        'stars' => 'ESTRELLAS',
-        'cult' => 'DE CULTO',
-        _ => '',
+        'stars'     => 'ESTRELLAS',
+        'cult'      => 'DE CULTO',
+        _           => '',
       };
 
   Color get _accent => switch (tab) {
@@ -212,17 +507,10 @@ class _CategorySheet extends StatelessWidget {
                       color: GsColors.cream,
                       border: Border.all(color: GsColors.border, width: 1.5),
                       boxShadow: const [
-                        BoxShadow(
-                          color: GsColors.shadow,
-                          offset: Offset(2, 2),
-                        ),
+                        BoxShadow(color: GsColors.shadow, offset: Offset(2, 2)),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.close,
-                      size: 14,
-                      color: GsColors.text,
-                    ),
+                    child: const Icon(Icons.close, size: 14, color: GsColors.text),
                   ),
                 ),
               ],
@@ -233,17 +521,17 @@ class _CategorySheet extends StatelessWidget {
             child: switch (tab) {
               'legendary' => LegendarySection(
                   definitions: model.legendaryAlbums,
-                  progress: model.progressByAlbumId.values.toList(),
-                  collection: model.collection,
+                  progress:    model.progressByAlbumId.values.toList(),
+                  collection:  model.collection,
                 ),
               'stars' => StarsSection(
                   collection: model.collection,
-                  allCards: allCards,
+                  allCards:   allCards,
                 ),
               'cult' => CultSection(
                   definitions: model.cultAlbums,
-                  collection: model.collection,
-                  allCards: allCards,
+                  collection:  model.collection,
+                  allCards:    allCards,
                 ),
               _ => const SizedBox.shrink(),
             },
@@ -255,18 +543,18 @@ class _CategorySheet extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// FILA DE CATEGORÍA
+//  FILA DE CATEGORÍA — rediseñada
 // ═══════════════════════════════════════════════════════════
-class _CategoryRow extends StatelessWidget {
-  final String label;
-  final String subtitle;
-  final Color accentColor;
-  final Color spineColor;
-  final Color coverBg;
-  final int albumCount;
-  final int completedCount;
+class _CategoryRow extends StatefulWidget {
+  final String   label;
+  final String   subtitle;
+  final Color    accentColor;
+  final Color    spineColor;
+  final Color    coverBg;
+  final int      albumCount;
+  final int      completedCount;
+  final Widget   coverChild;
   final VoidCallback onTap;
-  final Widget coverChild;
 
   const _CategoryRow({
     required this.label,
@@ -276,122 +564,147 @@ class _CategoryRow extends StatelessWidget {
     required this.coverBg,
     required this.albumCount,
     required this.completedCount,
-    required this.onTap,
     required this.coverChild,
+    required this.onTap,
   });
 
-  double get _pct =>
-      albumCount > 0 ? (completedCount / albumCount).clamp(0.0, 1.0) : 0.0;
+  @override
+  State<_CategoryRow> createState() => _CategoryRowState();
+}
+
+class _CategoryRowState extends State<_CategoryRow> {
+  bool _pressed = false;
+
+  double get _pct => widget.albumCount > 0
+      ? (widget.completedCount / widget.albumCount).clamp(0.0, 1.0)
+      : 0.0;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: GsColors.card,
-        border: Border.all(color: GsColors.border, width: 1.5),
-        boxShadow: const [
-          BoxShadow(color: GsColors.shadow, offset: Offset(3, 3)),
-        ],
-      ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // ── Portada del libro ──
-            _BookCover(
-              spine: spineColor,
-              bg: coverBg,
-              accent: accentColor,
-              child: coverChild,
-            ),
-
-            // ── Info ──
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 0, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 2,
-                        color: accentColor,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: GsColors.text,
-                        height: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    _AlbumStatusRow(
-                      total: albumCount,
-                      completed: completedCount,
-                      accent: accentColor,
-                    ),
-                    const SizedBox(height: 8),
-                    _ProgressBar(pct: _pct, accent: accentColor),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '$completedCount / $albumCount COMPLETADOS',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                            color: accentColor,
-                          ),
-                        ),
-                        Text(
-                          '${(_pct * 100).round()}%',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
-                            color: accentColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+    return GestureDetector(
+      onTapDown:   (_) => setState(() => _pressed = true),
+      onTapUp:     (_) { setState(() => _pressed = false); widget.onTap(); },
+      onTapCancel: ()  => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 80),
+        transform: _pressed
+            ? (Matrix4.identity()..translate(3.0, 3.0))
+            : Matrix4.identity(),
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: GsColors.bg,
+          border: Border.all(color: GsColors.border, width: 1.5),
+          boxShadow: _pressed
+              ? []
+              : const [
+                  BoxShadow(color: GsColors.shadow, offset: Offset(3, 3)),
+                ],
+        ),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ── Portada del libro ──────────────────────
+              _BookCover(
+                spine:  widget.spineColor,
+                bg:     widget.coverBg,
+                accent: widget.accentColor,
+                child:  widget.coverChild,
               ),
-            ),
 
-            // ── Flecha ──
-            GestureDetector(
-              onTap: onTap,
-              child: Container(
-                width: 44,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  border: Border(
-                    left: BorderSide(
-                      color: GsColors.border.withValues(alpha: 0.5),
-                      width: 1,
-                    ),
+              // ── Info central ──────────────────────────
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 0, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Categoría label en color
+                      Text(
+                        widget.label,
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
+                          color: widget.accentColor,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+
+                      // Subtítulo grande bold
+                      Text(
+                        widget.subtitle,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: GsColors.text,
+                          height: 1.1,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      // Checkboxes de estado
+                      _AlbumStatusRow(
+                        total:     widget.albumCount,
+                        completed: widget.completedCount,
+                        accent:    widget.accentColor,
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // Barra de progreso
+                      _ProgressBar(pct: _pct, accent: widget.accentColor),
+
+                      const SizedBox(height: 5),
+
+                      // Texto "X / Y COMPLETADOS — XX%"
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${widget.completedCount} / ${widget.albumCount} COMPLETADOS',
+                            style: TextStyle(
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
+                              color: widget.accentColor,
+                            ),
+                          ),
+                          Text(
+                            '${(_pct * 100).round()}%',
+                            style: TextStyle(
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w900,
+                              color: widget.accentColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
+              ),
+
+              // ── Flecha ────────────────────────────────
+              Container(
+                width: 44,
+                alignment: Alignment.center,
                 child: Container(
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
                     color: GsColors.cream,
                     border: Border.all(color: GsColors.border, width: 1.5),
-                    boxShadow: const [
-                      BoxShadow(color: GsColors.shadow, offset: Offset(2, 2)),
-                    ],
+                    boxShadow: _pressed
+                        ? []
+                        : const [
+                            BoxShadow(
+                                color: GsColors.shadow,
+                                offset: Offset(2, 2)),
+                          ],
                   ),
                   child: const Icon(
                     Icons.chevron_right,
@@ -400,8 +713,8 @@ class _CategoryRow extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -409,12 +722,12 @@ class _CategoryRow extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// PORTADA DEL LIBRO
+//  PORTADA DEL LIBRO — con padding vertical para no pegar al borde
 // ═══════════════════════════════════════════════════════════
 class _BookCover extends StatelessWidget {
-  final Color spine;
-  final Color bg;
-  final Color accent;
+  final Color  spine;
+  final Color  bg;
+  final Color  accent;
   final Widget child;
 
   const _BookCover({
@@ -426,107 +739,115 @@ class _BookCover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 88,
-      height: 114,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // Páginas traseras (efecto pila)
-          Positioned(
-            top: 8, left: 10,
-            child: Container(
-              width: 72, height: 100,
-              color: bg.withValues(alpha: 0.45),
+    return Padding(
+      // Espacio arriba/abajo para que el libro flote dentro del card
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+      child: SizedBox(
+        width: 86,
+        height: 120,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // Páginas traseras (efecto pila)
+            Positioned(
+              top: 7, left: 10,
+              child: Container(
+                width: 70, height: 112,
+                color: bg.withValues(alpha: 0.55),
+              ),
             ),
-          ),
-          Positioned(
-            top: 4, left: 6,
-            child: Container(
-              width: 72, height: 100,
-              color: bg.withValues(alpha: 0.65),
+            Positioned(
+              top: 3, left: 5,
+              child: Container(
+                width: 70, height: 112,
+                color: bg.withValues(alpha: 0.75),
+              ),
             ),
-          ),
-          // Libro principal
-          Positioned(
-            top: 0, left: 2,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Lomo
-                Container(
-                  width: 9,
-                  height: 106,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [
-                        spine.withValues(alpha: 0.7),
-                        spine,
+
+            // Libro principal
+            Positioned(
+              top: 0, left: 0,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Lomo
+                  Container(
+                    width: 10,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          spine.withValues(alpha: 0.7),
+                          spine,
+                        ],
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Container(
+                          height: 20,
+                          width: 2,
+                          margin: const EdgeInsets.only(bottom: 6),
+                          color: Colors.white.withValues(alpha: 0.22),
+                        ),
                       ],
                     ),
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Container(
-                        height: 20,
-                        width: 2,
-                        margin: const EdgeInsets.only(bottom: 6),
-                        color: Colors.white.withValues(alpha: 0.25),
-                      ),
-                    ],
-                  ),
-                ),
-                // Tapa
-                Container(
-                  width: 70,
-                  height: 106,
-                  color: bg,
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                accent.withValues(alpha: 0.10),
-                                Colors.transparent,
-                                accent.withValues(alpha: 0.04),
-                              ],
+                  // Tapa
+                  Container(
+                    width: 70,
+                    height: 120,
+                    color: bg,
+                    child: Stack(
+                      children: [
+                        // Gradiente sutil
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  accent.withValues(alpha: 0.08),
+                                  Colors.transparent,
+                                  accent.withValues(alpha: 0.04),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      Positioned.fill(child: child),
-                      Positioned(
-                        bottom: 0, left: 0, right: 0,
-                        child: Container(
-                          height: 3,
-                          color: spine.withValues(alpha: 0.6),
+                        // Arte de portada
+                        Positioned.fill(child: child),
+                        // Borde inferior accent
+                        Positioned(
+                          bottom: 0, left: 0, right: 0,
+                          child: Container(
+                            height: 3,
+                            color: spine.withValues(alpha: 0.7),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 // ═══════════════════════════════════════════════════════════
-// CHECKBOXES DE ESTADO
+//  CHECKBOXES DE ESTADO
 // ═══════════════════════════════════════════════════════════
 class _AlbumStatusRow extends StatelessWidget {
-  final int total;
-  final int completed;
+  final int   total;
+  final int   completed;
   final Color accent;
 
   const _AlbumStatusRow({
@@ -537,13 +858,14 @@ class _AlbumStatusRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Tamaño adaptativo: max 5 álbumes × (24px + 4px margin) = 140px — cabe en ~161px
     return Row(
       children: List.generate(total, (i) {
         final done = i < completed;
         return Container(
-          width: 26,
-          height: 26,
-          margin: const EdgeInsets.only(right: 5),
+          width: 24,
+          height: 24,
+          margin: const EdgeInsets.only(right: 4),
           decoration: BoxDecoration(
             color: done ? accent : GsColors.cream,
             border: Border.all(
@@ -551,12 +873,12 @@ class _AlbumStatusRow extends StatelessWidget {
               width: 1.5,
             ),
             boxShadow: done
-                ? const [BoxShadow(color: GsColors.shadow, offset: Offset(1, 1))]
+                ? [BoxShadow(color: accent.withValues(alpha: 0.25), offset: const Offset(1, 1))]
                 : null,
           ),
           child: Icon(
             done ? Icons.check : Icons.lock_outline,
-            size: 13,
+            size: 12,
             color: done ? Colors.white : GsColors.muted,
           ),
         );
@@ -566,38 +888,35 @@ class _AlbumStatusRow extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// BARRA DE PROGRESO
+//  BARRA DE PROGRESO
 // ═══════════════════════════════════════════════════════════
 class _ProgressBar extends StatelessWidget {
   final double pct;
-  final Color accent;
+  final Color  accent;
 
   const _ProgressBar({required this.pct, required this.accent});
 
   @override
   Widget build(BuildContext context) {
-    // No usamos LayoutBuilder — es incompatible con IntrinsicHeight
     return SizedBox(
-      height: 6,
+      height: 7,
       child: LinearProgressIndicator(
         value: pct,
-        backgroundColor: GsColors.cream,
+        backgroundColor: GsColors.bgSection,
         valueColor: AlwaysStoppedAnimation<Color>(accent),
-        minHeight: 6,
+        minHeight: 7,
       ),
     );
   }
 }
 
 // ═══════════════════════════════════════════════════════════
-// COVER PAINTERS
+//  COVER PAINTERS (sin cambios, reutilizados)
 // ═══════════════════════════════════════════════════════════
 
-// ── Rayo (Legendarios) ────────────────────────────────────
 class _BoltPainterWidget extends StatelessWidget {
   final Color accent;
   const _BoltPainterWidget({required this.accent});
-
   @override
   Widget build(BuildContext context) =>
       CustomPaint(painter: _BoltPainter(accent: accent));
@@ -615,14 +934,14 @@ class _BoltPainter extends CustomPainter {
     final glowPaint = Paint()
       ..shader = RadialGradient(
         colors: [accent.withValues(alpha: 0.20), accent.withValues(alpha: 0.0)],
-      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: 32));
-    canvas.drawCircle(Offset(cx, cy), 32, glowPaint);
+      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: 34));
+    canvas.drawCircle(Offset(cx, cy), 34, glowPaint);
 
     final ringPaint = Paint()
       ..color = accent.withValues(alpha: 0.10)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.8;
-    for (final r in [26.0, 18.0]) {
+    for (final r in [28.0, 20.0]) {
       canvas.drawCircle(Offset(cx, cy), r, ringPaint);
     }
 
@@ -640,23 +959,15 @@ class _BoltPainter extends CustomPainter {
       ..close();
 
     canvas.drawPath(path, fill);
-
-    final stroke = Paint()
-      ..color = accent.withValues(alpha: 0.4)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.6;
-    canvas.drawPath(path, stroke);
   }
 
   @override
   bool shouldRepaint(_BoltPainter old) => old.accent != accent;
 }
 
-// ── Corona (Estrellas) ────────────────────────────────────
 class _CrownPainterWidget extends StatelessWidget {
   final Color accent;
   const _CrownPainterWidget({required this.accent});
-
   @override
   Widget build(BuildContext context) =>
       CustomPaint(painter: _CrownPainter(accent: accent));
@@ -665,21 +976,6 @@ class _CrownPainterWidget extends StatelessWidget {
 class _CrownPainter extends CustomPainter {
   final Color accent;
   const _CrownPainter({required this.accent});
-
-  void _drawStar(Canvas canvas, Offset center, double size, Paint paint) {
-    const pts = 5;
-    final path = Path();
-    for (int i = 0; i < pts * 2; i++) {
-      final angle = (i / (pts * 2)) * 2 * math.pi - math.pi / 2;
-      final r = i.isEven ? size : size * 0.45;
-      final x = center.dx + r * math.cos(angle);
-      final y = center.dy + r * math.sin(angle);
-      if (i == 0) path.moveTo(x, y);
-      else path.lineTo(x, y);
-    }
-    path.close();
-    canvas.drawPath(path, paint);
-  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -724,9 +1020,9 @@ class _CrownPainter extends CustomPainter {
     final crown = Path()
       ..moveTo(cx - 14, cy + 8)
       ..lineTo(cx - 14, cy - 10)
-      ..lineTo(cx - 7, cy - 2)
-      ..lineTo(cx, cy - 14)
-      ..lineTo(cx + 7, cy - 2)
+      ..lineTo(cx - 7,  cy - 2)
+      ..lineTo(cx,      cy - 14)
+      ..lineTo(cx + 7,  cy - 2)
       ..lineTo(cx + 14, cy - 10)
       ..lineTo(cx + 14, cy + 8)
       ..close();
@@ -738,22 +1034,17 @@ class _CrownPainter extends CustomPainter {
       ..color = accent.withValues(alpha: 0.85)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset(cx - 14, cy - 10), 2.2, dotPaint);
-    canvas.drawCircle(Offset(cx, cy - 14), 2.2, dotPaint);
+    canvas.drawCircle(Offset(cx,      cy - 14), 2.2, dotPaint);
     canvas.drawCircle(Offset(cx + 14, cy - 10), 2.2, dotPaint);
-
-    _drawStar(canvas, Offset(cx, cy + 1), 4.5,
-        Paint()..color = accent.withValues(alpha: 0.75));
   }
 
   @override
   bool shouldRepaint(_CrownPainter old) => old.accent != accent;
 }
 
-// ── Globo/Red (De Culto) ──────────────────────────────────
 class _GlobePainterWidget extends StatelessWidget {
   final Color accent;
   const _GlobePainterWidget({required this.accent});
-
   @override
   Widget build(BuildContext context) =>
       CustomPaint(painter: _GlobePainter(accent: accent));
@@ -767,13 +1058,13 @@ class _GlobePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
     final cy = size.height / 2;
-    const r = 20.0;
+    const r = 22.0;
 
     final glowPaint = Paint()
       ..shader = RadialGradient(
         colors: [accent.withValues(alpha: 0.20), accent.withValues(alpha: 0.0)],
-      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: 32));
-    canvas.drawCircle(Offset(cx, cy), 32, glowPaint);
+      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: 34));
+    canvas.drawCircle(Offset(cx, cy), 34, glowPaint);
 
     final fill = Paint()
       ..color = accent.withValues(alpha: 0.10)
@@ -799,14 +1090,13 @@ class _GlobePainter extends CustomPainter {
       thinStroke,
     );
 
-    for (final offset in [-8.0, 8.0]) {
+    for (final offset in [-9.0, 9.0]) {
       final halfW = math.sqrt(r * r - offset * offset);
       canvas.drawOval(
         Rect.fromCenter(
-          center: Offset(cx, cy + offset),
-          width: halfW * 1.9,
-          height: 5,
-        ),
+            center: Offset(cx, cy + offset),
+            width: halfW * 1.9,
+            height: 5.5),
         thinStroke,
       );
     }
@@ -820,12 +1110,12 @@ class _GlobePainter extends CustomPainter {
       ..strokeWidth = 1.1;
 
     final shield = Path()
-      ..moveTo(cx, cy - 11)
-      ..lineTo(cx + 8, cy - 6)
-      ..lineTo(cx + 8, cy + 2)
-      ..quadraticBezierTo(cx + 8, cy + 10, cx, cy + 14)
-      ..quadraticBezierTo(cx - 8, cy + 10, cx - 8, cy + 2)
-      ..lineTo(cx - 8, cy - 6)
+      ..moveTo(cx, cy - 12)
+      ..lineTo(cx + 9,  cy - 7)
+      ..lineTo(cx + 9,  cy + 2)
+      ..quadraticBezierTo(cx + 9, cy + 11, cx, cy + 15)
+      ..quadraticBezierTo(cx - 9, cy + 11, cx - 9, cy + 2)
+      ..lineTo(cx - 9, cy - 7)
       ..close();
 
     canvas.drawPath(shield, shieldFill);
