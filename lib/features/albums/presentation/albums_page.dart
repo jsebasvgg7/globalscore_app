@@ -5,7 +5,7 @@ import '../domain/albums_model.dart';
 import '../widgets/active_album_hero.dart';
 import '../widgets/boost_progress_bar.dart';
 import '../widgets/pack_card.dart';
-import '../widgets/albums_carousel.dart';
+import '../widgets/albums_collection_view.dart';
 import '../widgets/pack_opening_modal.dart';
 
 // ════════════════════════════════════════════════════════════
@@ -118,7 +118,7 @@ class _AlbumsBody extends ConsumerWidget {
             const SizedBox(height: 14),
 
             // 5 — Carrusel colecciones
-            AlbumsCarousel(model: model),
+            AlbumsCollectionView(model: model),
 
             const SizedBox(height: 32),
           ],
