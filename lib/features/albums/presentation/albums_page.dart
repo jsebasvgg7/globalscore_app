@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../domain/albums_provider.dart';
 import '../domain/albums_model.dart';
-import 'pack_opening_modal.dart';
+import '../widgets/pack_opening_modal.dart';
 
 // ── Paleta ───────────────────────────────────────────────
 const _accent  = Color(0xFF2D0CFF);
