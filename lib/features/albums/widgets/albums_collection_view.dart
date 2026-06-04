@@ -994,11 +994,12 @@ class _ProgressBar extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  BOTTOM SHEET CON SECCIÓN EXPANDIDA (sin cambios)
+//  BOTTOM SHEET REDISEÑADO — panel tipo colección por categoría
 // ═══════════════════════════════════════════════════════════
+
 class _CategorySheet extends StatelessWidget {
-  final String       tab;
-  final AlbumsModel  model;
+  final String tab;
+  final AlbumsModel model;
   final List<AlbumCard> allCards;
 
   const _CategorySheet({
@@ -1014,20 +1015,76 @@ class _CategorySheet extends StatelessWidget {
         _           => '',
       };
 
+  String get _subtitle => switch (tab) {
+        'legendary' => '5 álbumes · Temp 25-26',
+        'stars'     => '5 álbumes · Por nivel de rareza',
+        'cult'      => '3 álbumes · Equipos, Copas y Eventos',
+        _           => '',
+      };
+
   Color get _accent => switch (tab) {
-        'legendary' => const Color(0xFF34d399),
+        'legendary' => const Color(0xFF5b4fd8),
         'stars'     => const Color(0xFFa599d9),
         'cult'      => const Color(0xFFf59e0b),
         _           => GsColors.accent,
       };
 
+  Color get _accentLight => switch (tab) {
+        'legendary' => const Color(0xFFa599d9),
+        'stars'     => const Color(0xFFc4b5fd),
+        'cult'      => const Color(0xFFfbbf24),
+        _           => GsColors.accent,
+      };
+
+  int get _totalAlbums => switch (tab) {
+        'legendary' => 5,
+        'stars'     => 5,
+        'cult'      => 3,
+        _           => 0,
+      };
+
+  int _completedAlbums() {
+    final prefix = switch (tab) {
+      'legendary' => 'legendary',
+      'stars'     => 'stars',
+      'cult'      => 'cult',
+      _           => '',
+    };
+    return model.progressByAlbumId.values
+        .where((p) => p.albumId.startsWith(prefix) && p.isCompleted)
+        .length;
+  }
+
+  int _figuritas() {
+    final types = switch (tab) {
+      'legendary' => {'player'},
+      'stars'     => {'player'},
+      'cult'      => {'team', 'competition', 'event'},
+      _           => <String>{},
+    };
+    return model.collection
+        .where((c) => types.contains(c.card?.cardType))
+        .fold(0, (s, c) => s + c.copies);
+  }
+
+  double _pct() {
+    final completed = _completedAlbums();
+    final total = _totalAlbums;
+    return total > 0 ? (completed / total).clamp(0.0, 1.0) : 0.0;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final completed = _completedAlbums();
+    final figuritas = _figuritas();
+    final pct       = _pct();
+    final pctInt    = (pct * 100).round();
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.92,
       decoration: BoxDecoration(
         color: GsColors.bg,
-        border: Border(top: BorderSide(color: GsColors.border, width: 2)),
+        border: Border(top: BorderSide(color: _accent, width: 3)),
       ),
       child: Column(
         children: [
@@ -1039,40 +1096,60 @@ class _CategorySheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          Container(
-            height: 48,
-            decoration: BoxDecoration(
-              color: GsColors.bgCard,
-              border: Border(bottom: BorderSide(color: GsColors.border, width: 1.5)),
-            ),
+
+          _SheetHeader(
+            title:    _title,
+            subtitle: _subtitle,
+            accent:   _accent,
+            onClose:  () => Navigator.of(context).pop(),
+          ),
+
+          _SheetStatsPanel(
+            accent:      _accent,
+            accentLight: _accentLight,
+            completed:   completed,
+            total:       _totalAlbums,
+            figuritas:   figuritas,
+            pct:         pct,
+            pctInt:      pctInt,
+          ),
+
+          const SizedBox(height: 12),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                Container(width: 4, color: _accent),
-                const SizedBox(width: 12),
+                Container(width: 3, height: 12, color: _accent),
+                const SizedBox(width: 8),
                 Text(
-                  _title,
+                  'TUS ÁLBUMES',
                   style: TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w900,
-                    letterSpacing: 2, color: _accent,
+                    fontFamily: GsColors.fontMono,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                    color: _accent,
                   ),
                 ),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    width: 32, height: 32,
-                    margin: const EdgeInsets.only(right: 12),
-                    decoration: BoxDecoration(
-                      color: GsColors.cream,
-                      border: Border.all(color: GsColors.border, width: 1.5),
-                      boxShadow: const [BoxShadow(color: GsColors.shadow, offset: Offset(2, 2))],
-                    ),
-                    child: const Icon(Icons.close, size: 14, color: GsColors.text),
+                const SizedBox(width: 8),
+                Expanded(child: Container(height: 1, color: GsColors.borderSub)),
+                const SizedBox(width: 8),
+                Text(
+                  '$completed / $_totalAlbums',
+                  style: TextStyle(
+                    fontFamily: GsColors.fontMono,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w700,
+                    color: _accentLight,
                   ),
                 ),
               ],
             ),
           ),
+
+          const SizedBox(height: 10),
+
           Expanded(
             child: switch (tab) {
               'legendary' => LegendarySection(
@@ -1092,12 +1169,434 @@ class _CategorySheet extends StatelessWidget {
               _ => const SizedBox.shrink(),
             },
           ),
+
+          _SheetFooter(
+            accent:    _accent,
+            completed: completed,
+            total:     _totalAlbums,
+            onClose:   () => Navigator.of(context).pop(),
+          ),
         ],
       ),
     );
   }
 }
 
+// ── Header ────────────────────────────────────────────────
+class _SheetHeader extends StatelessWidget {
+  final String title, subtitle;
+  final Color accent;
+  final VoidCallback onClose;
+
+  const _SheetHeader({
+    required this.title, required this.subtitle,
+    required this.accent, required this.onClose,
+  });
+
+  IconData get _icon => switch (title) {
+        'LEGENDARIOS' => Icons.auto_awesome,
+        'ESTRELLAS'   => Icons.star,
+        'DE CULTO'    => Icons.public,
+        _             => Icons.collections_bookmark,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: GsColors.bg,
+        border: Border(bottom: BorderSide(color: GsColors.border, width: 1.5)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Ícono neobrutalista con fondo accent
+          Container(
+            width: 44, height: 44,
+            decoration: BoxDecoration(
+              color: accent,
+              border: Border.all(color: GsColors.border, width: 1.5),
+              boxShadow: const [BoxShadow(color: GsColors.shadow, offset: Offset(3, 3))],
+            ),
+            child: Icon(_icon, size: 20, color: Colors.white),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontFamily: GsColors.fontMono,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1,
+                    color: GsColors.text,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontFamily: GsColors.fontMono,
+                    fontSize: 9,
+                    color: GsColors.muted,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: onClose,
+            child: Container(
+              width: 32, height: 32,
+              decoration: BoxDecoration(
+                color: GsColors.bg,
+                border: Border.all(color: GsColors.border, width: 1.5),
+                boxShadow: const [BoxShadow(color: GsColors.shadow, offset: Offset(2, 2))],
+              ),
+              child: const Icon(Icons.close, size: 14, color: GsColors.text),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Stats panel ───────────────────────────────────────────
+class _SheetStatsPanel extends StatelessWidget {
+  final Color accent, accentLight;
+  final int completed, total, figuritas, pctInt;
+  final double pct;
+
+  const _SheetStatsPanel({
+    required this.accent, required this.accentLight,
+    required this.completed, required this.total,
+    required this.figuritas, required this.pct, required this.pctInt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Fila de 3 mini-cards ─────────────────────
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // CARD 1 — álbumes completados
+              _StatCard(
+                flex: 3,
+                bgColor: accent,
+                borderColor: accent,
+                labelColor: Colors.white70,
+                topWidget: Text(
+                  '$completed',
+                  style: const TextStyle(
+                    fontFamily: GsColors.fontMono,
+                    fontSize: 40,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    height: 1,
+                  ),
+                ),
+                label: 'ÁLBUMES\nCOMPLETADOS',
+              ),
+              const SizedBox(width: 6),
+              // CARD 2 — figuritas
+              _StatCard(
+                flex: 4,
+                topWidget: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 20, height: 20,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: accentLight, width: 1.5),
+                      ),
+                      child: Icon(Icons.star, size: 11, color: accentLight),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '$figuritas',
+                      style: const TextStyle(
+                        fontFamily: GsColors.fontMono,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: GsColors.text,
+                        height: 1,
+                      ),
+                    ),
+                  ],
+                ),
+                label: 'FIGURITAS\nCONSEGUIDAS',
+                borderColor: GsColors.borderSub,
+              ),
+              const SizedBox(width: 6),
+              // CARD 3 — progreso %
+              _StatCard(
+                flex: 4,
+                topWidget: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 20, height: 20,
+                      color: const Color(0xFF22C55E),
+                      child: const Icon(Icons.check, size: 11, color: Colors.white),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '$pctInt%',
+                      style: const TextStyle(
+                        fontFamily: GsColors.fontMono,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: GsColors.text,
+                        height: 1,
+                      ),
+                    ),
+                  ],
+                ),
+                label: 'PROGRESO\nGLOBAL',
+                borderColor: GsColors.borderSub,
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          // ── Barra de progreso ────────────────────────
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: GsColors.border, width: 1.5),
+              boxShadow: const [BoxShadow(color: GsColors.shadow, offset: Offset(3, 3))],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Stack(
+                  children: [
+                    Container(height: 10, color: GsColors.bgSection),
+                    FractionallySizedBox(
+                      widthFactor: pct,
+                      child: Container(
+                        height: 10,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: [accent, accentLight]),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 4, 10, 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '$completed de $total álbumes completados',
+                        style: const TextStyle(
+                          fontFamily: GsColors.fontMono,
+                          fontSize: 8,
+                          color: GsColors.muted,
+                        ),
+                      ),
+                      Text(
+                        '$pctInt%',
+                        style: TextStyle(
+                          fontFamily: GsColors.fontMono,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          color: accent,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final int flex;
+  final Widget topWidget;
+  final String label;
+  final Color borderColor;
+  final Color? bgColor;
+  final Color? labelColor;
+
+  const _StatCard({
+    required this.flex,
+    required this.topWidget,
+    required this.label,
+    required this.borderColor,
+    this.bgColor,
+    this.labelColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      flex: flex,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
+        decoration: BoxDecoration(
+          color: bgColor ?? GsColors.bg,
+          border: Border.all(color: borderColor, width: 1.5),
+          boxShadow: const [BoxShadow(color: GsColors.shadow, offset: Offset(2, 2))],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            topWidget,
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: GsColors.fontMono,
+                fontSize: 7,
+                fontWeight: FontWeight.w700,
+                color: labelColor ?? GsColors.muted,
+                height: 1.35,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+class _StatCell extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor, borderColor;
+  final bool filled;
+  final Color? fillColor;
+  final String value, label;
+
+  const _StatCell({
+    required this.icon, required this.iconColor,
+    required this.borderColor, required this.filled,
+    this.fillColor, required this.value, required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 22, height: 22,
+            decoration: BoxDecoration(
+              color: filled ? fillColor : Colors.transparent,
+              border: Border.all(color: borderColor, width: 1.5),
+            ),
+            child: Icon(icon, size: 12, color: iconColor),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              fontFamily: GsColors.fontMono,
+              fontSize: 20, fontWeight: FontWeight.w900,
+              color: GsColors.text, height: 1,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: GsColors.fontMono,
+              fontSize: 6.5, fontWeight: FontWeight.w600,
+              color: GsColors.muted, height: 1.3,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Footer ────────────────────────────────────────────────
+class _SheetFooter extends StatelessWidget {
+  final Color accent;
+  final int completed, total;
+  final VoidCallback onClose;
+
+  const _SheetFooter({
+    required this.accent, required this.completed,
+    required this.total, required this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        color: GsColors.bgCard,
+        border: const Border(top: BorderSide(color: GsColors.border, width: 1.5)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          // Pips de progreso
+          Row(
+            children: List.generate(total, (i) {
+              final done = i < completed;
+              return Container(
+                width: 8, height: 8,
+                margin: const EdgeInsets.only(right: 4),
+                decoration: BoxDecoration(
+                  color: done ? accent : GsColors.bgSection,
+                  border: Border.all(
+                    color: done ? accent : GsColors.borderSub,
+                    width: 1,
+                  ),
+                ),
+              );
+            }),
+          ),
+          const Spacer(),
+          GestureDetector(
+            onTap: onClose,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: GsColors.bg,
+                border: Border.all(color: GsColors.border, width: 1.5),
+                boxShadow: const [BoxShadow(color: GsColors.shadow, offset: Offset(2, 2))],
+              ),
+              child: const Text(
+                'CERRAR',
+                style: TextStyle(
+                  fontFamily: GsColors.fontMono,
+                  fontSize: 9, fontWeight: FontWeight.w900,
+                  color: GsColors.text, letterSpacing: 1,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 // ═══════════════════════════════════════════════════════════
 //  COVER PAINTERS — igual que antes
 // ═══════════════════════════════════════════════════════════
