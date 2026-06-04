@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../presentation/albums_page.dart' show GsColors;
 import '../domain/albums_model.dart';
 import '../domain/albums_provider.dart';
-import 'album_panel_modal.dart';
 import 'legendary_section.dart';
 import 'stars_section.dart';
 import 'cult_section.dart';
@@ -32,6 +31,19 @@ class AlbumsCollectionView extends ConsumerWidget {
         .length;
   }
 
+  // allCards construido desde model.allCards (si existe) o desde collection
+  List<AlbumCard> _allCards() {
+    // Intenta usar model.allCards primero; si no existe, usa collection
+    try {
+      // ignore: return_of_invalid_type
+      return (model as dynamic).allCards as List<AlbumCard>;
+    } catch (_) {}
+    return model.collection
+        .where((c) => c.card != null)
+        .map((c) => c.card!)
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
@@ -53,6 +65,7 @@ class AlbumsCollectionView extends ConsumerWidget {
               ref: ref,
               tab: 'legendary',
               model: model,
+              allCards: _allCards(),
             ),
             coverChild: const _BoltPainterWidget(accent: Color(0xFF34d399)),
           ),
@@ -73,6 +86,7 @@ class AlbumsCollectionView extends ConsumerWidget {
               ref: ref,
               tab: 'stars',
               model: model,
+              allCards: _allCards(),
             ),
             coverChild: const _CrownPainterWidget(accent: Color(0xFFa599d9)),
           ),
@@ -93,6 +107,7 @@ class AlbumsCollectionView extends ConsumerWidget {
               ref: ref,
               tab: 'cult',
               model: model,
+              allCards: _allCards(),
             ),
             coverChild: const _GlobePainterWidget(accent: Color(0xFFf59e0b)),
           ),
@@ -106,13 +121,14 @@ class AlbumsCollectionView extends ConsumerWidget {
     required WidgetRef ref,
     required String tab,
     required AlbumsModel model,
+    required List<AlbumCard> allCards,
   }) {
     ref.read(albumsTabProvider.notifier).set(tab);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _CategorySheet(tab: tab, model: model),
+      builder: (_) => _CategorySheet(tab: tab, model: model, allCards: allCards),
     );
   }
 }
@@ -121,8 +137,13 @@ class AlbumsCollectionView extends ConsumerWidget {
 class _CategorySheet extends StatelessWidget {
   final String tab;
   final AlbumsModel model;
+  final List<AlbumCard> allCards;
 
-  const _CategorySheet({required this.tab, required this.model});
+  const _CategorySheet({
+    required this.tab,
+    required this.model,
+    required this.allCards,
+  });
 
   String get _title => switch (tab) {
         'legendary' => 'LEGENDARIOS',
@@ -133,22 +154,40 @@ class _CategorySheet extends StatelessWidget {
 
   Color get _accent => switch (tab) {
         'legendary' => const Color(0xFFa599d9),
-        'stars' => const Color(0xFFa599d9),
-        'cult' => const Color(0xFFf59e0b),
-        _ => GsColors.accent,
+        'stars'     => const Color(0xFFa599d9),
+        'cult'      => const Color(0xFFf59e0b),
+        _           => GsColors.accent,
       };
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.90,
-      color: GsColors.border,
+      height: MediaQuery.of(context).size.height * 0.92,
+      decoration: BoxDecoration(
+        color: GsColors.bg,
+        border: Border(top: BorderSide(color: GsColors.border, width: 2)),
+      ),
       child: Column(
         children: [
+          // Handle
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: GsColors.borderSub,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
           // Header
           Container(
             height: 48,
-            color: GsColors.card,
+            decoration: BoxDecoration(
+              color: GsColors.bgCard,
+              border: Border(
+                bottom: BorderSide(color: GsColors.border, width: 1.5),
+              ),
+            ),
             child: Row(
               children: [
                 Container(width: 4, color: _accent),
@@ -171,9 +210,19 @@ class _CategorySheet extends StatelessWidget {
                     margin: const EdgeInsets.only(right: 12),
                     decoration: BoxDecoration(
                       color: GsColors.cream,
-                      border: Border.all(color: GsColors.border, width: 1),
+                      border: Border.all(color: GsColors.border, width: 1.5),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: GsColors.shadow,
+                          offset: Offset(2, 2),
+                        ),
+                      ],
                     ),
-                    child: const Icon(Icons.close, size: 14, color: GsColors.text),
+                    child: const Icon(
+                      Icons.close,
+                      size: 14,
+                      color: GsColors.text,
+                    ),
                   ),
                 ),
               ],
@@ -181,31 +230,23 @@ class _CategorySheet extends StatelessWidget {
           ),
           // Contenido
           Expanded(
-            child: SingleChildScrollView(
-              child: switch (tab) {
-                'legendary' => LegendarySection(
-                    definitions: model.legendaryAlbums,
-                    progress: model.progressByAlbumId.values.toList(),
-                    collection: model.collection,
-                  ),
-                'stars' => StarsSection(
-                    collection: model.collection,
-                    allCards: model.collection
-                        .where((c) => c.card != null)
-                        .map((c) => c.card!)
-                        .toList(),
-                  ),
-                'cult' => CultSection(
-                    definitions: model.cultAlbums,
-                    collection: model.collection,
-                    allCards: model.collection
-                        .where((c) => c.card != null)
-                        .map((c) => c.card!)
-                        .toList(),
-                  ),
-                _ => const SizedBox.shrink(),
-              },
-            ),
+            child: switch (tab) {
+              'legendary' => LegendarySection(
+                  definitions: model.legendaryAlbums,
+                  progress: model.progressByAlbumId.values.toList(),
+                  collection: model.collection,
+                ),
+              'stars' => StarsSection(
+                  collection: model.collection,
+                  allCards: allCards,
+                ),
+              'cult' => CultSection(
+                  definitions: model.cultAlbums,
+                  collection: model.collection,
+                  allCards: allCards,
+                ),
+              _ => const SizedBox.shrink(),
+            },
           ),
         ],
       ),
@@ -406,7 +447,6 @@ class _BookCover extends StatelessWidget {
               color: bg.withValues(alpha: 0.65),
             ),
           ),
-
           // Libro principal
           Positioned(
             top: 0, left: 2,
@@ -430,7 +470,6 @@ class _BookCover extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      // Detalle dorado lomo
                       Container(
                         height: 20,
                         width: 2,
@@ -447,7 +486,6 @@ class _BookCover extends StatelessWidget {
                   color: bg,
                   child: Stack(
                     children: [
-                      // Gradiente overlay
                       Positioned.fill(
                         child: Container(
                           decoration: BoxDecoration(
@@ -463,11 +501,7 @@ class _BookCover extends StatelessWidget {
                           ),
                         ),
                       ),
-                      // Arte central
-                      Positioned.fill(
-                        child: child,
-                      ),
-                      // Franja inferior con accent
+                      Positioned.fill(child: child),
                       Positioned(
                         bottom: 0, left: 0, right: 0,
                         child: Container(
@@ -517,9 +551,7 @@ class _AlbumStatusRow extends StatelessWidget {
               width: 1.5,
             ),
             boxShadow: done
-                ? const [
-                    BoxShadow(color: GsColors.shadow, offset: Offset(1, 1))
-                  ]
+                ? const [BoxShadow(color: GsColors.shadow, offset: Offset(1, 1))]
                 : null,
           ),
           child: Icon(
@@ -544,22 +576,15 @@ class _ProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (_, constraints) {
-        return Container(
-          height: 6,
-          width: constraints.maxWidth,
-          color: GsColors.cream,
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-              width: constraints.maxWidth * pct,
-              height: 6,
-              color: accent,
-            ),
-          ),
-        );
-      },
+    // No usamos LayoutBuilder — es incompatible con IntrinsicHeight
+    return SizedBox(
+      height: 6,
+      child: LinearProgressIndicator(
+        value: pct,
+        backgroundColor: GsColors.cream,
+        valueColor: AlwaysStoppedAnimation<Color>(accent),
+        minHeight: 6,
+      ),
     );
   }
 }
@@ -574,9 +599,8 @@ class _BoltPainterWidget extends StatelessWidget {
   const _BoltPainterWidget({required this.accent});
 
   @override
-  Widget build(BuildContext context) {
-    return CustomPaint(painter: _BoltPainter(accent: accent));
-  }
+  Widget build(BuildContext context) =>
+      CustomPaint(painter: _BoltPainter(accent: accent));
 }
 
 class _BoltPainter extends CustomPainter {
@@ -588,14 +612,12 @@ class _BoltPainter extends CustomPainter {
     final cx = size.width / 2;
     final cy = size.height / 2;
 
-    // Glow radial
     final glowPaint = Paint()
       ..shader = RadialGradient(
         colors: [accent.withValues(alpha: 0.20), accent.withValues(alpha: 0.0)],
       ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: 32));
     canvas.drawCircle(Offset(cx, cy), 32, glowPaint);
 
-    // Anillos decorativos
     final ringPaint = Paint()
       ..color = accent.withValues(alpha: 0.10)
       ..style = PaintingStyle.stroke
@@ -604,7 +626,6 @@ class _BoltPainter extends CustomPainter {
       canvas.drawCircle(Offset(cx, cy), r, ringPaint);
     }
 
-    // Rayo
     final fill = Paint()
       ..color = accent.withValues(alpha: 0.88)
       ..style = PaintingStyle.fill;
@@ -620,7 +641,6 @@ class _BoltPainter extends CustomPainter {
 
     canvas.drawPath(path, fill);
 
-    // Contorno sutil
     final stroke = Paint()
       ..color = accent.withValues(alpha: 0.4)
       ..style = PaintingStyle.stroke
@@ -638,9 +658,8 @@ class _CrownPainterWidget extends StatelessWidget {
   const _CrownPainterWidget({required this.accent});
 
   @override
-  Widget build(BuildContext context) {
-    return CustomPaint(painter: _CrownPainter(accent: accent));
-  }
+  Widget build(BuildContext context) =>
+      CustomPaint(painter: _CrownPainter(accent: accent));
 }
 
 class _CrownPainter extends CustomPainter {
@@ -667,14 +686,12 @@ class _CrownPainter extends CustomPainter {
     final cx = size.width / 2;
     final cy = size.height / 2;
 
-    // Glow
     final glowPaint = Paint()
       ..shader = RadialGradient(
         colors: [accent.withValues(alpha: 0.18), accent.withValues(alpha: 0.0)],
       ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: 32));
     canvas.drawCircle(Offset(cx, cy), 32, glowPaint);
 
-    // Hexágono fondo
     final hexPaint = Paint()
       ..color = accent.withValues(alpha: 0.10)
       ..style = PaintingStyle.fill;
@@ -695,7 +712,6 @@ class _CrownPainter extends CustomPainter {
     canvas.drawPath(hexPath, hexPaint);
     canvas.drawPath(hexPath, hexStroke);
 
-    // Corona
     final crownFill = Paint()
       ..color = accent.withValues(alpha: 0.12)
       ..style = PaintingStyle.fill;
@@ -718,7 +734,6 @@ class _CrownPainter extends CustomPainter {
     canvas.drawPath(crown, crownFill);
     canvas.drawPath(crown, crownStroke);
 
-    // Puntos en las puntas
     final dotPaint = Paint()
       ..color = accent.withValues(alpha: 0.85)
       ..style = PaintingStyle.fill;
@@ -726,7 +741,6 @@ class _CrownPainter extends CustomPainter {
     canvas.drawCircle(Offset(cx, cy - 14), 2.2, dotPaint);
     canvas.drawCircle(Offset(cx + 14, cy - 10), 2.2, dotPaint);
 
-    // Estrella central
     _drawStar(canvas, Offset(cx, cy + 1), 4.5,
         Paint()..color = accent.withValues(alpha: 0.75));
   }
@@ -741,9 +755,8 @@ class _GlobePainterWidget extends StatelessWidget {
   const _GlobePainterWidget({required this.accent});
 
   @override
-  Widget build(BuildContext context) {
-    return CustomPaint(painter: _GlobePainter(accent: accent));
-  }
+  Widget build(BuildContext context) =>
+      CustomPaint(painter: _GlobePainter(accent: accent));
 }
 
 class _GlobePainter extends CustomPainter {
@@ -756,7 +769,6 @@ class _GlobePainter extends CustomPainter {
     final cy = size.height / 2;
     const r = 20.0;
 
-    // Glow
     final glowPaint = Paint()
       ..shader = RadialGradient(
         colors: [accent.withValues(alpha: 0.20), accent.withValues(alpha: 0.0)],
@@ -771,28 +783,22 @@ class _GlobePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
-    // Círculo exterior
     canvas.drawCircle(Offset(cx, cy), r, fill);
     canvas.drawCircle(Offset(cx, cy), r, stroke);
 
-    // Meridianos
     final thinStroke = Paint()
       ..color = accent.withValues(alpha: 0.28)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.7;
 
-    // Línea vertical
     canvas.drawLine(Offset(cx, cy - r), Offset(cx, cy + r), thinStroke);
-    // Línea horizontal (ecuador)
     canvas.drawLine(Offset(cx - r, cy), Offset(cx + r, cy), thinStroke);
 
-    // Elipses meridianos
     canvas.drawOval(
       Rect.fromCenter(center: Offset(cx, cy), width: r * 0.9, height: r * 2),
       thinStroke,
     );
 
-    // Paralelos
     for (final offset in [-8.0, 8.0]) {
       final halfW = math.sqrt(r * r - offset * offset);
       canvas.drawOval(
@@ -805,7 +811,6 @@ class _GlobePainter extends CustomPainter {
       );
     }
 
-    // Escudo central
     final shieldFill = Paint()
       ..color = accent.withValues(alpha: 0.15)
       ..style = PaintingStyle.fill;
