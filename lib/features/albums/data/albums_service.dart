@@ -53,8 +53,6 @@ class AlbumsService {
 
   // ─── Todo en paralelo ─────────────────────────────────────
   Future<AlbumsModel> fetchAll(String userId) async {
-    print('╔══ ALBUMS FETCH ══════════════════════════');
-
     final results = await Future.wait([
       fetchPacks(userId),
       fetchCollection(userId),
@@ -67,11 +65,6 @@ class AlbumsService {
     final definitions = results[2] as List<AlbumDefinition>;
     final progress    = results[3] as Map<String, AlbumProgress>;
 
-    print('║ packs disponibles : ${packs?.packsAvailable ?? 0}');
-    print('║ cartas únicas     : ${collection.length}');
-    print('║ álbumes activos   : ${definitions.length}');
-    print('╚════════════════════════════════════════');
-
     return AlbumsModel(
       packs:             packs,
       collection:        collection,
@@ -80,58 +73,102 @@ class AlbumsService {
     );
   }
 
-  // ─── Pack Opening (lógica local, sin Edge Function) ───────
+  // ═══════════════════════════════════════════════════════════
+  //  PACK OPENING — mismo orden que React:
+  //  1. Verificar sobres
+  //  2. Obtener cartas
+  //  3. Seleccionar cartas
+  //  4. Decrement con optimistic lock ← PRIMERO antes de guardar
+  //  5. Upsert colección
+  //  6. Insertar historial
+  // ═══════════════════════════════════════════════════════════
   Future<PackOpenResult> openPack(String userId) async {
     // 1. Verificar sobres disponibles
     final packsData = await _db
         .from('album_packs')
         .select()
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
+
+    if (packsData == null) throw Exception('No se encontró el registro de sobres');
 
     final packs = AlbumPacks.fromMap(packsData);
     if (packs.packsAvailable <= 0) {
       throw Exception('No tienes sobres disponibles');
     }
 
-    // 2. Traer todas las cartas activas agrupadas por tipo
-    final allCardsData = await _db
-        .from('album_cards')
-        .select()
-        .eq('is_active', true)
-        .eq('drop_enabled', true);
-
-    final allCards = (allCardsData as List)
-        .map((m) => AlbumCard.fromMap(m))
-        .toList();
-
-    // 3. Separar por tipo
-    final players      = allCards.where((c) => c.cardType == 'player').toList();
-    final teams        = allCards.where((c) => c.cardType == 'team').toList();
-    final competitions = allCards.where((c) => c.cardType == 'competition').toList();
-    final events       = allCards.where((c) => c.cardType == 'event').toList();
-
-    // 4. Seleccionar 1 carta de cada tipo con probabilidades por rareza
-    final playerCard      = players.isNotEmpty      ? _pickByRarity(players)      : null;
-    final teamCard        = teams.isNotEmpty         ? _pickRandom(teams)          : null;
-    final competitionCard = competitions.isNotEmpty  ? _pickRandom(competitions)   : null;
-    final eventCard       = events.isNotEmpty        ? _pickRandom(events)         : null;
-
-    // 5. Guardar en colección e historial en paralelo
-    await Future.wait([
-      _saveToCollection(userId, playerCard),
-      _saveToCollection(userId, teamCard),
-      _saveToCollection(userId, competitionCard),
-      _saveToCollection(userId, eventCard),
-      _saveHistory(userId, playerCard, teamCard, competitionCard, eventCard),
-      _decrementPack(userId, packs),
+    // 2. Traer cartas activas por tipo en paralelo
+    final cardResults = await Future.wait([
+      _db.from('album_cards').select().eq('is_active', true).eq('drop_enabled', true).eq('card_type', 'player'),
+      _db.from('album_cards').select().eq('is_active', true).eq('drop_enabled', true).eq('card_type', 'team'),
+      _db.from('album_cards').select().eq('is_active', true).eq('drop_enabled', true).eq('card_type', 'competition'),
+      _db.from('album_cards').select().eq('is_active', true).eq('drop_enabled', true).eq('card_type', 'event'),
     ]);
 
+    final players      = (cardResults[0] as List).map((m) => AlbumCard.fromMap(m as Map<String, dynamic>)).toList();
+    final teams        = (cardResults[1] as List).map((m) => AlbumCard.fromMap(m as Map<String, dynamic>)).toList();
+    final competitions = (cardResults[2] as List).map((m) => AlbumCard.fromMap(m as Map<String, dynamic>)).toList();
+    final events       = (cardResults[3] as List).map((m) => AlbumCard.fromMap(m as Map<String, dynamic>)).toList();
+
+    // 3. Seleccionar cartas
+    final playerCard      = players.isNotEmpty      ? _pickByRarity(players, boosted: packs.boostActive) : null;
+    final teamCard        = teams.isNotEmpty         ? _pickRandom(teams)       : null;
+    final competitionCard = competitions.isNotEmpty  ? _pickRandom(competitions) : null;
+    final eventCard       = events.isNotEmpty        ? _pickRandom(events)      : null;
+
+    // 4. ── OPTIMISTIC LOCK: decrement PRIMERO ──────────────
+    //    Si packs_available cambió desde que lo leímos → el update
+    //    no matchea ninguna fila → lanzamos error (igual que React)
+    final newOpened = packs.totalPacksOpened + 1;
+    final (newBoostActive, newBoostRemaining) = _computeBoost(
+      boosted: packs.boostActive,
+      boostRemaining: packs.boostPacksRemaining,
+      newOpened: newOpened,
+      totalPreviouslyOpened: packs.totalPacksOpened,
+    );
+
+    final updated = await _db
+        .from('album_packs')
+        .update({
+          'packs_available':       packs.packsAvailable - 1,
+          'total_packs_opened':    newOpened,
+          'boost_active':          newBoostActive,
+          'boost_packs_remaining': newBoostRemaining,
+          'updated_at':            DateTime.now().toIso8601String(),
+        })
+        .eq('user_id', userId)
+        .eq('packs_available', packs.packsAvailable) // ← optimistic lock
+        .select();
+
+    // Si no matcheó nada → otro proceso ya usó el sobre
+    if ((updated as List).isEmpty) {
+      throw Exception('No hay sobres disponibles');
+    }
+
+    // 5. Upsert colección (en paralelo)
+    final drawn = [playerCard, teamCard, competitionCard, eventCard]
+        .whereType<AlbumCard>()
+        .toList();
+
+    await Future.wait(drawn.map((card) => _upsertCollectionCard(userId, card)));
+
+    // 6. Historial
+    await _db.from('album_pack_history').insert({
+      'user_id':              userId,
+      'opened_at':            DateTime.now().toIso8601String(),
+      'card_player_id':       playerCard?.id,
+      'card_team_id':         teamCard?.id,
+      'card_competition_id':  competitionCard?.id,
+      'card_event_id':        eventCard?.id,
+      'player_significance':  playerCard?.significanceLevel,
+    });
+
     print('╔══ PACK OPENED ═══════════════════════════');
-    print('║ player      : ${playerCard?.name ?? 'none'}  (${playerCard?.significanceLevel}★)');
+    print('║ player      : ${playerCard?.name ?? 'none'}  (${playerCard?.significanceLevel}★)  boosted=${ packs.boostActive}');
     print('║ team        : ${teamCard?.name ?? 'none'}');
     print('║ competition : ${competitionCard?.name ?? 'none'}');
     print('║ event       : ${eventCard?.name ?? 'none'}');
+    print('║ boost next  : active=$newBoostActive remaining=$newBoostRemaining');
     print('╚════════════════════════════════════════');
 
     return PackOpenResult(
@@ -142,119 +179,94 @@ class AlbumsService {
     );
   }
 
-  // ─── Selección por rareza (solo jugadores tienen rareza) ──
-  AlbumCard _pickByRarity(List<AlbumCard> cards) {
-    // Tasas de drop: 1★=55% 2★=25% 3★=12% 4★=7.5% 5★=0.5%
-    const rates = {1: 55.0, 2: 25.0, 3: 12.0, 4: 7.5, 5: 0.5};
+  // ─── Boost logic (idéntica a React) ──────────────────────
+  (bool active, int remaining) _computeBoost({
+    required bool boosted,
+    required int boostRemaining,
+    required int newOpened,
+    required int totalPreviouslyOpened,
+  }) {
+    // ¿Este sobre es el décimo? (mismo check que React: total anterior > 0)
+    final boostTriggered = totalPreviouslyOpened > 0 && newOpened % 10 == 0;
 
-    // Determinar qué rareza salió
+    if (boostTriggered) {
+      return (true, 3);
+    } else if (boosted) {
+      final remaining = boostRemaining - 1;
+      return remaining <= 0 ? (false, 0) : (true, remaining);
+    }
+    return (false, 0);
+  }
+
+  // ─── Selección por rareza ─────────────────────────────────
+  // Tasas base:  1★=55%  2★=25%  3★=12%  4★=7.5%  5★=0.5%
+  // Tasas boost: 1★=40.3% 2★=25% 3★=19% 4★=14.5% 5★=1.2%
+  AlbumCard _pickByRarity(List<AlbumCard> cards, {bool boosted = false}) {
+    const baseRates  = {1: 55.0, 2: 25.0, 3: 12.0, 4: 7.5,  5: 0.5};
+    const boostRates = {1: 40.3, 2: 25.0, 3: 19.0, 4: 14.5, 5: 1.2};
+    final rates = boosted ? boostRates : baseRates;
+
     final roll = _rng.nextDouble() * 100;
     int targetRarity = 1;
     double cumulative = 0;
+
     for (final entry in rates.entries) {
       cumulative += entry.value;
-      if (roll < cumulative) {
+      if (roll <= cumulative) {
         targetRarity = entry.key;
         break;
       }
     }
 
-    // Filtrar cartas de esa rareza
     final candidates = cards
         .where((c) => c.significanceLevel == targetRarity)
         .toList();
 
-    // Si no hay cartas de esa rareza, usar cualquiera
     final pool = candidates.isNotEmpty ? candidates : cards;
     return pool[_rng.nextInt(pool.length)];
   }
 
-  // ─── Selección aleatoria simple ───────────────────────────
-  AlbumCard _pickRandom(List<AlbumCard> cards) {
-    return cards[_rng.nextInt(cards.length)];
-  }
+  AlbumCard _pickRandom(List<AlbumCard> cards) =>
+      cards[_rng.nextInt(cards.length)];
 
-  // ─── Guardar/actualizar en colección ─────────────────────
-  Future<void> _saveToCollection(String userId, AlbumCard? card) async {
-    if (card == null) return;
-
-    // Buscar si ya existe en la colección
+  // ─── Upsert colección (mismo frame_level logic que React) ─
+  Future<void> _upsertCollectionCard(String userId, AlbumCard card) async {
     final existing = await _db
         .from('album_collection')
-        .select()
+        .select('id, copies')
         .eq('user_id', userId)
         .eq('card_id', card.id)
         .maybeSingle();
 
+    final now = DateTime.now().toIso8601String();
+
     if (existing != null) {
-      // Ya la tiene → incrementar copias
+      final newCopies = (existing['copies'] as int) + 1;
       await _db
           .from('album_collection')
           .update({
-            'copies': (existing['copies'] as int) + 1,
-            'last_obtained_at': DateTime.now().toIso8601String(),
+            'copies':          newCopies,
+            'frame_level':     _getFrameLevel(newCopies), // ← igual que React
+            'last_obtained_at': now,
           })
           .eq('id', existing['id']);
     } else {
-      // Nueva carta → insertar
       await _db.from('album_collection').insert({
-        'user_id':          userId,
-        'card_id':          card.id,
-        'copies':           1,
-        'frame_level':      'normal',
-        'first_obtained_at': DateTime.now().toIso8601String(),
-        'last_obtained_at': DateTime.now().toIso8601String(),
+        'user_id':           userId,
+        'card_id':           card.id,
+        'copies':            1,
+        'frame_level':       'normal',
+        'first_obtained_at': now,
+        'last_obtained_at':  now,
       });
     }
   }
 
-  // ─── Guardar historial ────────────────────────────────────
-  Future<void> _saveHistory(
-    String userId,
-    AlbumCard? player,
-    AlbumCard? team,
-    AlbumCard? competition,
-    AlbumCard? event,
-  ) async {
-    await _db.from('album_pack_history').insert({
-      'user_id':            userId,
-      'opened_at':          DateTime.now().toIso8601String(),
-      'card_player_id':     player?.id,
-      'card_team_id':       team?.id,
-      'card_competition_id': competition?.id,
-      'card_event_id':      event?.id,
-      'player_significance': player?.significanceLevel,
-    });
-  }
-
-  // ─── Decrementar sobre + actualizar boost ─────────────────
-  Future<void> _decrementPack(String userId, AlbumPacks current) async {
-    final newOpened    = current.totalPacksOpened + 1;
-    final newAvailable = current.packsAvailable - 1;
-
-    // Boost: cada 10 sobres abiertos → activar boost con 3 sobres extra
-    bool  newBoostActive    = current.boostActive;
-    int   newBoostRemaining = current.boostPacksRemaining;
-
-    if (current.boostActive) {
-      // Consumir un sobre del boost
-      newBoostRemaining = current.boostPacksRemaining - 1;
-      if (newBoostRemaining <= 0) {
-        newBoostActive    = false;
-        newBoostRemaining = 0;
-      }
-    } else if (newOpened % 10 == 0) {
-      // Activar boost
-      newBoostActive    = true;
-      newBoostRemaining = 3;
-    }
-
-    await _db.from('album_packs').update({
-      'packs_available':      newAvailable,
-      'total_packs_opened':   newOpened,
-      'boost_active':         newBoostActive,
-      'boost_packs_remaining': newBoostRemaining,
-      'updated_at':           DateTime.now().toIso8601String(),
-    }).eq('user_id', userId);
+  // ─── frame_level — idéntico a getFrameLevel() de React ────
+  String _getFrameLevel(int copies) {
+    if (copies >= 10) return 'legendary';
+    if (copies >= 5)  return 'gold';
+    if (copies >= 3)  return 'silver';
+    return 'normal';
   }
 }
