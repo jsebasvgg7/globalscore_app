@@ -13,7 +13,6 @@ class AlbumsCollectionView extends ConsumerWidget {
   final AlbumsModel model;
   const AlbumsCollectionView({super.key, required this.model});
 
-  // ── Contadores por categoría ──────────────────────────
   int _legendaryCompleted() => model.progressByAlbumId.values
       .where((p) => p.albumId.startsWith('legendary') && p.isCompleted)
       .length;
@@ -26,16 +25,14 @@ class AlbumsCollectionView extends ConsumerWidget {
       .where((p) => p.albumId.startsWith('cult') && p.isCompleted)
       .length;
 
-  // ── Stats globales para el header ─────────────────────
   int _totalFiguritas() => model.collection.fold(0, (s, c) => s + c.copies);
 
   int _totalCompleted() =>
       _legendaryCompleted() + _starsCompleted() + _cultCompleted();
 
   double _globalProgress() {
-    const total = 5 + 5 + 3; // 13 álbumes
-    final completed = _totalCompleted();
-    return completed / total;
+    const total = 5 + 5 + 3;
+    return _totalCompleted() / total;
   }
 
   List<AlbumCard> _allCards() {
@@ -57,16 +54,16 @@ class AlbumsCollectionView extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── Header "TU COLECCIÓN" con stats ──────────────
+        // ── Header "TU COLECCIÓN" ─────────────────────
         _CollectionHeader(
           figuritas:      figuritas,
           globalPct:      globalPct,
           completedCount: totalCompleted,
         ),
 
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
 
-        // ── Título sección ────────────────────────────────
+        // ── Título "TUS COLECCIONES" ──────────────────
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
@@ -88,16 +85,17 @@ class AlbumsCollectionView extends ConsumerWidget {
 
         const SizedBox(height: 10),
 
-        // ── Filas de categoría ────────────────────────────
+        // ── Filas de categoría ────────────────────────
         _CategoryRow(
           label:          'LEGENDARIOS',
           subtitle:       '5 ÁLBUMES',
-          accentColor:    const Color(0xFFa599d9),
-          spineColor:     const Color(0xFF5b4fd8),
-          coverBg:        const Color(0xFF1a1726),
+          accentColor:    const Color(0xFF34d399),
+          spineColor:     const Color(0xFF1D9E75),
+          coverBg:        const Color(0xFF0d1f18),
           albumCount:     5,
           completedCount: _legendaryCompleted(),
           coverChild:     const _BoltPainterWidget(accent: Color(0xFF34d399)),
+          badgeColor:     const Color(0xFF34d399),
           onTap: () => _openCategorySheet(
             context: context, ref: ref,
             tab: 'legendary', model: model, allCards: _allCards(),
@@ -110,11 +108,12 @@ class AlbumsCollectionView extends ConsumerWidget {
           label:          'ESTRELLAS',
           subtitle:       '5 ÁLBUMES',
           accentColor:    const Color(0xFFa599d9),
-          spineColor:     const Color(0xFF7c3aed),
-          coverBg:        const Color(0xFF160e2a),
+          spineColor:     const Color(0xFF5b4fd8),
+          coverBg:        const Color(0xFF100e1f),
           albumCount:     5,
           completedCount: _starsCompleted(),
           coverChild:     const _CrownPainterWidget(accent: Color(0xFFa599d9)),
+          badgeColor:     const Color(0xFF7c3aed),
           onTap: () => _openCategorySheet(
             context: context, ref: ref,
             tab: 'stars', model: model, allCards: _allCards(),
@@ -125,20 +124,21 @@ class AlbumsCollectionView extends ConsumerWidget {
 
         _CategoryRow(
           label:          'DE CULTO',
-          subtitle:       '3 ÁLBUMES',
+          subtitle:       '4 ÁLBUMES',
           accentColor:    const Color(0xFFf59e0b),
           spineColor:     const Color(0xFFb45309),
-          coverBg:        const Color(0xFF1a1200),
-          albumCount:     3,
+          coverBg:        const Color(0xFF1a1100),
+          albumCount:     4,
           completedCount: _cultCompleted(),
           coverChild:     const _GlobePainterWidget(accent: Color(0xFFf59e0b)),
+          badgeColor:     const Color(0xFFf59e0b),
           onTap: () => _openCategorySheet(
             context: context, ref: ref,
             tab: 'cult', model: model, allCards: _allCards(),
           ),
         ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
       ],
     );
   }
@@ -159,11 +159,6 @@ class AlbumsCollectionView extends ConsumerWidget {
     );
   }
 }
-
-// ═══════════════════════════════════════════════════════════
-//  HEADER — "TU COLECCIÓN" — replica imagen 2
-//  Layout: título + VER TODO / fila horizontal 4 stats / barra
-// ═══════════════════════════════════════════════════════════
 class _CollectionHeader extends StatelessWidget {
   final int    figuritas;
   final double globalPct;
@@ -193,61 +188,138 @@ class _CollectionHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
 
-          // ── Fila título ───────────────────────────────
-          const Padding(
-            padding: EdgeInsets.fromLTRB(14, 12, 14, 0),
-            child: Text(
-              'TU COLECCIÓN',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1,
-                color: GsColors.text,
-              ),
+          // ── Fila título + VER TODO ──────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 10, 0),
+            child: Row(
+              children: [
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                ),
+              ],
             ),
           ),
 
-          // ── Fila de 4 stats horizontales ──────────────
+          const SizedBox(height: 8),
+
+          // ── Fila única de 4 stats ───────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             child: IntrinsicHeight(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
 
-                  // STAT 1 — Álbumes activos (bloque bordeado propio)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: GsColors.bgCard,
-                          border: Border.all(
-                              color: GsColors.borderSub, width: 1),
+                  // ── STAT 1: Álbumes activos ────────────
+                  // Contenedor propio con relieve (borde + sombra offset)
+                  Container(
+                    width: 72,
+                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                    decoration: BoxDecoration(
+                      color: GsColors.bgCard,
+                      border: Border.all(color: GsColors.borderSub, width: 1),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0xFFB0AAA0),
+                          offset: Offset(2, 2),
+                          blurRadius: 0,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '$activeCount',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            color: GsColors.accent,
+                            height: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        const Text(
+                          'ÁLBUMES\nACTIVOS',
+                          style: TextStyle(
+                            fontFamily: GsColors.fontMono,
+                            fontSize: 7.5,
+                            fontWeight: FontWeight.w700,
+                            color: GsColors.muted,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // ── STATS 2-3-4: los 3 en un solo contenedor con relieve ──
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: GsColors.bgCard,
+                        border: Border.all(color: GsColors.borderSub, width: 1),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0xFFB0AAA0),
+                            offset: Offset(2, 2),
+                            blurRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text(
-                              '$activeCount',
-                              style: const TextStyle(
-                                fontSize: 30,
-                                fontWeight: FontWeight.w900,
-                                color: GsColors.accent,
-                                height: 1,
+
+                            // Figuritas
+                            Expanded(
+                              child: _CompactStat(
+                                iconWidget: _BoxedIcon(
+                                  icon: Icons.star,
+                                  color: GsColors.accent,
+                                  borderColor: GsColors.accent,
+                                ),
+                                value: '$figuritas',
+                                label: 'FIGURITAS\nCONSEGUIDAS',
                               ),
                             ),
-                            const SizedBox(height: 3),
-                            const Text(
-                              'ÁLBUMES\nACTIVOS',
-                              style: TextStyle(
-                                fontSize: 7.5,
-                                fontWeight: FontWeight.w700,
-                                color: GsColors.muted,
-                                height: 1.4,
+
+                            // Divisor interno
+                            Container(width: 0.8, color: GsColors.borderSub),
+
+                            // Progreso global
+                            Expanded(
+                              child: _CompactStat(
+                                iconWidget: _BoxedIcon(
+                                  icon: Icons.check,
+                                  color: Colors.white,
+                                  borderColor: const Color(0xFF22C55E),
+                                  filled: true,
+                                  fillColor: const Color(0xFF22C55E),
+                                ),
+                                value: '$pctInt%',
+                                label: 'PROGRESO\nGLOBAL',
+                              ),
+                            ),
+
+                            // Divisor interno
+                            Container(width: 0.8, color: GsColors.borderSub),
+
+                            // Completados
+                            Expanded(
+                              child: _CompactStat(
+                                iconWidget: _BoxedIcon(
+                                  icon: Icons.star_border,
+                                  color: const Color(0xFFf59e0b),
+                                  borderColor: const Color(0xFFf59e0b),
+                                ),
+                                value: '$completedCount',
+                                label: 'COMPLETADOS',
                               ),
                             ),
                           ],
@@ -255,81 +327,44 @@ class _CollectionHeader extends StatelessWidget {
                       ),
                     ),
                   ),
-
-                  // Separador
-                  Container(width: 1, color: GsColors.borderSub),
-
-                  // STAT 2 — Figuritas (ícono en cuadro bordeado accent)
-                  Expanded(
-                    child: _HorizStat(
-                      iconWidget: _BorderedIcon(
-                        icon:        Icons.star,
-                        borderColor: GsColors.accent,
-                        iconColor:   GsColors.accent,
-                      ),
-                      value: '$figuritas',
-                      label: 'FIGURITAS\nCONSEGUIDAS',
-                    ),
-                  ),
-
-                  // Separador
-                  Container(width: 1, color: GsColors.borderSub),
-
-                  // STAT 3 — Progreso global (ícono check verde bordeado)
-                  Expanded(
-                    child: _HorizStat(
-                      iconWidget: _BorderedIcon(
-                        icon:        Icons.check,
-                        borderColor: const Color(0xFF22C55E),
-                        iconColor:   const Color(0xFF22C55E),
-                        filled:      true,
-                        fillColor:   const Color(0xFF22C55E),
-                        filledIconColor: Colors.white,
-                      ),
-                      value: '$pctInt%',
-                      label: 'PROGRESO\nGLOBAL',
-                    ),
-                  ),
-
-                  // Separador
-                  Container(width: 1, color: GsColors.borderSub),
-
-                  // STAT 4 — Completados (estrella naranja bordeada)
-                  Expanded(
-                    child: _HorizStat(
-                      iconWidget: _BorderedIcon(
-                        icon:        Icons.star_border,
-                        borderColor: const Color(0xFFf59e0b),
-                        iconColor:   const Color(0xFFf59e0b),
-                      ),
-                      value: '$completedCount',
-                      label: 'COMPLETADOS',
-                    ),
-                  ),
                 ],
               ),
             ),
           ),
 
-          // ── Barra de progreso + % ─────────────────────
+          const SizedBox(height: 8),
+
+          // ── Barra de progreso global ────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
-            child: LinearProgressIndicator(
-              value: globalPct,
-              backgroundColor: GsColors.bgSection,
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(GsColors.accent),
-              minHeight: 7,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Stack(
+              children: [
+                Container(height: 7, color: GsColors.bgSection),
+                FractionallySizedBox(
+                  widthFactor: globalPct,
+                  child: Container(
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [GsColors.accent, Color(0xFF7c6fef)],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
+
+          // ── % alineado a la derecha ─────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 4, 14, 12),
+            padding: const EdgeInsets.fromLTRB(12, 3, 12, 8),
             child: Align(
               alignment: Alignment.centerRight,
               child: Text(
                 '$pctInt%',
                 style: const TextStyle(
-                  fontSize: 10,
+                  fontFamily: GsColors.fontMono,
+                  fontSize: 9.5,
                   fontWeight: FontWeight.w900,
                   color: GsColors.accent,
                 ),
@@ -342,33 +377,27 @@ class _CollectionHeader extends StatelessWidget {
   }
 }
 
-// ── Stat horizontal (ícono arriba + valor + label) ────────
-class _HorizStat extends StatelessWidget {
+// Celda compacta — ícono + valor grande + label pequeño
+class _CompactStat extends StatelessWidget {
   final Widget iconWidget;
-  final String value;
-  final String label;
-
-  const _HorizStat({
-    required this.iconWidget,
-    required this.value,
-    required this.label,
-  });
+  final String value, label;
+  const _CompactStat({required this.iconWidget, required this.value, required this.label});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
           iconWidget,
-          const SizedBox(height: 5),
+          const SizedBox(height: 4),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 20,
+              fontSize: 17,
               fontWeight: FontWeight.w900,
               color: GsColors.text,
               height: 1,
@@ -378,7 +407,8 @@ class _HorizStat extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontSize: 7,
+              fontFamily: GsColors.fontMono,
+              fontSize: 6.5,
               fontWeight: FontWeight.w600,
               color: GsColors.muted,
               height: 1.3,
@@ -390,170 +420,42 @@ class _HorizStat extends StatelessWidget {
   }
 }
 
-// ── Ícono en cuadro con borde de color (o relleno) ────────
-class _BorderedIcon extends StatelessWidget {
+// Ícono en caja con borde de color
+class _BoxedIcon extends StatelessWidget {
   final IconData icon;
-  final Color    borderColor;
-  final Color    iconColor;
-  final bool     filled;
-  final Color?   fillColor;
-  final Color?   filledIconColor;
+  final Color color, borderColor;
+  final bool filled;
+  final Color? fillColor;
 
-  const _BorderedIcon({
+  const _BoxedIcon({
     required this.icon,
+    required this.color,
     required this.borderColor,
-    required this.iconColor,
-    this.filled         = false,
+    this.filled = false,
     this.fillColor,
-    this.filledIconColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 26,
-      height: 26,
+      width: 24, height: 24,
       decoration: BoxDecoration(
         color: filled ? fillColor : Colors.transparent,
         border: Border.all(color: borderColor, width: 1.5),
       ),
-      child: Icon(
-        icon,
-        size: 14,
-        color: filled ? (filledIconColor ?? Colors.white) : iconColor,
-      ),
+      child: Icon(icon, size: 13, color: color),
     );
   }
 }
 
 // ═══════════════════════════════════════════════════════════
-//  BOTTOM SHEET CON SECCIÓN EXPANDIDA
-// ═══════════════════════════════════════════════════════════
-class _CategorySheet extends StatelessWidget {
-  final String       tab;
-  final AlbumsModel  model;
-  final List<AlbumCard> allCards;
-
-  const _CategorySheet({
-    required this.tab,
-    required this.model,
-    required this.allCards,
-  });
-
-  String get _title => switch (tab) {
-        'legendary' => 'LEGENDARIOS',
-        'stars'     => 'ESTRELLAS',
-        'cult'      => 'DE CULTO',
-        _           => '',
-      };
-
-  Color get _accent => switch (tab) {
-        'legendary' => const Color(0xFFa599d9),
-        'stars'     => const Color(0xFFa599d9),
-        'cult'      => const Color(0xFFf59e0b),
-        _           => GsColors.accent,
-      };
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.92,
-      decoration: BoxDecoration(
-        color: GsColors.bg,
-        border: Border(top: BorderSide(color: GsColors.border, width: 2)),
-      ),
-      child: Column(
-        children: [
-          // Handle
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            width: 36,
-            height: 4,
-            decoration: BoxDecoration(
-              color: GsColors.borderSub,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          // Header
-          Container(
-            height: 48,
-            decoration: BoxDecoration(
-              color: GsColors.bgCard,
-              border: Border(
-                bottom: BorderSide(color: GsColors.border, width: 1.5),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(width: 4, color: _accent),
-                const SizedBox(width: 12),
-                Text(
-                  _title,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
-                    color: _accent,
-                  ),
-                ),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    margin: const EdgeInsets.only(right: 12),
-                    decoration: BoxDecoration(
-                      color: GsColors.cream,
-                      border: Border.all(color: GsColors.border, width: 1.5),
-                      boxShadow: const [
-                        BoxShadow(color: GsColors.shadow, offset: Offset(2, 2)),
-                      ],
-                    ),
-                    child: const Icon(Icons.close, size: 14, color: GsColors.text),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Contenido
-          Expanded(
-            child: switch (tab) {
-              'legendary' => LegendarySection(
-                  definitions: model.legendaryAlbums,
-                  progress:    model.progressByAlbumId.values.toList(),
-                  collection:  model.collection,
-                ),
-              'stars' => StarsSection(
-                  collection: model.collection,
-                  allCards:   allCards,
-                ),
-              'cult' => CultSection(
-                  definitions: model.cultAlbums,
-                  collection:  model.collection,
-                  allCards:    allCards,
-                ),
-              _ => const SizedBox.shrink(),
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-//  FILA DE CATEGORÍA — rediseñada
+//  FILA DE CATEGORÍA — libro premium a la izquierda
 // ═══════════════════════════════════════════════════════════
 class _CategoryRow extends StatefulWidget {
-  final String   label;
-  final String   subtitle;
-  final Color    accentColor;
-  final Color    spineColor;
-  final Color    coverBg;
-  final int      albumCount;
-  final int      completedCount;
-  final Widget   coverChild;
+  final String     label, subtitle;
+  final Color      accentColor, spineColor, coverBg, badgeColor;
+  final int        albumCount, completedCount;
+  final Widget     coverChild;
   final VoidCallback onTap;
 
   const _CategoryRow({
@@ -565,6 +467,7 @@ class _CategoryRow extends StatefulWidget {
     required this.albumCount,
     required this.completedCount,
     required this.coverChild,
+    required this.badgeColor,
     required this.onTap,
   });
 
@@ -596,43 +499,40 @@ class _CategoryRowState extends State<_CategoryRow> {
           border: Border.all(color: GsColors.border, width: 1.5),
           boxShadow: _pressed
               ? []
-              : const [
-                  BoxShadow(color: GsColors.shadow, offset: Offset(3, 3)),
-                ],
+              : const [BoxShadow(color: GsColors.shadow, offset: Offset(3, 3))],
         ),
         child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── Portada del libro ──────────────────────
-              _BookCover(
-                spine:  widget.spineColor,
-                bg:     widget.coverBg,
-                accent: widget.accentColor,
-                child:  widget.coverChild,
+              // ── Libro 3D compacto ──────────────────
+              _CompactBook(
+                spine:      widget.spineColor,
+                bg:         widget.coverBg,
+                accent:     widget.accentColor,
+                badgeColor: widget.badgeColor,
+                child:      widget.coverChild,
               ),
 
-              // ── Info central ──────────────────────────
+              // ── Info central ──────────────────────
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 0, 12),
+                  padding: const EdgeInsets.fromLTRB(12, 12, 0, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Categoría label en color
                       Text(
                         widget.label,
                         style: TextStyle(
+                          fontFamily: GsColors.fontMono,
                           fontSize: 9,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 2,
                           color: widget.accentColor,
                         ),
                       ),
-                      const SizedBox(height: 1),
-
-                      // Subtítulo grande bold
+                      const SizedBox(height: 2),
                       Text(
                         widget.subtitle,
                         style: const TextStyle(
@@ -643,39 +543,31 @@ class _CategoryRowState extends State<_CategoryRow> {
                           letterSpacing: -0.5,
                         ),
                       ),
-
                       const SizedBox(height: 10),
-
-                      // Checkboxes de estado
                       _AlbumStatusRow(
                         total:     widget.albumCount,
                         completed: widget.completedCount,
                         accent:    widget.accentColor,
                       ),
-
                       const SizedBox(height: 8),
-
-                      // Barra de progreso
                       _ProgressBar(pct: _pct, accent: widget.accentColor),
-
                       const SizedBox(height: 5),
-
-                      // Texto "X / Y COMPLETADOS — XX%"
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             '${widget.completedCount} / ${widget.albumCount} COMPLETADOS',
                             style: TextStyle(
-                              fontSize: 8.5,
+                              fontFamily: GsColors.fontMono,
+                              fontSize: 8,
                               fontWeight: FontWeight.w700,
-                              letterSpacing: 0.3,
                               color: widget.accentColor,
                             ),
                           ),
                           Text(
                             '${(_pct * 100).round()}%',
                             style: TextStyle(
+                              fontFamily: GsColors.fontMono,
                               fontSize: 8.5,
                               fontWeight: FontWeight.w900,
                               color: widget.accentColor,
@@ -688,29 +580,20 @@ class _CategoryRowState extends State<_CategoryRow> {
                 ),
               ),
 
-              // ── Flecha ────────────────────────────────
+              // ── Flecha ────────────────────────────
               Container(
                 width: 44,
                 alignment: Alignment.center,
                 child: Container(
-                  width: 28,
-                  height: 28,
+                  width: 28, height: 28,
                   decoration: BoxDecoration(
                     color: GsColors.cream,
                     border: Border.all(color: GsColors.border, width: 1.5),
-                    boxShadow: _pressed
-                        ? []
-                        : const [
-                            BoxShadow(
-                                color: GsColors.shadow,
-                                offset: Offset(2, 2)),
-                          ],
+                    boxShadow: _pressed ? [] : const [
+                      BoxShadow(color: GsColors.shadow, offset: Offset(2, 2)),
+                    ],
                   ),
-                  child: const Icon(
-                    Icons.chevron_right,
-                    size: 18,
-                    color: GsColors.text,
-                  ),
+                  child: const Icon(Icons.chevron_right, size: 18, color: GsColors.text),
                 ),
               ),
             ],
@@ -722,132 +605,326 @@ class _CategoryRowState extends State<_CategoryRow> {
 }
 
 // ═══════════════════════════════════════════════════════════
-//  PORTADA DEL LIBRO — con padding vertical para no pegar al borde
+//  LIBRO COMPACTO 3D — para las filas de categoría
+//  Incluye: pila de libros (3 capas), lomo grabado, portada
 // ═══════════════════════════════════════════════════════════
-class _BookCover extends StatelessWidget {
-  final Color  spine;
-  final Color  bg;
-  final Color  accent;
+class _CompactBook extends StatelessWidget {
+  final Color  spine, bg, accent, badgeColor;
   final Widget child;
 
-  const _BookCover({
+  const _CompactBook({
     required this.spine,
     required this.bg,
     required this.accent,
+    required this.badgeColor,
     required this.child,
   });
+
+  static const double _bw = 68.0;  // ancho portada
+  static const double _bh = 110.0; // alto portada
+  static const double _sw = 12.0;  // ancho lomo
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      // Espacio arriba/abajo para que el libro flote dentro del card
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
       child: SizedBox(
-        width: 86,
-        height: 120,
+        width: _sw + _bw + 14,
+        height: _bh + 10,
         child: Stack(
-          clipBehavior: Clip.none,
           children: [
-            // Páginas traseras (efecto pila)
+            // ── Libros apilados detrás (efecto pila) ──
+            // Libro más atrás (más claro, más desplazado)
             Positioned(
-              top: 7, left: 10,
+              left: _sw + 10,
+              top: 10,
               child: Container(
-                width: 70, height: 112,
-                color: bg.withValues(alpha: 0.55),
+                width: _bw,
+                height: _bh,
+                color: bg.withValues(alpha: 0.4),
               ),
             ),
+            // Libro medio
             Positioned(
-              top: 3, left: 5,
-              child: Container(
-                width: 70, height: 112,
-                color: bg.withValues(alpha: 0.75),
-              ),
-            ),
-
-            // Libro principal
-            Positioned(
-              top: 0, left: 0,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              left: _sw + 5,
+              top: 5,
+              child: Stack(
                 children: [
-                  // Lomo
                   Container(
-                    width: 10,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [
-                          spine.withValues(alpha: 0.7),
-                          spine,
-                        ],
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Container(
-                          height: 20,
-                          width: 2,
-                          margin: const EdgeInsets.only(bottom: 6),
-                          color: Colors.white.withValues(alpha: 0.22),
-                        ),
-                      ],
-                    ),
+                    width: _bw,
+                    height: _bh,
+                    color: bg.withValues(alpha: 0.65),
                   ),
-                  // Tapa
-                  Container(
-                    width: 70,
-                    height: 120,
-                    color: bg,
-                    child: Stack(
-                      children: [
-                        // Gradiente sutil
-                        Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  accent.withValues(alpha: 0.08),
-                                  Colors.transparent,
-                                  accent.withValues(alpha: 0.04),
-                                ],
-                              ),
-                            ),
-                          ),
+                  // Lomo del libro medio
+                  Positioned(
+                    left: -_sw, top: 0,
+                    child: Container(
+                      width: _sw - 2,
+                      height: _bh,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            spine.withValues(alpha: 0.4),
+                            spine.withValues(alpha: 0.65),
+                          ],
                         ),
-                        // Arte de portada
-                        Positioned.fill(child: child),
-                        // Borde inferior accent
-                        Positioned(
-                          bottom: 0, left: 0, right: 0,
-                          child: Container(
-                            height: 3,
-                            color: spine.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ],
               ),
+            ),
+
+            // ── Libro principal (frente) ───────────────
+            Positioned(
+              left: 0, top: 0,
+              child: _buildMainBook(),
             ),
           ],
         ),
       ),
     );
   }
+
+  Widget _buildMainBook() {
+    return SizedBox(
+      width: _sw + _bw,
+      height: _bh,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // LOMO
+          SizedBox(
+            width: _sw,
+            child: Stack(
+              children: [
+                // Gradiente lomo
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        stops: const [0.0, 0.3, 0.7, 1.0],
+                        colors: [
+                          spine.withValues(alpha: 0.5),
+                          spine,
+                          spine.withValues(alpha: 0.85),
+                          spine.withValues(alpha: 0.45),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Líneas de grabado
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _SpineLinesCompact(),
+                  ),
+                ),
+                // Línea dorada superior
+                Positioned(
+                  top: 0, left: 0, right: 0,
+                  child: Container(height: 2, color: const Color(0xFFD4A820).withValues(alpha: 0.6)),
+                ),
+                // Línea dorada inferior
+                Positioned(
+                  bottom: 0, left: 0, right: 0,
+                  child: Container(height: 2, color: const Color(0xFFD4A820).withValues(alpha: 0.6)),
+                ),
+                // Highlight reflejo
+                Positioned(
+                  right: 0, top: 0, bottom: 0,
+                  child: Container(
+                    width: 2,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.2),
+                          Colors.white.withValues(alpha: 0.05),
+                          Colors.white.withValues(alpha: 0.15),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // PORTADA
+          Expanded(
+            child: Stack(
+              children: [
+                // Base de portada
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: bg,
+                      border: Border(
+                        top:    BorderSide(color: spine.withValues(alpha: 0.3), width: 0.5),
+                        right:  BorderSide(color: spine.withValues(alpha: 0.3), width: 0.5),
+                        bottom: BorderSide(color: spine.withValues(alpha: 0.7), width: 2),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Textura/glow de portada
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _CoverGlowCompact(accent: accent),
+                  ),
+                ),
+
+                // Arte de la categoría
+                Positioned.fill(
+                  top: 12, bottom: 8, left: 4, right: 4,
+                  child: child,
+                ),
+
+                // Franja de color en la parte inferior (identidad)
+                Positioned(
+                  bottom: 0, left: 0, right: 0,
+                  child: Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          spine.withValues(alpha: 0.8),
+                          spine,
+                          spine.withValues(alpha: 0.8),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Esquinas doradas
+                ..._buildCorners(),
+
+                // Viñeta
+                Positioned.fill(
+                  child: CustomPaint(painter: _VignetteCompact()),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildCorners() {
+    const size = 7.0;
+    const color = Color(0xFFD4A820);
+    const alpha = 0.55;
+
+    Widget corner({double? t, double? b, double? l, double? r}) =>
+        Positioned(
+          top: t, bottom: b, left: l, right: r,
+          child: CustomPaint(
+            size: const Size(size, size),
+            painter: _CornerPaint(
+              top: t != null, left: l != null,
+              color: color.withValues(alpha: alpha),
+            ),
+          ),
+        );
+
+    return [
+      corner(t: 3, l: 3),
+      corner(t: 3, r: 3),
+      corner(b: 3, l: 3),
+      corner(b: 3, r: 3),
+    ];
+  }
+}
+
+class _SpineLinesCompact extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = Colors.white.withValues(alpha: 0.06)
+      ..strokeWidth = 0.5;
+    for (double y = 10; y < size.height - 10; y += 5) {
+      canvas.drawLine(Offset(1, y), Offset(size.width - 1, y), p);
+    }
+  }
+  @override
+  bool shouldRepaint(_SpineLinesCompact old) => false;
+}
+
+class _CoverGlowCompact extends CustomPainter {
+  final Color accent;
+  const _CoverGlowCompact({required this.accent});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(0, -0.2),
+        radius: 0.75,
+        colors: [accent.withValues(alpha: 0.15), Colors.transparent],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
+
+    // Líneas diagonales sutiles
+    final lp = Paint()
+      ..color = Colors.white.withValues(alpha: 0.02)
+      ..strokeWidth = 0.7;
+    for (double x = -size.height; x < size.width + size.height; x += 8) {
+      canvas.drawLine(Offset(x, 0), Offset(x + size.height, size.height), lp);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CoverGlowCompact old) => old.accent != accent;
+}
+
+class _VignetteCompact extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..shader = RadialGradient(
+        colors: [Colors.transparent, Colors.black.withValues(alpha: 0.2)],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), p);
+  }
+  @override
+  bool shouldRepaint(_VignetteCompact old) => false;
+}
+
+class _CornerPaint extends CustomPainter {
+  final bool top, left;
+  final Color color;
+  const _CornerPaint({required this.top, required this.left, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = color
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.square;
+    final x = left ? 0.0 : size.width;
+    final y = top  ? 0.0 : size.height;
+    canvas.drawLine(Offset(x, y), Offset(x + (left ? size.width : -size.width), y), p);
+    canvas.drawLine(Offset(x, y), Offset(x, y + (top ? size.height : -size.height)), p);
+  }
+  @override
+  bool shouldRepaint(_CornerPaint old) => false;
 }
 
 // ═══════════════════════════════════════════════════════════
-//  CHECKBOXES DE ESTADO
+//  CHECKBOXES DE ESTADO — fieles a la referencia
 // ═══════════════════════════════════════════════════════════
 class _AlbumStatusRow extends StatelessWidget {
-  final int   total;
-  final int   completed;
+  final int total, completed;
   final Color accent;
 
   const _AlbumStatusRow({
@@ -858,13 +935,11 @@ class _AlbumStatusRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Tamaño adaptativo: max 5 álbumes × (24px + 4px margin) = 140px — cabe en ~161px
     return Row(
       children: List.generate(total, (i) {
         final done = i < completed;
         return Container(
-          width: 24,
-          height: 24,
+          width: 24, height: 24,
           margin: const EdgeInsets.only(right: 4),
           decoration: BoxDecoration(
             color: done ? accent : GsColors.cream,
@@ -873,7 +948,7 @@ class _AlbumStatusRow extends StatelessWidget {
               width: 1.5,
             ),
             boxShadow: done
-                ? [BoxShadow(color: accent.withValues(alpha: 0.25), offset: const Offset(1, 1))]
+                ? [BoxShadow(color: accent.withValues(alpha: 0.3), offset: const Offset(1, 1))]
                 : null,
           ),
           child: Icon(
@@ -893,27 +968,139 @@ class _AlbumStatusRow extends StatelessWidget {
 class _ProgressBar extends StatelessWidget {
   final double pct;
   final Color  accent;
-
   const _ProgressBar({required this.pct, required this.accent});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 7,
-      child: LinearProgressIndicator(
-        value: pct,
-        backgroundColor: GsColors.bgSection,
-        valueColor: AlwaysStoppedAnimation<Color>(accent),
-        minHeight: 7,
+      child: Stack(
+        children: [
+          Positioned.fill(child: Container(color: GsColors.bgSection)),
+          FractionallySizedBox(
+            widthFactor: pct.clamp(0.0, 1.0),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [accent.withValues(alpha: 0.8), accent],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
 // ═══════════════════════════════════════════════════════════
-//  COVER PAINTERS (sin cambios, reutilizados)
+//  BOTTOM SHEET CON SECCIÓN EXPANDIDA (sin cambios)
 // ═══════════════════════════════════════════════════════════
+class _CategorySheet extends StatelessWidget {
+  final String       tab;
+  final AlbumsModel  model;
+  final List<AlbumCard> allCards;
 
+  const _CategorySheet({
+    required this.tab,
+    required this.model,
+    required this.allCards,
+  });
+
+  String get _title => switch (tab) {
+        'legendary' => 'LEGENDARIOS',
+        'stars'     => 'ESTRELLAS',
+        'cult'      => 'DE CULTO',
+        _           => '',
+      };
+
+  Color get _accent => switch (tab) {
+        'legendary' => const Color(0xFF34d399),
+        'stars'     => const Color(0xFFa599d9),
+        'cult'      => const Color(0xFFf59e0b),
+        _           => GsColors.accent,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.92,
+      decoration: BoxDecoration(
+        color: GsColors.bg,
+        border: Border(top: BorderSide(color: GsColors.border, width: 2)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: GsColors.borderSub,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Container(
+            height: 48,
+            decoration: BoxDecoration(
+              color: GsColors.bgCard,
+              border: Border(bottom: BorderSide(color: GsColors.border, width: 1.5)),
+            ),
+            child: Row(
+              children: [
+                Container(width: 4, color: _accent),
+                const SizedBox(width: 12),
+                Text(
+                  _title,
+                  style: TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w900,
+                    letterSpacing: 2, color: _accent,
+                  ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    width: 32, height: 32,
+                    margin: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      color: GsColors.cream,
+                      border: Border.all(color: GsColors.border, width: 1.5),
+                      boxShadow: const [BoxShadow(color: GsColors.shadow, offset: Offset(2, 2))],
+                    ),
+                    child: const Icon(Icons.close, size: 14, color: GsColors.text),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: switch (tab) {
+              'legendary' => LegendarySection(
+                  definitions: model.legendaryAlbums,
+                  progress:    model.progressByAlbumId.values.toList(),
+                  collection:  model.collection,
+                ),
+              'stars' => StarsSection(
+                  collection: model.collection,
+                  allCards:   allCards,
+                ),
+              'cult' => CultSection(
+                  definitions: model.cultAlbums,
+                  collection:  model.collection,
+                  allCards:    allCards,
+                ),
+              _ => const SizedBox.shrink(),
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  COVER PAINTERS — igual que antes
+// ═══════════════════════════════════════════════════════════
 class _BoltPainterWidget extends StatelessWidget {
   final Color accent;
   const _BoltPainterWidget({required this.accent});
@@ -931,33 +1118,32 @@ class _BoltPainter extends CustomPainter {
     final cx = size.width / 2;
     final cy = size.height / 2;
 
-    final glowPaint = Paint()
+    final glow = Paint()
       ..shader = RadialGradient(
-        colors: [accent.withValues(alpha: 0.20), accent.withValues(alpha: 0.0)],
-      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: 34));
-    canvas.drawCircle(Offset(cx, cy), 34, glowPaint);
+        colors: [accent.withValues(alpha: 0.25), Colors.transparent],
+      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: 32));
+    canvas.drawCircle(Offset(cx, cy), 32, glow);
 
-    final ringPaint = Paint()
-      ..color = accent.withValues(alpha: 0.10)
+    final ring = Paint()
+      ..color = accent.withValues(alpha: 0.12)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.8;
-    for (final r in [28.0, 20.0]) {
-      canvas.drawCircle(Offset(cx, cy), r, ringPaint);
+    for (final r in [26.0, 18.0]) {
+      canvas.drawCircle(Offset(cx, cy), r, ring);
     }
 
     final fill = Paint()
-      ..color = accent.withValues(alpha: 0.88)
+      ..color = accent.withValues(alpha: 0.9)
       ..style = PaintingStyle.fill;
 
     final path = Path()
-      ..moveTo(cx + 7, cy - 22)
-      ..lineTo(cx - 5, cy - 2)
-      ..lineTo(cx + 4, cy - 2)
-      ..lineTo(cx - 7, cy + 22)
-      ..lineTo(cx + 5, cy + 2)
-      ..lineTo(cx - 4, cy + 2)
+      ..moveTo(cx + 6, cy - 20)
+      ..lineTo(cx - 4, cy - 2)
+      ..lineTo(cx + 3, cy - 2)
+      ..lineTo(cx - 6, cy + 20)
+      ..lineTo(cx + 4, cy + 2)
+      ..lineTo(cx - 3, cy + 2)
       ..close();
-
     canvas.drawPath(path, fill);
   }
 
@@ -982,60 +1168,46 @@ class _CrownPainter extends CustomPainter {
     final cx = size.width / 2;
     final cy = size.height / 2;
 
-    final glowPaint = Paint()
+    final glow = Paint()
       ..shader = RadialGradient(
-        colors: [accent.withValues(alpha: 0.18), accent.withValues(alpha: 0.0)],
-      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: 32));
-    canvas.drawCircle(Offset(cx, cy), 32, glowPaint);
+        colors: [accent.withValues(alpha: 0.2), Colors.transparent],
+      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: 30));
+    canvas.drawCircle(Offset(cx, cy), 30, glow);
 
-    final hexPaint = Paint()
-      ..color = accent.withValues(alpha: 0.10)
-      ..style = PaintingStyle.fill;
-    final hexStroke = Paint()
-      ..color = accent.withValues(alpha: 0.30)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.8;
-
+    // Hexágono
+    final hexFill = Paint()..color = accent.withValues(alpha: 0.10)..style = PaintingStyle.fill;
+    final hexStroke = Paint()..color = accent.withValues(alpha: 0.30)..style = PaintingStyle.stroke..strokeWidth = 0.8;
     final hexPath = Path();
     for (int i = 0; i < 6; i++) {
-      final angle = (i / 6) * 2 * math.pi - math.pi / 6;
-      final x = cx + 22 * math.cos(angle);
-      final y = cy + 22 * math.sin(angle);
-      if (i == 0) hexPath.moveTo(x, y);
-      else hexPath.lineTo(x, y);
+      final a = (i / 6) * 2 * math.pi - math.pi / 6;
+      final x = cx + 20 * math.cos(a);
+      final y = cy + 20 * math.sin(a);
+      if (i == 0) hexPath.moveTo(x, y); else hexPath.lineTo(x, y);
     }
     hexPath.close();
-    canvas.drawPath(hexPath, hexPaint);
+    canvas.drawPath(hexPath, hexFill);
     canvas.drawPath(hexPath, hexStroke);
 
-    final crownFill = Paint()
-      ..color = accent.withValues(alpha: 0.12)
-      ..style = PaintingStyle.fill;
-    final crownStroke = Paint()
-      ..color = accent.withValues(alpha: 0.70)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..strokeJoin = StrokeJoin.round;
+    // Corona
+    final cFill   = Paint()..color = accent.withValues(alpha: 0.12)..style = PaintingStyle.fill;
+    final cStroke = Paint()..color = accent.withValues(alpha: 0.72)..style = PaintingStyle.stroke..strokeWidth = 1.2..strokeJoin = StrokeJoin.round;
 
     final crown = Path()
-      ..moveTo(cx - 14, cy + 8)
-      ..lineTo(cx - 14, cy - 10)
-      ..lineTo(cx - 7,  cy - 2)
-      ..lineTo(cx,      cy - 14)
-      ..lineTo(cx + 7,  cy - 2)
-      ..lineTo(cx + 14, cy - 10)
-      ..lineTo(cx + 14, cy + 8)
+      ..moveTo(cx - 12, cy + 7)
+      ..lineTo(cx - 12, cy - 8)
+      ..lineTo(cx - 5,  cy - 1)
+      ..lineTo(cx,      cy - 12)
+      ..lineTo(cx + 5,  cy - 1)
+      ..lineTo(cx + 12, cy - 8)
+      ..lineTo(cx + 12, cy + 7)
       ..close();
+    canvas.drawPath(crown, cFill);
+    canvas.drawPath(crown, cStroke);
 
-    canvas.drawPath(crown, crownFill);
-    canvas.drawPath(crown, crownStroke);
-
-    final dotPaint = Paint()
-      ..color = accent.withValues(alpha: 0.85)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset(cx - 14, cy - 10), 2.2, dotPaint);
-    canvas.drawCircle(Offset(cx,      cy - 14), 2.2, dotPaint);
-    canvas.drawCircle(Offset(cx + 14, cy - 10), 2.2, dotPaint);
+    final dotP = Paint()..color = accent.withValues(alpha: 0.9)..style = PaintingStyle.fill;
+    for (final pt in [Offset(cx - 12, cy - 8), Offset(cx, cy - 12), Offset(cx + 12, cy - 8)]) {
+      canvas.drawCircle(pt, 2.0, dotP);
+    }
   }
 
   @override
@@ -1058,68 +1230,45 @@ class _GlobePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
     final cy = size.height / 2;
-    const r = 22.0;
+    const r = 20.0;
 
-    final glowPaint = Paint()
+    final glow = Paint()
       ..shader = RadialGradient(
-        colors: [accent.withValues(alpha: 0.20), accent.withValues(alpha: 0.0)],
-      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: 34));
-    canvas.drawCircle(Offset(cx, cy), 34, glowPaint);
+        colors: [accent.withValues(alpha: 0.22), Colors.transparent],
+      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: 32));
+    canvas.drawCircle(Offset(cx, cy), 32, glow);
 
-    final fill = Paint()
-      ..color = accent.withValues(alpha: 0.10)
-      ..style = PaintingStyle.fill;
-    final stroke = Paint()
-      ..color = accent.withValues(alpha: 0.60)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
+    final fill   = Paint()..color = accent.withValues(alpha: 0.10)..style = PaintingStyle.fill;
+    final stroke = Paint()..color = accent.withValues(alpha: 0.62)..style = PaintingStyle.stroke..strokeWidth = 1.0;
 
     canvas.drawCircle(Offset(cx, cy), r, fill);
     canvas.drawCircle(Offset(cx, cy), r, stroke);
 
-    final thinStroke = Paint()
-      ..color = accent.withValues(alpha: 0.28)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.7;
+    final thin = Paint()..color = accent.withValues(alpha: 0.28)..style = PaintingStyle.stroke..strokeWidth = 0.7;
+    canvas.drawLine(Offset(cx, cy - r), Offset(cx, cy + r), thin);
+    canvas.drawLine(Offset(cx - r, cy), Offset(cx + r, cy), thin);
+    canvas.drawOval(Rect.fromCenter(center: Offset(cx, cy), width: r * 0.9, height: r * 2), thin);
 
-    canvas.drawLine(Offset(cx, cy - r), Offset(cx, cy + r), thinStroke);
-    canvas.drawLine(Offset(cx - r, cy), Offset(cx + r, cy), thinStroke);
-
-    canvas.drawOval(
-      Rect.fromCenter(center: Offset(cx, cy), width: r * 0.9, height: r * 2),
-      thinStroke,
-    );
-
-    for (final offset in [-9.0, 9.0]) {
-      final halfW = math.sqrt(r * r - offset * offset);
+    for (final off in [-8.0, 8.0]) {
+      final hw = math.sqrt(r * r - off * off);
       canvas.drawOval(
-        Rect.fromCenter(
-            center: Offset(cx, cy + offset),
-            width: halfW * 1.9,
-            height: 5.5),
-        thinStroke,
+        Rect.fromCenter(center: Offset(cx, cy + off), width: hw * 1.9, height: 5.0), thin,
       );
     }
 
-    final shieldFill = Paint()
-      ..color = accent.withValues(alpha: 0.15)
-      ..style = PaintingStyle.fill;
-    final shieldStroke = Paint()
-      ..color = accent.withValues(alpha: 0.70)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.1;
-
+    // Escudo
+    final sFill   = Paint()..color = accent.withValues(alpha: 0.14)..style = PaintingStyle.fill;
+    final sStroke = Paint()..color = accent.withValues(alpha: 0.72)..style = PaintingStyle.stroke..strokeWidth = 1.1;
     final shield = Path()
-      ..moveTo(cx, cy - 12)
-      ..lineTo(cx + 9,  cy - 7)
-      ..lineTo(cx + 9,  cy + 2)
-      ..quadraticBezierTo(cx + 9, cy + 11, cx, cy + 15)
-      ..quadraticBezierTo(cx - 9, cy + 11, cx - 9, cy + 2)
-      ..lineTo(cx - 9, cy - 7)
+      ..moveTo(cx, cy - 11)
+      ..lineTo(cx + 8,  cy - 6)
+      ..lineTo(cx + 8,  cy + 2)
+      ..quadraticBezierTo(cx + 8, cy + 10, cx, cy + 14)
+      ..quadraticBezierTo(cx - 8, cy + 10, cx - 8, cy + 2)
+      ..lineTo(cx - 8, cy - 6)
       ..close();
-
-    canvas.drawPath(shield, shieldFill);
-    canvas.drawPath(shield, shieldStroke);
+    canvas.drawPath(shield, sFill);
+    canvas.drawPath(shield, sStroke);
   }
 
   @override

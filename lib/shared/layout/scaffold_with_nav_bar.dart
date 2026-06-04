@@ -115,7 +115,6 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
           ? null
           : _GsBottomNav(
               currentIndex: widget.navigationShell.currentIndex,
-              isAdmin:      _isAdmin,
               onTap: (i) {
                 widget.navigationShell.goBranch(
                   i,
@@ -416,13 +415,11 @@ class _Initials extends StatelessWidget {
 
 class _GsBottomNav extends StatelessWidget {
   final int  currentIndex;
-  final bool isAdmin;
   final void Function(int) onTap;
   final VoidCallback onTrophy;
 
   const _GsBottomNav({
     required this.currentIndex,
-    required this.isAdmin,
     required this.onTap,
     required this.onTrophy,
   });
@@ -430,20 +427,12 @@ class _GsBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final leftItems = [
-      if (isAdmin)
-        const _NavItem(
-          icon: Icons.shield_outlined,
-          activeIcon: Icons.shield,
-          label: 'ADMIN',
-          branchIndex: 2,
-        )
-      else
-        const _NavItem(
-          icon: Icons.museum_outlined,
-          activeIcon: Icons.museum,
-          label: 'ÁLBUMS',
-          branchIndex: 2,
-        ),
+      const _NavItem(
+        icon: Icons.menu_book_outlined,
+        activeIcon: Icons.menu_book,
+        label: 'ÁLBUMS',
+        branchIndex: 2,
+      ),
       const _NavItem(
         icon: Icons.emoji_events_outlined,
         activeIcon: Icons.emoji_events,
