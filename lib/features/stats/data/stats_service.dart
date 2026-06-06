@@ -6,12 +6,29 @@ class StatsService {
 
   Future<StatsModel> fetchStats(String userId, String timeRange) async {
     final from = _rangeStart(timeRange);
+    final isAll = from == null;
 
     print('╔══ STATS FETCH ══════════════════════════');
     print('║ timeRange : $timeRange');
     print('║ from (UTC): $from');
 
     List r0 = [], r1 = [], r2 = [], r3 = [];
+    Map<String, dynamic>? userRow;
+
+    // En modo "all" traemos también la fila del usuario para usar
+    // users.points como fuente de verdad (ya incluye todo: partidos + ligas + premios)
+    if (isAll) {
+      try {
+        userRow = await _db
+            .from('users')
+            .select('points, correct, predictions, current_streak, best_streak')
+            .eq('id', userId)
+            .single();
+        print('║ [OK] user row: $userRow');
+      } catch (e) {
+        print('║ [ERR] user row: $e');
+      }
+    }
 
     try {
       r0 = await _queryFinished(userId, from);
@@ -51,6 +68,7 @@ class StatsService {
       pendingCount: r1.length,
       leagueRows:   r2,
       awardRows:    r3,
+      userRow:      userRow, // solo en modo "all", null en week/month
     );
   }
 
@@ -64,18 +82,23 @@ class StatsService {
     };
   }
 
-  // FIX: se añade advancing_points al select para calcular puntos correctamente
   Future<List> _queryFinished(String userId, DateTime? from) {
     if (from == null) {
       return _db
           .from('predictions')
-          .select('points_earned, advancing_points, result_type, created_at, matches!inner(league, is_knockout, deadline)')
+          .select(
+            'points_earned, advancing_points, result_type, created_at, '
+            'matches!inner(league, is_knockout, deadline)',
+          )
           .eq('user_id', userId)
           .filter('result_type', 'not.is', 'null');
     }
     return _db
         .from('predictions')
-        .select('points_earned, advancing_points, result_type, created_at, matches!inner(league, is_knockout, deadline)')
+        .select(
+          'points_earned, advancing_points, result_type, created_at, '
+          'matches!inner(league, is_knockout, deadline)',
+        )
         .eq('user_id', userId)
         .filter('result_type', 'not.is', 'null')
         .gte('matches.deadline', from.toIso8601String());
@@ -97,7 +120,6 @@ class StatsService {
         .gte('matches.deadline', from.toIso8601String());
   }
 
-  // FIX: se añade leagues(name) para poder agrupar leagueStats por nombre
   Future<List> _queryLeagues(String userId, DateTime? from) {
     var q = _db
         .from('league_predictions')
@@ -121,11 +143,11 @@ class StatsService {
     required int pendingCount,
     required List leagueRows,
     required List awardRows,
+    Map<String, dynamic>? userRow,
   }) {
     int exact = 0, correct = 0, wrong = 0, ptsMatches = 0;
     final Map<int, Map<String, int>> dayMap = {};
 
-    // Ordenar por created_at desc para calcular racha desde el más reciente
     final sorted = [...rows]..sort((a, b) {
         final da = DateTime.tryParse(a['created_at'] ?? '') ?? DateTime(2000);
         final db = DateTime.tryParse(b['created_at'] ?? '') ?? DateTime(2000);
@@ -136,12 +158,10 @@ class StatsService {
     bool streakBroken = false;
 
     for (final r in sorted) {
-      final type   = r['result_type'] as String? ?? '';
-      // FIX: sumar points_earned + advancing_points para incluir los 2pts extra
-      // de partidos eliminatorios al total de puntos
-      final pts    = ((r['points_earned'] as num?)?.toInt() ?? 0)
-                   + ((r['advancing_points'] as num?)?.toInt() ?? 0);
-      final isHit  = type == 'exact' || type == 'correct';
+      final type  = r['result_type'] as String? ?? '';
+      final pts   = ((r['points_earned']    as num?)?.toInt() ?? 0)
+                  + ((r['advancing_points'] as num?)?.toInt() ?? 0);
+      final isHit = type == 'exact' || type == 'correct';
 
       if (type == 'exact')        { exact++; }
       else if (type == 'correct') { correct++; }
@@ -149,12 +169,9 @@ class StatsService {
 
       ptsMatches += pts;
 
-      // Racha actual: consecutivos desde la predicción más reciente
       if (!streakBroken) {
         if (isHit) { currentStreak++; } else { streakBroken = true; }
       }
-
-      // Mejor racha histórica
       if (isHit) {
         tempStreak++;
         if (tempStreak > bestStreak) bestStreak = tempStreak;
@@ -162,10 +179,9 @@ class StatsService {
         tempStreak = 0;
       }
 
-      // Mapa por día de semana (weekday: 1=Lun … 7=Dom, igual que Dart)
       final date = DateTime.tryParse(r['created_at'] ?? '');
       if (date != null) {
-        final dow = date.weekday;
+        final dow = date.weekday; // 1=Lun … 7=Dom
         dayMap.putIfAbsent(dow, () => {'correct': 0, 'total': 0});
         dayMap[dow]!['total'] = dayMap[dow]!['total']! + 1;
         if (isHit) dayMap[dow]!['correct'] = dayMap[dow]!['correct']! + 1;
@@ -176,13 +192,40 @@ class StatsService {
     final accuracy      = total > 0 ? (((exact + correct) / total) * 100).round() : 0;
     final exactAccuracy = total > 0 ? ((exact / total) * 100).round() : 0;
 
-    final ptsLeagues = leagueRows.fold<int>(
+    // Puntos de ligas y premios calculados desde las predicciones
+    final ptsLeaguesCalc = leagueRows.fold<int>(
         0, (s, r) => s + ((r['points_earned'] as num?)?.toInt() ?? 0));
-    final ptsAwards  = awardRows.fold<int>(
+    final ptsAwardsCalc  = awardRows.fold<int>(
         0, (s, r) => s + ((r['points_earned'] as num?)?.toInt() ?? 0));
 
-    // FIX: construir leagueStats agrupando por nombre de liga
-    // usando points_earned + advancing_points de la DB
+    // En modo "all": usamos users.points como fuente de verdad para el total.
+    // La diferencia respecto a ptsMatches + ptsLeaguesCalc + ptsAwardsCalc
+    // se asigna a ptsLeagues para que el total cuadre exactamente.
+    // En modo week/month: usamos lo calculado directamente.
+    final int ptsLeagues;
+    final int ptsAwards;
+    final int ptsMatchesFinal;
+
+    if (userRow != null) {
+      // Fuente de verdad: users.points ya tiene el total real acumulado
+      final totalFromDB   = (userRow['points'] as num?)?.toInt() ?? 0;
+      // ptsMatches calculado es confiable (suma points_earned + advancing_points)
+      ptsMatchesFinal     = ptsMatches;
+      ptsAwards           = ptsAwardsCalc;
+      // Lo que falta para llegar al total real = ligas + cualquier ajuste histórico
+      final resto = totalFromDB - ptsMatchesFinal - ptsAwardsCalc;
+      ptsLeagues  = resto > 0 ? resto : ptsLeaguesCalc;
+
+      // Racha: en modo "all" la DB tiene el valor histórico correcto
+      currentStreak = (userRow['current_streak'] as num?)?.toInt() ?? currentStreak;
+      bestStreak    = (userRow['best_streak']    as num?)?.toInt() ?? bestStreak;
+    } else {
+      ptsMatchesFinal = ptsMatches;
+      ptsLeagues      = ptsLeaguesCalc;
+      ptsAwards       = ptsAwardsCalc;
+    }
+
+    // leagueStats: agrupar por liga usando points_earned de la DB
     final Map<String, Map<String, dynamic>> leagueMap = {};
     for (final r in rows) {
       final leagueName = (r['matches'] as Map?)?['league'] as String?;
@@ -192,26 +235,26 @@ class StatsService {
         'total': 0, 'correct': 0, 'exact': 0, 'points': 0,
       });
 
-      final type   = r['result_type'] as String? ?? '';
-      final pts    = ((r['points_earned'] as num?)?.toInt() ?? 0)
-                   + ((r['advancing_points'] as num?)?.toInt() ?? 0);
-      final isHit  = type == 'exact' || type == 'correct';
+      final type  = r['result_type'] as String? ?? '';
+      final pts   = ((r['points_earned']    as num?)?.toInt() ?? 0)
+                  + ((r['advancing_points'] as num?)?.toInt() ?? 0);
+      final isHit = type == 'exact' || type == 'correct';
 
-      leagueMap[leagueName]!['total']  = leagueMap[leagueName]!['total']!  + 1;
-      leagueMap[leagueName]!['points'] = leagueMap[leagueName]!['points']! + pts;
-      if (isHit)           leagueMap[leagueName]!['correct'] = leagueMap[leagueName]!['correct']! + 1;
-      if (type == 'exact') leagueMap[leagueName]!['exact']   = leagueMap[leagueName]!['exact']!   + 1;
+      leagueMap[leagueName]!['total']  = (leagueMap[leagueName]!['total']  as int) + 1;
+      leagueMap[leagueName]!['points'] = (leagueMap[leagueName]!['points'] as int) + pts;
+      if (isHit)           leagueMap[leagueName]!['correct'] = (leagueMap[leagueName]!['correct'] as int) + 1;
+      if (type == 'exact') leagueMap[leagueName]!['exact']   = (leagueMap[leagueName]!['exact']   as int) + 1;
     }
 
     final leagueStats = leagueMap.entries.map((e) {
-      final s        = e.value;
-      final t        = s['total'] as int;
-      final accuracy = t > 0 ? (((s['correct'] as int) / t) * 100).round() : 0;
+      final s   = e.value;
+      final t   = s['total'] as int;
+      final acc = t > 0 ? (((s['correct'] as int) / t) * 100).round() : 0;
       return LeagueStat(
         name:     e.key,
         points:   s['points'] as int,
         exact:    s['exact']  as int,
-        accuracy: accuracy,
+        accuracy: acc,
       );
     }).toList()
       ..sort((a, b) => b.points.compareTo(a.points));
@@ -234,9 +277,8 @@ class StatsService {
       wrong:              wrong,
       accuracy:           accuracy,
       exactAccuracy:      exactAccuracy,
-      // FIX: totalPoints refleja solo partidos; totalPts del modelo suma los 3
-      totalPoints:        ptsMatches,
-      pointsFromMatches:  ptsMatches,
+      totalPoints:        ptsMatchesFinal,
+      pointsFromMatches:  ptsMatchesFinal,
       pointsFromLeagues:  ptsLeagues,
       pointsFromAwards:   ptsAwards,
       leaguePredictions:  leagueRows.length,

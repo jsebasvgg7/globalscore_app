@@ -37,6 +37,50 @@ extension _HistFilterExt on _HistFilter {
 }
 
 // ─────────────────────────────────────────────────────────────
+//  LÓGICA DE RESULTADO — igual que getPredictionResult en React
+// ─────────────────────────────────────────────────────────────
+class _PredResult {
+  final String status; // 'exact' | 'correct' | 'wrong' | 'pending'
+  final int points;
+  const _PredResult(this.status, this.points);
+}
+
+_PredResult _getPredictionResult(PredictionHistoryEntry entry) {
+  final match = entry.match;
+
+  // Si el partido no terminó → pendiente
+  if (match == null || match.status != 'finished') {
+    return const _PredResult('pending', 0);
+  }
+
+  final rHome = match.resultHome;
+  final rAway = match.resultAway;
+
+  // Si no hay resultado real → pendiente
+  if (rHome == null || rAway == null) {
+    return const _PredResult('pending', 0);
+  }
+
+  final predHome = entry.homeScore;
+  final predAway = entry.awayScore;
+
+  // Exacto: marcador idéntico
+  if (predHome == rHome && predAway == rAway) {
+    return const _PredResult('exact', 5);
+  }
+
+  // Acertado: mismo ganador / empate
+  final predDiff = (predHome - predAway).sign;
+  final realDiff = (rHome - rAway).sign;
+
+  if (predDiff == realDiff) {
+    return const _PredResult('correct', 3);
+  }
+
+  return const _PredResult('wrong', 0);
+}
+
+// ─────────────────────────────────────────────────────────────
 //  HISTORY TAB
 // ─────────────────────────────────────────────────────────────
 class HistoryTab extends ConsumerStatefulWidget {
@@ -56,9 +100,9 @@ class _HistoryTabState extends ConsumerState<HistoryTab> {
       case _HistFilter.all:      return all;
       case _HistFilter.active:   return all.where((e) => e.match?.status == 'pending').toList();
       case _HistFilter.finished: return all.where((e) => e.match?.status == 'finished').toList();
-      case _HistFilter.exact:    return all.where((e) => e.resultType == 'exact').toList();
-      case _HistFilter.correct:  return all.where((e) => e.resultType == 'correct').toList();
-      case _HistFilter.wrong:    return all.where((e) => e.resultType == 'wrong').toList();
+      case _HistFilter.exact:    return all.where((e) => _getPredictionResult(e).status == 'exact').toList();
+      case _HistFilter.correct:  return all.where((e) => _getPredictionResult(e).status == 'correct').toList();
+      case _HistFilter.wrong:    return all.where((e) => _getPredictionResult(e).status == 'wrong').toList();
     }
   }
 
@@ -66,9 +110,9 @@ class _HistoryTabState extends ConsumerState<HistoryTab> {
     _HistFilter.all:      all.length,
     _HistFilter.active:   all.where((e) => e.match?.status == 'pending').length,
     _HistFilter.finished: all.where((e) => e.match?.status == 'finished').length,
-    _HistFilter.exact:    all.where((e) => e.resultType == 'exact').length,
-    _HistFilter.correct:  all.where((e) => e.resultType == 'correct').length,
-    _HistFilter.wrong:    all.where((e) => e.resultType == 'wrong').length,
+    _HistFilter.exact:    all.where((e) => _getPredictionResult(e).status == 'exact').length,
+    _HistFilter.correct:  all.where((e) => _getPredictionResult(e).status == 'correct').length,
+    _HistFilter.wrong:    all.where((e) => _getPredictionResult(e).status == 'wrong').length,
   };
 
   @override
@@ -337,7 +381,9 @@ class _HistCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final match       = entry.match;
-    final resultType  = entry.resultType;
+    final result      = _getPredictionResult(entry);
+    final resultType  = result.status;
+    final pointsEarned = result.points;
     final accentColor = _accentForResult(resultType);
 
     return Container(
@@ -537,24 +583,24 @@ class _HistCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: entry.pointsEarned > 0
+                    color: pointsEarned > 0
                         ? _green.withValues(alpha: 0.08)
                         : _bg,
                     border: Border.all(
-                      color: entry.pointsEarned > 0 ? _green : _border,
+                      color: pointsEarned > 0 ? _green : _border,
                       width: 1.5,
                     ),
                     boxShadow: const [_shadowSm],
                   ),
                   child: Text(
-                    entry.pointsEarned > 0
-                        ? '+${entry.pointsEarned} PTS'
+                    pointsEarned > 0
+                        ? '+${pointsEarned} PTS'
                         : '0 PTS',
                     style: TextStyle(
                       fontFamily: 'DM Mono',
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
-                      color: entry.pointsEarned > 0 ? _green : _muted,
+                      color: pointsEarned > 0 ? _green : _muted,
                       letterSpacing: 0.6,
                     ),
                   ),

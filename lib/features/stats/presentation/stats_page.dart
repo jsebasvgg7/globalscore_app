@@ -4,22 +4,20 @@ import '../domain/stats_provider.dart';
 import '../domain/stats_model.dart';
 
 // ── Paleta Neobrutalismo Retro
-const _accent    = Color(0xFF2D0CFF);   // azul eléctrico
-const _accentL   = Color(0xFF7B61FF);   // lavanda
-const _exact     = Color(0xFFFF3C00);   // naranja quemado retro
-const _correct   = Color(0xFF00C48C);   // verde menta
-const _wrong     = Color(0xFFFF9500);   // ámbar
-const _gold      = Color(0xFFFFD600);   // amarillo neón
-const _bg        = Color(0xFFF5F0E8);   // crema off-white
-const _card      = Color(0xFFEDE7DA);   // crema oscura
-const _border    = Color(0xFF1A1A2E);   // negro profundo (bordes duros)
+const _accent    = Color(0xFF2D0CFF);
+const _accentL   = Color(0xFF7B61FF);
+const _exact     = Color(0xFFFF3C00);
+const _correct   = Color(0xFF00C48C);
+const _wrong     = Color(0xFFFF9500);
+const _gold      = Color(0xFFFFD600);
+const _bg        = Color(0xFFF5F0E8);
+const _card      = Color(0xFFEDE7DA);
+const _border    = Color(0xFF1A1A2E);
 const _text      = Color(0xFF1A1A2E);
 const _muted     = Color(0xFF555550);
-// sombra dura neobrut
 const _shadow    = Color(0x661A1A2E);
 
 String _fmt(int n) {
-  // Equivalente a toLocaleString('es-ES')
   final s = n.toString();
   final buf = StringBuffer();
   for (int i = 0; i < s.length; i++) {
@@ -35,7 +33,7 @@ class StatsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(statsProvider);
-    final timeRange = ref.watch(statsTimeRangeProvider);
+    final timeRange  = ref.watch(statsTimeRangeProvider);
 
     return Scaffold(
       backgroundColor: _bg,
@@ -67,7 +65,7 @@ class StatsPage extends ConsumerWidget {
   }
 }
 
-// ══ TOP BAR con pills de rango ══════════════════════════════════════════
+// ══ TOP BAR ════════════════════════════════════════════════════════════
 class _TopBar extends StatelessWidget {
   final String timeRange;
   final WidgetRef ref;
@@ -99,14 +97,16 @@ class _TopBar extends StatelessWidget {
           Row(
             children: [
               for (final r in [
-                ('all', 'TODO'),
+                ('all',   'TODO'),
                 ('month', 'MES'),
-                ('week', 'SEMANA'),
+                ('week',  'SEMANA'),
               ])
                 _RangePill(
-                  label: r.$2,
+                  label:  r.$2,
                   active: timeRange == r.$1,
-                  onTap: () => ref.read(statsTimeRangeProvider.notifier).set(r.$1)
+                  onTap:  () => ref
+                      .read(statsTimeRangeProvider.notifier)
+                      .set(r.$1),
                 ),
             ],
           ),
@@ -118,7 +118,7 @@ class _TopBar extends StatelessWidget {
 
 class _RangePill extends StatelessWidget {
   final String label;
-  final bool active;
+  final bool   active;
   final VoidCallback onTap;
   const _RangePill({required this.label, required this.active, required this.onTap});
 
@@ -171,12 +171,11 @@ class _EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 72,
-              height: 72,
+              width: 72, height: 72,
               decoration: BoxDecoration(
                 color: _bg,
                 border: Border.all(color: _border, width: 1),
-                boxShadow: const [BoxShadow(color: _shadow, offset: Offset(1, 1), blurRadius: 0)],
+                boxShadow: const [BoxShadow(color: _shadow, offset: Offset(1, 1))],
               ),
               child: const Icon(Icons.sports_soccer, size: 36, color: _accent),
             ),
@@ -185,10 +184,8 @@ class _EmptyState extends StatelessWidget {
               'SIN PARTIDOS $_label'.toUpperCase(),
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.5,
-                color: _text,
+                fontSize: 13, fontWeight: FontWeight.w900,
+                letterSpacing: 1.5, color: _text,
               ),
             ),
             const SizedBox(height: 8),
@@ -204,7 +201,7 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ══ BODY SCROLLABLE ══════════════════════════════════════════════════════
+// ══ BODY ═════════════════════════════════════════════════════════════════
 class _StatsBody extends StatelessWidget {
   final StatsModel stats;
   const _StatsBody({required this.stats});
@@ -265,7 +262,8 @@ class _HeroGrid extends StatelessWidget {
             label: 'PRECISIÓN',
             value: '${stats.accuracy}%',
             valueColor: _accent,
-            sub: '${_fmt(stats.totalPredictions)} finalizadas',
+            // FIX: muestra total finalizadas + pendientes para contexto completo
+            sub: '${_fmt(stats.totalPredictions)} finalizadas · ${_fmt(stats.pendingPredictions)} pend.',
             borderRight: true,
             borderBottom: true,
           ),
@@ -292,10 +290,11 @@ class _HeroGrid extends StatelessWidget {
           _HeroBlock(
             icon: Icons.bolt,
             iconColor: _gold,
-            label: 'PUNTOS',
-            value: _fmt(stats.totalPoints),
+            // FIX: totalPts = partidos + ligas + premios (antes solo mostraba partidos)
+            label: 'PUNTOS TOTALES',
+            value: _fmt(stats.totalPts),
             valueColor: _gold,
-            sub: 'de partidos',
+            sub: '${_fmt(stats.pointsFromMatches)} part. · ${_fmt(stats.pointsFromLeagues)} ligas · ${_fmt(stats.pointsFromAwards)} prem.',
             borderRight: false,
             borderBottom: false,
           ),
@@ -307,13 +306,13 @@ class _HeroGrid extends StatelessWidget {
 
 class _HeroBlock extends StatelessWidget {
   final IconData icon;
-  final Color iconColor;
-  final String label;
-  final String value;
-  final Color valueColor;
-  final String sub;
-  final bool borderRight;
-  final bool borderBottom;
+  final Color    iconColor;
+  final String   label;
+  final String   value;
+  final Color    valueColor;
+  final String   sub;
+  final bool     borderRight;
+  final bool     borderBottom;
 
   const _HeroBlock({
     required this.icon,
@@ -333,7 +332,7 @@ class _HeroBlock extends StatelessWidget {
       decoration: BoxDecoration(
         color: _bg,
         border: Border(
-          right: borderRight ? const BorderSide(color: _border, width: 1) : BorderSide.none,
+          right:  borderRight  ? const BorderSide(color: _border, width: 1) : BorderSide.none,
           bottom: borderBottom ? const BorderSide(color: _border, width: 1) : BorderSide.none,
         ),
       ),
@@ -344,26 +343,29 @@ class _HeroBlock extends StatelessWidget {
             children: [
               Text(label,
                   style: const TextStyle(
-                      fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 2, color: _muted)),
+                      fontSize: 9, fontWeight: FontWeight.w900,
+                      letterSpacing: 2, color: _muted)),
               const SizedBox(height: 4),
-              Text(value,
-                  style: TextStyle(
-                      fontSize: 38,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -2,
-                      height: 1,
-                      color: valueColor)),
+              // FIX: tamaño adaptativo para no overflow con números grandes
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(value,
+                    style: TextStyle(
+                        fontSize: 38, fontWeight: FontWeight.w900,
+                        letterSpacing: -2, height: 1, color: valueColor)),
+              ),
               const SizedBox(height: 4),
               Text(sub,
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: _muted)),
+                  maxLines: 2,
+                  style: const TextStyle(
+                      fontSize: 9, fontWeight: FontWeight.w500, color: _muted)),
             ],
           ),
           Positioned(
-            top: 0,
-            right: 0,
+            top: 0, right: 0,
             child: Container(
-              width: 28,
-              height: 28,
+              width: 28, height: 28,
               decoration: BoxDecoration(
                 color: iconColor,
                 border: Border.all(color: _border, width: 1),
@@ -387,7 +389,7 @@ class _SectionDivider extends StatelessWidget {
 
 class _SectionHeader extends StatelessWidget {
   final String label;
-  final Color color;
+  final Color  color;
   const _SectionHeader({required this.label, required this.color});
 
   @override
@@ -405,7 +407,8 @@ class _SectionHeader extends StatelessWidget {
           const SizedBox(width: 8),
           Text(label,
               style: const TextStyle(
-                  fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2, color: _text)),
+                  fontSize: 10, fontWeight: FontWeight.w900,
+                  letterSpacing: 2, color: _text)),
         ],
       ),
     );
@@ -426,9 +429,11 @@ class _ResultsDesglose extends StatelessWidget {
         children: [
           _ResultBar(
             count: stats.exact,
-            pts: '+${_fmt(stats.exact * 5)} pts',
+            // FIX: pts base exacto = 5, pero pueden tener advancing_points
+            // mostramos desde pointsFromMatches proporcional
+            pts: '+${_fmt(stats.exact * 5)} pts base',
             ptsColor: _exact,
-            label: 'EXACTOS',
+            label: 'EXACTOS (+5 pts)',
             pct: total > 0 ? ((stats.exact / total) * 100).round() : 0,
             barColor: _exact,
             total: total,
@@ -436,9 +441,9 @@ class _ResultsDesglose extends StatelessWidget {
           const SizedBox(height: 14),
           _ResultBar(
             count: stats.correctResult,
-            pts: '+${_fmt(stats.correctResult * 3)} pts',
+            pts: '+${_fmt(stats.correctResult * 3)} pts base',
             ptsColor: _correct,
-            label: 'CORRECTOS',
+            label: 'CORRECTOS (+3 pts)',
             pct: total > 0 ? ((stats.correctResult / total) * 100).round() : 0,
             barColor: _correct,
             total: total,
@@ -453,6 +458,53 @@ class _ResultsDesglose extends StatelessWidget {
             barColor: _wrong,
             total: total,
           ),
+          // FIX: mostrar bonus eliminatorios si existen
+          if (stats.knockoutBonus > 0) ...[
+            const SizedBox(height: 14),
+            _BonusRow(bonus: stats.knockoutBonus),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// FIX: nuevo widget para mostrar bonus de eliminatorios
+class _BonusRow extends StatelessWidget {
+  final int bonus;
+  const _BonusRow({required this.bonus});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: _gold.withValues(alpha: 0.15),
+        border: Border.all(color: _gold, width: 1),
+        boxShadow: const [BoxShadow(color: _shadow, offset: Offset(1, 1), blurRadius: 0)],
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.emoji_events, size: 16, color: _gold),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              'BONUS ELIMINATORIOS (+2 pts por equipo clasificado)',
+              style: TextStyle(
+                  fontSize: 9, fontWeight: FontWeight.w900,
+                  letterSpacing: 1, color: _text),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: _gold,
+              border: Border.all(color: _border, width: 1),
+            ),
+            child: Text('+${_fmt(bonus)} pts',
+                style: const TextStyle(
+                    fontSize: 11, fontWeight: FontWeight.w900, color: _border)),
+          ),
         ],
       ),
     );
@@ -460,13 +512,13 @@ class _ResultsDesglose extends StatelessWidget {
 }
 
 class _ResultBar extends StatelessWidget {
-  final int count;
+  final int    count;
   final String pts;
-  final Color ptsColor;
+  final Color  ptsColor;
   final String label;
-  final int pct;
-  final Color barColor;
-  final int total;
+  final int    pct;
+  final Color  barColor;
+  final int    total;
 
   const _ResultBar({
     required this.count,
@@ -486,7 +538,9 @@ class _ResultBar extends StatelessWidget {
         Row(
           children: [
             Text(_fmt(count),
-                style: TextStyle(fontSize: 38, fontWeight: FontWeight.w900, letterSpacing: -1, height: 1, color: barColor)),
+                style: TextStyle(
+                    fontSize: 38, fontWeight: FontWeight.w900,
+                    letterSpacing: -1, height: 1, color: barColor)),
             const SizedBox(width: 10),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -495,15 +549,21 @@ class _ResultBar extends StatelessWidget {
                 border: Border.all(color: _border, width: 1),
                 boxShadow: const [BoxShadow(color: _shadow, offset: Offset(1, 1), blurRadius: 0)],
               ),
-              child: Text(pts, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white)),
+              child: Text(pts,
+                  style: const TextStyle(
+                      fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white)),
             ),
             const Spacer(),
-            Text('$pct%', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: _text)),
+            Text('$pct%',
+                style: const TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w900, color: _text)),
           ],
         ),
         const SizedBox(height: 4),
         Text(label,
-            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 2, color: _muted)),
+            style: const TextStyle(
+                fontSize: 9, fontWeight: FontWeight.w900,
+                letterSpacing: 2, color: _muted)),
         const SizedBox(height: 8),
         TweenAnimationBuilder<double>(
           tween: Tween(begin: 0, end: pct / 100),
@@ -533,21 +593,26 @@ class _LeagueTable extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Thead
         Container(
-          height: 36,
-          color: _card,
+          height: 36, color: _card,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
-            children: [
-              const SizedBox(width: 28),
-              const Expanded(child: Text('Liga', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 1, color: _muted))),
-              const SizedBox(width: 48, child: Text('Pts', textAlign: TextAlign.center, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: _muted))),
-              const SizedBox(width: 100, child: Text('Precisión', textAlign: TextAlign.right, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: _muted))),
+            children: const [
+              SizedBox(width: 28),
+              Expanded(child: Text('Liga',
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
+                      letterSpacing: 1, color: _muted))),
+              SizedBox(width: 48, child: Text('Pts',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: _muted))),
+              SizedBox(width: 100, child: Text('Precisión',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: _muted))),
             ],
           ),
         ),
-        ...leagues.asMap().entries.map((e) => _LeagueRow(league: e.value, rank: e.key + 1)),
+        ...leagues.asMap().entries.map((e) =>
+            _LeagueRow(league: e.value, rank: e.key + 1)),
       ],
     );
   }
@@ -555,7 +620,7 @@ class _LeagueTable extends StatelessWidget {
 
 class _LeagueRow extends StatelessWidget {
   final LeagueStat league;
-  final int rank;
+  final int        rank;
   const _LeagueRow({required this.league, required this.rank});
 
   Color get badgeColor {
@@ -577,8 +642,7 @@ class _LeagueRow extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 22,
-            height: 22,
+            width: 22, height: 22,
             decoration: BoxDecoration(
               color: badgeColor,
               border: Border.all(color: _border, width: 1),
@@ -618,7 +682,8 @@ class _LeagueRow extends StatelessWidget {
                   ),
                 ),
                 Text('${league.accuracy}%',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _accent)),
+                    style: const TextStyle(
+                        fontSize: 11, fontWeight: FontWeight.w700, color: _accent)),
               ],
             ),
           ),
@@ -638,11 +703,11 @@ class _DayBars extends StatelessWidget {
     if (days.isEmpty) return const SizedBox(height: 60);
     return LayoutBuilder(
       builder: (context, constraints) {
-        const hPadding = 32.0;
-        final available = constraints.maxWidth - hPadding;
-        final naturalColWidth = available / days.length;
-        final colWidth = naturalColWidth.clamp(36.0, 80.0);
-        final needsScroll = colWidth * days.length > available;
+        const hPadding      = 32.0;
+        final available     = constraints.maxWidth - hPadding;
+        final naturalColW   = available / days.length;
+        final colWidth      = naturalColW.clamp(36.0, 80.0);
+        final needsScroll   = colWidth * days.length > available;
 
         final row = Row(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -675,7 +740,7 @@ class _DayBars extends StatelessWidget {
 
 class _DayColumn extends StatelessWidget {
   final DayStat day;
-  final double colWidth;
+  final double  colWidth;
   const _DayColumn({required this.day, required this.colWidth});
 
   @override
@@ -711,7 +776,9 @@ class _DayColumn extends StatelessWidget {
         const SizedBox(height: 4),
         Text(day.name,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5, color: _muted)),
+            style: const TextStyle(
+                fontSize: 9, fontWeight: FontWeight.w700,
+                letterSpacing: 0.5, color: _muted)),
         Text('${day.correct}/${day.total}',
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 8, color: _muted)),
@@ -731,11 +798,24 @@ class _PointsDistribution extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Column(
         children: [
-          _DistRow(label: 'PARTIDOS', value: stats.pointsFromMatches, pct: stats.pctMatches, color: _accent),
+          // FIX: usa totalPts (suma real) para los porcentajes
+          _DistRow(label: 'PARTIDOS',  value: stats.pointsFromMatches, pct: stats.pctMatches, color: _accent),
           const SizedBox(height: 10),
-          _DistRow(label: 'LIGAS', value: stats.pointsFromLeagues, pct: stats.pctLeagues, color: _exact),
+          _DistRow(label: 'LIGAS',     value: stats.pointsFromLeagues, pct: stats.pctLeagues, color: _exact),
           const SizedBox(height: 10),
-          _DistRow(label: 'PREMIOS', value: stats.pointsFromAwards, pct: stats.pctAwards, color: _correct),
+          _DistRow(label: 'PREMIOS',   value: stats.pointsFromAwards,  pct: stats.pctAwards,  color: _correct),
+          const SizedBox(height: 14),
+          // FIX: total real visible al pie
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('TOTAL',
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+                      letterSpacing: 2, color: _muted)),
+              Text(_fmt(stats.totalPts),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: _text)),
+            ],
+          ),
         ],
       ),
     );
@@ -744,9 +824,9 @@ class _PointsDistribution extends StatelessWidget {
 
 class _DistRow extends StatelessWidget {
   final String label;
-  final int value;
-  final int pct;
-  final Color color;
+  final int    value;
+  final int    pct;
+  final Color  color;
   const _DistRow({required this.label, required this.value, required this.pct, required this.color});
 
   @override
@@ -755,9 +835,12 @@ class _DistRow extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(label, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 1, color: _muted)),
+            Text(label,
+                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700,
+                    letterSpacing: 1, color: _muted)),
             const Spacer(),
-            Text(_fmt(value), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _text)),
+            Text(_fmt(value),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _text)),
           ],
         ),
         const SizedBox(height: 5),
@@ -780,7 +863,7 @@ class _DistRow extends StatelessWidget {
   }
 }
 
-// ══ FORECAST GRID 2×2 ════════════════════════════════════════════════
+// ══ FORECAST GRID ═════════════════════════════════════════════════════
 class _ForecastGrid extends StatelessWidget {
   final StatsModel stats;
   const _ForecastGrid({required this.stats});
@@ -798,9 +881,9 @@ class _ForecastGrid extends StatelessWidget {
         childAspectRatio: 2.2,
         children: [
           _ForecastItem(value: _fmt(stats.leaguePredictions), label: 'LIGAS PRED.'),
-          _ForecastItem(value: _fmt(stats.awardPredictions), label: 'PREMIOS PRED.'),
-          _ForecastItem(value: _fmt(stats.pointsFromLeagues), label: 'PTS LIGAS', valueColor: _exact),
-          _ForecastItem(value: _fmt(stats.pointsFromAwards), label: 'PTS PREMIOS', valueColor: _exact),
+          _ForecastItem(value: _fmt(stats.awardPredictions),  label: 'PREMIOS PRED.'),
+          _ForecastItem(value: _fmt(stats.pointsFromLeagues), label: 'PTS LIGAS',   valueColor: _exact),
+          _ForecastItem(value: _fmt(stats.pointsFromAwards),  label: 'PTS PREMIOS', valueColor: _exact),
         ],
       ),
     );
@@ -810,7 +893,7 @@ class _ForecastGrid extends StatelessWidget {
 class _ForecastItem extends StatelessWidget {
   final String value;
   final String label;
-  final Color valueColor;
+  final Color  valueColor;
   const _ForecastItem({required this.value, required this.label, this.valueColor = _text});
 
   @override
@@ -827,9 +910,14 @@ class _ForecastItem extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(value,
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: -1, height: 1, color: valueColor)),
+              style: TextStyle(
+                  fontSize: 24, fontWeight: FontWeight.w800,
+                  letterSpacing: -1, height: 1, color: valueColor)),
           const SizedBox(height: 2),
-          Text(label, style: const TextStyle(fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: _muted)),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 8, fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8, color: _muted)),
         ],
       ),
     );
@@ -855,10 +943,17 @@ class _StreakCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('RACHA ACTUAL',
-              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 2, color: _text)),
+              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900,
+                  letterSpacing: 2, color: _text)),
           const SizedBox(height: 4),
-          Text(_fmt(stats.currentStreak),
-              style: const TextStyle(fontSize: 54, fontWeight: FontWeight.w900, letterSpacing: -3, height: 1, color: _text)),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(_fmt(stats.currentStreak),
+                style: const TextStyle(
+                    fontSize: 54, fontWeight: FontWeight.w900,
+                    letterSpacing: -3, height: 1, color: _text)),
+          ),
           const SizedBox(height: 4),
           const Text('predicciones seguidas correctas',
               style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: _text)),
@@ -878,7 +973,8 @@ class _StreakCard extends StatelessWidget {
                   boxShadow: const [BoxShadow(color: _shadow, offset: Offset(1, 1), blurRadius: 0)],
                 ),
                 child: Text(_fmt(stats.bestStreak),
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white)),
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white)),
               ),
             ],
           ),
