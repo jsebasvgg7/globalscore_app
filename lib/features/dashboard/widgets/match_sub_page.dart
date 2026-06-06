@@ -812,7 +812,38 @@ class _MatchPredictionCardState extends State<_MatchPredictionCard> {
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(_MatchPredictionCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Solo sincronizar si NO hay una edición activa en curso
+    if (_saving || (_debounce != null && _debounce!.isActive)) return;
+
+    final pred = _myPred;
+    if (pred == null) return;
+
+    final newHome = pred['home_score'] as int? ?? 0;
+    final newAway = pred['away_score'] as int? ?? 0;
+    final newAdv  = pred['predicted_advancing_team'] as String?;
+
+    // Solo actualizar si el widget recibió datos distintos a los del widget anterior
+    final oldPred = (oldWidget.match['my_prediction'] ?? {}) as Map;
+    final oldHome = oldPred['home_score'] as int? ?? 0;
+    final oldAway = oldPred['away_score'] as int? ?? 0;
+
+    if (newHome != oldHome || newAway != oldAway) {
+      setState(() {
+        _home     = newHome;
+        _away     = newAway;
+        _advancing = newAdv;
+        _saved    = true;
+      });
+    }
+  }
+
+
   Map? get _myPred {
+    final preProcessed = widget.match['my_prediction'];
+    if (preProcessed != null) return preProcessed as Map;
     final preds = (widget.match['predictions'] as List?) ?? [];
     try {
       return preds.firstWhere((p) => (p as Map)['user_id'] == widget.userId) as Map;

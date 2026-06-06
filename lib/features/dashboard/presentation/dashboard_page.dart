@@ -863,6 +863,8 @@ class _MiniMatchCard extends StatelessWidget {
   }
 
   Map? get _pred {
+    final preProcessed = match['my_prediction'];
+    if (preProcessed != null) return preProcessed as Map;
     final preds = (match['predictions'] as List?) ?? [];
     try { return preds.firstWhere((p) => p['user_id'] == userId) as Map; } catch (_) { return null; }
   }
