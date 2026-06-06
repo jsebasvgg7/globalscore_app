@@ -1081,7 +1081,7 @@ class _CategorySheet extends StatelessWidget {
     final pctInt    = (pct * 100).round();
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.92,
+      height: MediaQuery.of(context).size.height * 0.88,
       decoration: BoxDecoration(
         color: GsColors.bg,
         border: Border(top: BorderSide(color: _accent, width: 3)),
@@ -1288,137 +1288,152 @@ class _SheetStatsPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Fila de 3 mini-cards ─────────────────────
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // CARD 1 — álbumes completados
-              _StatCard(
-                flex: 3,
-                bgColor: accent,
-                borderColor: accent,
-                labelColor: Colors.white70,
-                topWidget: Text(
-                  '$completed',
-                  style: const TextStyle(
-                    fontFamily: GsColors.fontMono,
-                    fontSize: 40,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    height: 1,
-                  ),
+          // ── 3 columnas simétricas ──────────────────────
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // STAT 1 — álbumes completados
+                _StatCard(
+                  icon: Icons.auto_awesome,
+                  iconBg: accent,
+                  iconColor: Colors.white,
+                  value: '$completed',
+                  label: 'ÁLBUMES\nCOMPLETADOS',
+                  accent: accent,
+                  highlighted: true,
                 ),
-                label: 'ÁLBUMES\nCOMPLETADOS',
-              ),
-              const SizedBox(width: 6),
-              // CARD 2 — figuritas
-              _StatCard(
-                flex: 4,
-                topWidget: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 20, height: 20,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: accentLight, width: 1.5),
-                      ),
-                      child: Icon(Icons.star, size: 11, color: accentLight),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '$figuritas',
-                      style: const TextStyle(
-                        fontFamily: GsColors.fontMono,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        color: GsColors.text,
-                        height: 1,
-                      ),
-                    ),
-                  ],
+                const SizedBox(width: 6),
+                // STAT 2 — figuritas
+                _StatCard(
+                  icon: Icons.style,
+                  iconBg: accentLight.withValues(alpha: 0.18),
+                  iconColor: accentLight,
+                  value: '$figuritas',
+                  label: 'FIGURITAS\nCONSEGUIDAS',
+                  accent: accent,
                 ),
-                label: 'FIGURITAS\nCONSEGUIDAS',
-                borderColor: GsColors.borderSub,
-              ),
-              const SizedBox(width: 6),
-              // CARD 3 — progreso %
-              _StatCard(
-                flex: 4,
-                topWidget: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 20, height: 20,
-                      color: const Color(0xFF22C55E),
-                      child: const Icon(Icons.check, size: 11, color: Colors.white),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '$pctInt%',
-                      style: const TextStyle(
-                        fontFamily: GsColors.fontMono,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        color: GsColors.text,
-                        height: 1,
-                      ),
-                    ),
-                  ],
+                const SizedBox(width: 6),
+                // STAT 3 — progreso %
+                _StatCard(
+                  icon: Icons.check,
+                  iconBg: const Color(0xFF22C55E),
+                  iconColor: Colors.white,
+                  value: '$pctInt%',
+                  label: 'PROGRESO\nGLOBAL',
+                  accent: accent,
                 ),
-                label: 'PROGRESO\nGLOBAL',
-                borderColor: GsColors.borderSub,
-              ),
-            ],
+              ],
+            ),
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
 
-          // ── Barra de progreso ────────────────────────
+          // ── Barra de progreso con contexto claro ────────
           Container(
             decoration: BoxDecoration(
+              color: GsColors.bgSection,
               border: Border.all(color: GsColors.border, width: 1.5),
               boxShadow: const [BoxShadow(color: GsColors.shadow, offset: Offset(3, 3))],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Etiqueta superior
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 7, 10, 4),
+                  child: Row(
+                    children: [
+                      Container(width: 3, height: 10, color: accent),
+                      const SizedBox(width: 6),
+                      Text(
+                        'PROGRESO DE LA COLECCIÓN',
+                        style: TextStyle(
+                          fontFamily: GsColors.fontMono,
+                          fontSize: 7.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                          color: accent,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '$completed / $total álbumes',
+                        style: const TextStyle(
+                          fontFamily: GsColors.fontMono,
+                          fontSize: 7.5,
+                          fontWeight: FontWeight.w700,
+                          color: GsColors.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Barra
                 Stack(
                   children: [
-                    Container(height: 10, color: GsColors.bgSection),
+                    Container(height: 12, color: GsColors.bgCard),
                     FractionallySizedBox(
-                      widthFactor: pct,
+                      widthFactor: pct.clamp(0.0, 1.0),
                       child: Container(
-                        height: 10,
+                        height: 12,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(colors: [accent, accentLight]),
                         ),
                       ),
                     ),
+                    // % flotando dentro de la barra
+                    if (pct > 0.12)
+                      Positioned(
+                        left: 8, top: 0, bottom: 0,
+                        child: Center(
+                          child: Text(
+                            '$pctInt%',
+                            style: const TextStyle(
+                              fontFamily: GsColors.fontMono,
+                              fontSize: 7,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
+                // Marcadores de hitos
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 4, 10, 6),
+                  padding: const EdgeInsets.fromLTRB(10, 5, 10, 7),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '$completed de $total álbumes completados',
-                        style: const TextStyle(
-                          fontFamily: GsColors.fontMono,
-                          fontSize: 8,
-                          color: GsColors.muted,
-                        ),
-                      ),
-                      Text(
-                        '$pctInt%',
-                        style: TextStyle(
-                          fontFamily: GsColors.fontMono,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          color: accent,
-                        ),
-                      ),
-                    ],
+                    children: List.generate(total + 1, (i) {
+                      final milePct = i / total;
+                      final reached = pct >= milePct;
+                      return Expanded(
+                        child: i == 0
+                            ? const SizedBox.shrink()
+                            : Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      height: 1,
+                                      color: reached
+                                          ? accent.withValues(alpha: 0.3)
+                                          : GsColors.borderSub,
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 5, height: 5,
+                                    decoration: BoxDecoration(
+                                      color: reached ? accent : GsColors.bgCard,
+                                      border: Border.all(
+                                        color: reached ? accent : GsColors.borderSub,
+                                        width: 1,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      );
+                    }),
                   ),
                 ),
               ],
@@ -1431,46 +1446,78 @@ class _SheetStatsPanel extends StatelessWidget {
 }
 
 class _StatCard extends StatelessWidget {
-  final int flex;
-  final Widget topWidget;
-  final String label;
-  final Color borderColor;
-  final Color? bgColor;
-  final Color? labelColor;
+  final IconData icon;
+  final Color iconBg, iconColor;
+  final String value, label;
+  final Color accent;
+  final bool highlighted;
 
   const _StatCard({
-    required this.flex,
-    required this.topWidget,
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.value,
     required this.label,
-    required this.borderColor,
-    this.bgColor,
-    this.labelColor,
+    required this.accent,
+    this.highlighted = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      flex: flex,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
+        padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
         decoration: BoxDecoration(
-          color: bgColor ?? GsColors.bg,
-          border: Border.all(color: borderColor, width: 1.5),
-          boxShadow: const [BoxShadow(color: GsColors.shadow, offset: Offset(2, 2))],
+          color: highlighted ? accent : GsColors.bg,
+          border: Border.all(
+            color: highlighted ? accent : GsColors.borderSub,
+            width: 1.5,
+          ),
+          boxShadow: const [
+            BoxShadow(color: GsColors.shadow, offset: Offset(2, 2)),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            topWidget,
-            const SizedBox(height: 4),
+            // Ícono en caja
+            Container(
+              width: 22, height: 22,
+              decoration: BoxDecoration(
+                color: iconBg,
+                border: Border.all(
+                  color: highlighted
+                      ? Colors.white.withValues(alpha: 0.4)
+                      : accent.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Icon(icon, size: 12, color: iconColor),
+            ),
+            const SizedBox(height: 6),
+            // Valor
+            Text(
+              value,
+              style: TextStyle(
+                fontFamily: GsColors.fontMono,
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: highlighted ? Colors.white : GsColors.text,
+                height: 1,
+              ),
+            ),
+            const SizedBox(height: 3),
+            // Label
             Text(
               label,
               style: TextStyle(
                 fontFamily: GsColors.fontMono,
-                fontSize: 7,
+                fontSize: 6.5,
                 fontWeight: FontWeight.w700,
-                color: labelColor ?? GsColors.muted,
+                color: highlighted
+                    ? Colors.white.withValues(alpha: 0.75)
+                    : GsColors.muted,
                 height: 1.35,
               ),
             ),

@@ -6,17 +6,19 @@ import '../domain/albums_provider.dart';
 import '../data/albums_service.dart';
 import '../../../shared/layout/scaffold_with_nav_bar.dart';
 
-// ── Paleta exacta del diseño ──────────────────────────────
-const _bg     = Color(0xFFF5F0E8);   // crema
-const _card   = Color(0xFFEDE7DA);
-const _border = Color(0xFF1A1A2E);
-const _accent = Color(0xFF5B2EFF);   // morado GA
-const _accentDark = Color(0xFF3A1DB3);
-const _gold   = Color(0xFFFFD600);
-const _shadow = Color(0x661A1A2E);
-const _muted  = Color(0xFF6B6660);
-const _text   = Color(0xFF1A1A2E);
-const _white  = Colors.white;
+// ── Paleta — crema base + tokens Ds de albums_page ──────────
+const _bg         = Color(0xFFF5F2EC);   // Ds.bg — crema base
+const _bgSection  = Color(0xFFEFEBE3);   // Ds.bgSection
+const _card       = Color(0xFFE8E3D8);   // Ds.bgCard
+const _border     = Color(0xFF2D2A40);   // Ds.border — oscuro azul-gris
+const _borderSub  = Color(0xFFCBC6BA);   // Ds.borderSub
+const _accent     = Color(0xFF5B4FD8);   // Ds.accent
+const _accentDark = Color(0xFF4A40C0);   // Ds.accentDim
+const _gold       = Color(0xFFFFD600);   // Ds.gold
+const _shadow     = Color(0xFF302D41);   // Ds.shadow3d
+const _muted      = Color(0xFF7A7268);   // Ds.muted
+const _text       = Color(0xFF1C1A2E);   // Ds.ink
+const _white      = Colors.white;
 
 // Colores por tipo (badge y borde)
 Color _typeColor(String t) => switch (t) {
@@ -76,12 +78,13 @@ class _PackOpeningSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // El alto se controla por fase desde _PackOpeningFlow vía un callback;
+    // aquí simplemente dejamos que el contenido dicte la altura.
     return Container(
-      height: MediaQuery.of(context).size.height * 0.92,
       decoration: const BoxDecoration(
         color: _bg,
         borderRadius: BorderRadius.zero,
-        border: Border(top: BorderSide(color: _border, width: 2)),
+        border: Border(top: BorderSide(color: _border, width: 2.5)),
       ),
       child: const _PackOpeningFlow(),
     );
@@ -104,6 +107,7 @@ class _PackOpeningFlowState extends ConsumerState<_PackOpeningFlow> {
   _Phase _phase = _Phase.idle;
   PackOpenResult? _result;
   String? _errorMsg;
+  bool _isOpening = false; // lock anti-double-tap
   // Set de índices revelados (tap por tap)
   final Set<int> _revealed = {};
   // Cuántos sobres se abrieron en ESTA sesión del modal.
@@ -120,7 +124,9 @@ class _PackOpeningFlowState extends ConsumerState<_PackOpeningFlow> {
   }
 
   Future<void> _startOpening() async {
+    if (_isOpening) return; // evita doble-tap / dupeos
     setState(() {
+      _isOpening = true;
       _phase    = _Phase.opening;
       _result   = null;
       _errorMsg = null;
@@ -143,13 +149,15 @@ class _PackOpeningFlowState extends ConsumerState<_PackOpeningFlow> {
           _result            = result;
           _phase             = _Phase.revealing;
           _openedThisSession += 1; // solo sube cuando la API confirma el gasto
+          _isOpening         = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMsg = e.toString();
-          _phase    = _Phase.idle;
+          _errorMsg  = e.toString();
+          _phase     = _Phase.idle;
+          _isOpening = false;
         });
       }
     }
@@ -167,49 +175,94 @@ class _PackOpeningFlowState extends ConsumerState<_PackOpeningFlow> {
     }
   }
 
-  bool get _allRevealed => _result != null && _revealed.length >= (_result!.allCards.length);
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // ── Header GA fijo
-        _GaHeader(packsAvailable: _packsAvailable),
+    final screenH = MediaQuery.of(context).size.height;
+    final isRevealing = _phase == _Phase.revealing;
+    final total = _result?.allCards.length ?? 0;
+    final revealedCount = _revealed.length;
+    final allDone = isRevealing && total > 0 && revealedCount >= total;
 
-        // ── Contenido por fase
-        Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 280),
-            transitionBuilder: (child, anim) => FadeTransition(
-              opacity: anim,
-              child: child,
-            ),
-            child: switch (_phase) {
-              _Phase.idle => _IdleView(
-                  key: const ValueKey('idle'),
-                  packsAvailable: _packsAvailable,
-                  onOpen: _startOpening,
-                  errorMsg: _errorMsg,
-                ),
-              _Phase.opening => const _OpeningView(key: ValueKey('opening')),
-              _Phase.revealing => _RevealingView(
-                  key: const ValueKey('revealing'),
-                  result: _result!,
-                  revealed: _revealed,
-                  allRevealed: _allRevealed,
-                  onReveal: _revealCard,
-                  onFinish: () => setState(() => _phase = _Phase.done),
-                ),
-              _Phase.done => _DoneView(
-                  key: const ValueKey('done'),
-                  result: _result!,
-                  packsAvailable: _packsAvailable,
-                  onOpenAnother: _packsAvailable > 0 ? _startOpening : null,
-                ),
-            },
+    // En revealing: el modal se ajusta al contenido (sin espacio vacío).
+    // En el resto de fases: altura fija 92% de pantalla.
+    if (isRevealing) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,   // ← clave: wrap content
+        children: [
+          _GaHeader(packsAvailable: _packsAvailable),
+          _RevealingView(
+            result: _result!,
+            revealed: _revealed,
+            onReveal: _revealCard,
+            onFinish: () => setState(() => _phase = _Phase.done),
           ),
-        ),
-      ],
+          // Footer siempre visible — el modal ya no tiene espacio vacío
+          Container(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 20),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: _border, width: 1)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  allDone ? '¡LISTO!' : 'TOCA CADA CARTA PARA REVELARLA',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: allDone ? _accent : _muted,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text('·', style: TextStyle(color: _muted, fontSize: 9)),
+                const SizedBox(width: 8),
+                Text(
+                  '$revealedCount/$total',
+                  style: const TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    color: _accent,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Fases idle / opening / done → altura fija
+    return SizedBox(
+      height: screenH * 0.92,
+      child: Column(
+        children: [
+          _GaHeader(packsAvailable: _packsAvailable),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 280),
+              transitionBuilder: (child, anim) =>
+                  FadeTransition(opacity: anim, child: child),
+              child: switch (_phase) {
+                _Phase.idle => _IdleView(
+                    key: const ValueKey('idle'),
+                    packsAvailable: _packsAvailable,
+                    onOpen: _startOpening,
+                    errorMsg: _errorMsg,
+                  ),
+                _Phase.opening => const _OpeningView(key: ValueKey('opening')),
+                _Phase.revealing => const SizedBox.shrink(), // nunca llega aquí
+                _Phase.done => _DoneView(
+                    key: const ValueKey('done'),
+                    result: _result!,
+                    packsAvailable: _packsAvailable,
+                  ),
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -326,7 +379,7 @@ class _IdleViewState extends State<_IdleView>
       vsync: this,
       duration: const Duration(milliseconds: 2200),
     )..repeat(reverse: true);
-    _floatAnim = Tween<double>(begin: 0, end: -10).animate(
+    _floatAnim = Tween<double>(begin: 0, end: -14).animate(
       CurvedAnimation(parent: _floatCtrl, curve: Curves.easeInOut),
     );
   }
@@ -347,50 +400,25 @@ class _IdleViewState extends State<_IdleView>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Sobre 3D animado
-              AnimatedBuilder(
-                animation: _floatAnim,
-                builder: (_, __) => Transform.translate(
-                  offset: Offset(0, _floatAnim.value),
-                  child: const _Pack3D(),
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // Contador de sobres
+              // Marco exterior con brackets
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(vertical: 28),
                 decoration: BoxDecoration(
-                  color: _border,
-                  boxShadow: const [
-                    BoxShadow(color: _shadow, offset: Offset(3, 3)),
-                  ],
+                  color: const Color(0xFFF0EBE0),
+                  border: Border.all(color: _border.withValues(alpha: 0.15), width: 1),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    Container(
-                      width: 32, height: 32,
-                      color: _accent,
-                      alignment: Alignment.center,
-                      child: Text(
-                        '${widget.packsAvailable}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'SOBRES DISPONIBLES',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.5,
-                        color: Colors.white,
+                    // Bracket esquinas exteriores
+                    ..._outerBrackets(),
+                    // Sobre flotando
+                    AnimatedBuilder(
+                      animation: _floatAnim,
+                      builder: (_, __) => Transform.translate(
+                        offset: Offset(0, _floatAnim.value),
+                        child: const _Pack3D(scale: 1.45),
                       ),
                     ),
                   ],
@@ -398,7 +426,7 @@ class _IdleViewState extends State<_IdleView>
               ),
 
               if (widget.errorMsg != null) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: 24),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 32),
                   child: Text(
@@ -433,7 +461,7 @@ class _IdleViewState extends State<_IdleView>
                     color: canOpen ? _accent : _muted,
                     border: Border.all(color: _border, width: 1.5),
                     boxShadow: canOpen
-                        ? const [BoxShadow(color: _shadow, offset: Offset(4, 4))]
+                        ? const [BoxShadow(color: Color(0x88302D41), offset: Offset(4, 4))]
                         : null,
                   ),
                   alignment: Alignment.center,
@@ -453,17 +481,17 @@ class _IdleViewState extends State<_IdleView>
 
               const SizedBox(height: 12),
 
-              // Footer categorías
-              const Row(
+              // Footer categorías con colores de tipo
+              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _CategoryPill(label: 'JUGADOR'),
-                  _Dot(),
-                  _CategoryPill(label: 'EQUIPO'),
-                  _Dot(),
-                  _CategoryPill(label: 'COPA'),
-                  _Dot(),
-                  _CategoryPill(label: 'EVENTO'),
+                  _CategoryPill(label: 'JUGADOR', color: const Color(0xFF5B4FD8)),
+                  const _Dot(),
+                  _CategoryPill(label: 'EQUIPO', color: const Color(0xFF1DAA75)),
+                  const _Dot(),
+                  _CategoryPill(label: 'COPA', color: const Color(0xFFF59E0B)),
+                  const _Dot(),
+                  _CategoryPill(label: 'EVENTO', color: const Color(0xFFE0435A)),
                 ],
               ),
             ],
@@ -472,18 +500,59 @@ class _IdleViewState extends State<_IdleView>
       ],
     );
   }
+
+  static List<Widget> _outerBrackets() {
+    const s = 14.0;
+    const t = 1.5;
+    const c = Color(0xFF8B7355);
+    Widget bracket({bool flipH = false, bool flipV = false}) => Transform.scale(
+      scaleX: flipH ? -1 : 1,
+      scaleY: flipV ? -1 : 1,
+      child: SizedBox(
+        width: s, height: s,
+        child: CustomPaint(painter: _BracketPainter(color: c, strokeWidth: t)),
+      ),
+    );
+
+    return [
+      Positioned(top: 6, left: 6, child: bracket()),
+      Positioned(top: 6, right: 6, child: bracket(flipH: true)),
+      Positioned(bottom: 6, left: 6, child: bracket(flipV: true)),
+      Positioned(bottom: 6, right: 6, child: bracket(flipH: true, flipV: true)),
+    ];
+  }
+}
+
+class _BracketPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+  const _BracketPainter({required this.color, required this.strokeWidth});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+    canvas.drawLine(Offset(0, size.height), const Offset(0, 0), paint);
+    canvas.drawLine(const Offset(0, 0), Offset(size.width, 0), paint);
+  }
+
+  @override
+  bool shouldRepaint(_BracketPainter old) => false;
 }
 
 class _CategoryPill extends StatelessWidget {
   final String label;
-  const _CategoryPill({required this.label});
+  final Color color;
+  const _CategoryPill({required this.label, this.color = _muted});
   @override
   Widget build(BuildContext context) => Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 9,
           fontWeight: FontWeight.w700,
-          color: _muted,
+          color: color,
           letterSpacing: 1,
         ),
       );
@@ -499,136 +568,74 @@ class _Dot extends StatelessWidget {
 }
 
 // ════════════════════════════════════════════════════════════
-//  SOBRE 3D — capas apiladas efecto profundidad
+//  SOBRE PREMIUM — rectangular con flap pintado + escudo GA
 // ════════════════════════════════════════════════════════════
 class _Pack3D extends StatelessWidget {
-  const _Pack3D();
+  final double scale;
+  const _Pack3D({this.scale = 1.0});
 
   @override
   Widget build(BuildContext context) {
+    final w   = 155.0 * scale;
+    final h   = 205.0 * scale;
+    final off = 7.0   * scale;
+
+    // El SizedBox total incluye espacio para las capas traseras
     return SizedBox(
-      width: 170, height: 220,
+      width:  w + off,
+      height: h + off,
       child: Stack(
-        alignment: Alignment.center,
         children: [
-          // Capa sombra más profunda
+          // ── Sombra
           Positioned(
-            top: 14, left: 14,
-            child: Container(
-              width: 140, height: 192,
-              color: const Color(0xFF0D0A1F),
-            ),
+            top: off + 5, left: off + 3,
+            child: Container(width: w, height: h, color: const Color(0x55302D41)),
           ),
-          // Capa intermedia (efecto 3D)
+          // ── Capa más trasera
           Positioned(
-            top: 8, left: 8,
-            child: Container(
-              width: 140, height: 192,
-              decoration: BoxDecoration(
-                color: const Color(0xFF3A2BB8),
-                border: Border.all(color: _border, width: 1.5),
+            top: off, left: off,
+            child: CustomPaint(
+              size: Size(w, h),
+              painter: _EnvelopePainter(
+                bodyColor:   const Color(0xFF1A154A),
+                borderColor: const Color(0xFF2E2870),
+                flapColor:   const Color(0xFF120E38),
+                isFront: false,
               ),
             ),
           ),
-          // Cara frontal principal
+          // ── Capa media
+          Positioned(
+            top: off * 0.5, left: off * 0.5,
+            child: CustomPaint(
+              size: Size(w, h),
+              painter: _EnvelopePainter(
+                bodyColor:   const Color(0xFF201A5C),
+                borderColor: const Color(0xFF3A318A),
+                flapColor:   const Color(0xFF160F44),
+                isFront: false,
+              ),
+            ),
+          ),
+          // ── Cara frontal con contenido
           Positioned(
             top: 0, left: 0,
-            child: Container(
-              width: 140, height: 192,
-              decoration: BoxDecoration(
-                color: _accent,
-                border: Border.all(color: _border, width: 2),
-              ),
+            child: SizedBox(
+              width: w, height: h,
               child: Stack(
                 children: [
-                  // Diagonal stripes
-                  Positioned.fill(
-                    child: CustomPaint(painter: _StripePainter()),
-                  ),
-                  // Esquinas decorativas
-                  ..._corners(),
-                  // Logo central
-                  Positioned.fill(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 8),
-                        // Escudo GA
-                        Container(
-                          width: 60, height: 60,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.35),
-                              width: 1.5,
-                            ),
-                          ),
-                          alignment: Alignment.center,
-                          child: const Text(
-                            'GA',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'GLOBAL ALBUMS',
-                          style: TextStyle(
-                            fontSize: 8,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 3),
-                          color: Colors.white.withValues(alpha: 0.15),
-                          child: const Text(
-                            '25 · 26',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white70,
-                              letterSpacing: 2,
-                            ),
-                          ),
-                        ),
-                      ],
+                  // Cuerpo del sobre
+                  CustomPaint(
+                    size: Size(w, h),
+                    painter: _EnvelopePainter(
+                      bodyColor:   const Color(0xFF2D1F7A),
+                      borderColor: _accent,
+                      flapColor:   const Color(0xFF231660),
+                      isFront: true,
                     ),
                   ),
-                  // Barcode top
-                  Positioned(
-                    top: 10, left: 0, right: 0,
-                    child: Center(
-                      child: CustomPaint(
-                        size: const Size(70, 14),
-                        painter: _BarcodePainter(),
-                      ),
-                    ),
-                  ),
-                  // Corner accents gold
-                  Positioned(
-                    bottom: 10, right: 10,
-                    child: Container(
-                      width: 16, height: 16,
-                      decoration: const BoxDecoration(
-                        color: _gold,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 10, left: 10,
-                    child: Container(
-                      width: 8, height: 8,
-                      color: Colors.white.withValues(alpha: 0.3),
-                    ),
-                  ),
+                  // Contenido superpuesto al cuerpo
+                  _EnvelopeFrontContent(w: w, h: h, scale: scale),
                 ],
               ),
             ),
@@ -637,26 +644,273 @@ class _Pack3D extends StatelessWidget {
       ),
     );
   }
-
-  List<Widget> _corners() => [
-        Positioned(
-          top: 8, left: 8,
-          child: _CornerBracket(topLeft: true),
-        ),
-        Positioned(
-          top: 8, right: 8,
-          child: _CornerBracket(topRight: true),
-        ),
-        Positioned(
-          bottom: 8, left: 8,
-          child: _CornerBracket(bottomLeft: true),
-        ),
-        Positioned(
-          bottom: 8, right: 8,
-          child: _CornerBracket(bottomRight: true),
-        ),
-      ];
 }
+
+// Painter que dibuja el sobre completo: cuerpo rect + flap triangular superior
+class _EnvelopePainter extends CustomPainter {
+  final Color bodyColor, borderColor, flapColor;
+  final bool isFront;
+
+  const _EnvelopePainter({
+    required this.bodyColor,
+    required this.borderColor,
+    required this.flapColor,
+    required this.isFront,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final flapH = h * 0.28; // altura del flap triangular
+
+    // ── Cuerpo rectangular
+    final bodyPaint = Paint()..color = bodyColor..style = PaintingStyle.fill;
+    canvas.drawRect(Rect.fromLTWH(0, 0, w, h), bodyPaint);
+
+    // ── Flap triangular (triángulo sobre la parte superior)
+    final flapPath = Path()
+      ..moveTo(0, 0)
+      ..lineTo(w / 2, flapH)
+      ..lineTo(w, 0)
+      ..close();
+    final flapPaint = Paint()..color = flapColor..style = PaintingStyle.fill;
+    canvas.drawPath(flapPath, flapPaint);
+
+    // ── Línea divisoria del flap (horizontal en la base del triángulo)
+    final divPaint = Paint()
+      ..color = borderColor.withValues(alpha: isFront ? 0.5 : 0.25)
+      ..strokeWidth = isFront ? 1.0 : 0.8
+      ..style = PaintingStyle.stroke;
+    // La línea del flap va de (0,0) a (w,0) pasando por el punto del triángulo
+    // en realidad dibujamos una línea en y=flapH que es donde termina el triángulo
+    // Pero visualmente el borde real del sobre es el rectángulo entero:
+    final borderPaint = Paint()
+      ..color = borderColor.withValues(alpha: isFront ? 0.85 : 0.35)
+      ..strokeWidth = isFront ? 1.5 : 1.0
+      ..style = PaintingStyle.stroke;
+    canvas.drawRect(Rect.fromLTWH(0, 0, w, h), borderPaint);
+
+    // ── Borde del flap triangular
+    canvas.drawPath(flapPath, divPaint);
+
+    // ── Línea de pliegue horizontal (base del triángulo)
+    if (isFront) {
+      final foldPaint = Paint()
+        ..color = borderColor.withValues(alpha: 0.35)
+        ..strokeWidth = 1.0
+        ..style = PaintingStyle.stroke;
+      canvas.drawLine(Offset(0, flapH), Offset(w, flapH), foldPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_EnvelopePainter old) => false;
+}
+
+// Contenido superpuesto al frente del sobre
+class _EnvelopeFrontContent extends StatelessWidget {
+  final double w, h, scale;
+  const _EnvelopeFrontContent({required this.w, required this.h, required this.scale});
+
+  @override
+  Widget build(BuildContext context) {
+    final flapH = h * 0.28;
+    final bodyTop = flapH + 4 * scale; // justo debajo del pliegue
+
+    return Stack(
+      children: [
+        // Stripes diagonales sutiles (solo en zona del cuerpo bajo el flap)
+        Positioned(top: flapH, left: 0, right: 0, bottom: 0,
+          child: ClipRect(child: CustomPaint(painter: _DarkStripePainter())),
+        ),
+
+        // Barcode en el flap (centrado verticalmente en el triángulo)
+        Positioned(
+          top: flapH * 0.3,
+          left: 0, right: 0,
+          child: Center(
+            child: CustomPaint(
+              size: Size(55 * scale, 9 * scale),
+              painter: _BarcodePainter(),
+            ),
+          ),
+        ),
+
+        // GS-25/26 debajo del barcode en el flap
+        Positioned(
+          top: flapH * 0.62,
+          left: 0, right: 0,
+          child: Center(
+            child: Text(
+              'GS-25/26',
+              style: TextStyle(
+                fontSize: 6.5 * scale,
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withValues(alpha: 0.45),
+                letterSpacing: 1.5,
+              ),
+            ),
+          ),
+        ),
+
+        // Escudo GA — zona central del cuerpo
+        Positioned(
+          top: bodyTop + 18 * scale,
+          left: 0, right: 0,
+          child: Center(child: _GaShield(scale: scale * 0.9, accentColor: _accent)),
+        ),
+
+        // GLOBAL ALBUMS
+        Positioned(
+          bottom: 36 * scale,
+          left: 0, right: 0,
+          child: Center(
+            child: Text(
+              'GLOBAL ALBUMS',
+              style: TextStyle(
+                fontSize: 8.5 * scale,
+                fontWeight: FontWeight.w900,
+                color: Colors.white.withValues(alpha: 0.88),
+                letterSpacing: 2.5,
+              ),
+            ),
+          ),
+        ),
+
+        // Temporada
+        Positioned(
+          bottom: 20 * scale,
+          left: 0, right: 0,
+          child: Center(
+            child: Text(
+              '25 · 26',
+              style: TextStyle(
+                fontSize: 7.5 * scale,
+                fontWeight: FontWeight.w500,
+                color: Colors.white.withValues(alpha: 0.45),
+                letterSpacing: 3,
+              ),
+            ),
+          ),
+        ),
+
+        // Esquinas doradas (en la zona del cuerpo)
+        Positioned(top: flapH + 8 * scale, left: 7 * scale,
+            child: _GoldCorner(scale: scale)),
+        Positioned(top: flapH + 8 * scale, right: 7 * scale,
+            child: _GoldCorner(scale: scale, flipH: true)),
+        Positioned(bottom: 8 * scale, left: 7 * scale,
+            child: _GoldCorner(scale: scale, flipV: true)),
+        Positioned(bottom: 8 * scale, right: 7 * scale,
+            child: _GoldCorner(scale: scale, flipH: true, flipV: true)),
+      ],
+    );
+  }
+}
+
+// Escudo pentagonal con "GA"
+class _GaShield extends StatelessWidget {
+  final double scale;
+  final Color accentColor;
+  const _GaShield({required this.scale, required this.accentColor});
+
+  @override
+  Widget build(BuildContext context) {
+    final size = 64.0 * scale;
+    return SizedBox(
+      width: size, height: size,
+      child: CustomPaint(
+        painter: _ShieldPainter(accentColor: accentColor),
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: 4 * scale),
+            child: Text(
+              'GA',
+              style: TextStyle(
+                fontSize: 18 * scale,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShieldPainter extends CustomPainter {
+  final Color accentColor;
+  const _ShieldPainter({required this.accentColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    // Fill
+    final fillPaint = Paint()
+      ..color = accentColor.withValues(alpha: 0.25)
+      ..style = PaintingStyle.fill;
+    // Border
+    final borderPaint = Paint()
+      ..color = accentColor.withValues(alpha: 0.85)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    final path = Path()
+      ..moveTo(w * 0.5, 0)
+      ..lineTo(w, h * 0.25)
+      ..lineTo(w, h * 0.65)
+      ..lineTo(w * 0.5, h)
+      ..lineTo(0, h * 0.65)
+      ..lineTo(0, h * 0.25)
+      ..close();
+
+    canvas.drawPath(path, fillPaint);
+    canvas.drawPath(path, borderPaint);
+  }
+
+  @override
+  bool shouldRepaint(_ShieldPainter old) => old.accentColor != accentColor;
+}
+
+// Esquina dorada tipo bracket
+class _GoldCorner extends StatelessWidget {
+  final double scale;
+  final bool flipH, flipV;
+  const _GoldCorner({required this.scale, this.flipH = false, this.flipV = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.scale(
+      scaleX: flipH ? -1 : 1,
+      scaleY: flipV ? -1 : 1,
+      child: CustomPaint(
+        size: Size(10 * scale, 10 * scale),
+        painter: _GoldCornerPainter(),
+      ),
+    );
+  }
+}
+
+class _GoldCornerPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = _gold
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+    canvas.drawLine(Offset(0, size.height), const Offset(0, 0), paint);
+    canvas.drawLine(const Offset(0, 0), Offset(size.width, 0), paint);
+  }
+
+  @override
+  bool shouldRepaint(_GoldCornerPainter old) => false;
+}
+
 
 class _CornerBracket extends StatelessWidget {
   final bool topLeft, topRight, bottomLeft, bottomRight;
@@ -800,7 +1054,7 @@ class _OpeningViewState extends State<_OpeningView>
           animation: _float,
           builder: (_, __) => Transform.translate(
             offset: Offset(0, _float.value),
-            child: const _Pack3D(),
+            child: const _Pack3D(scale: 1.45),
           ),
         ),
         const SizedBox(height: 40),
@@ -843,7 +1097,6 @@ class _OpeningViewState extends State<_OpeningView>
 class _RevealingView extends StatelessWidget {
   final PackOpenResult result;
   final Set<int> revealed;
-  final bool allRevealed;
   final void Function(int) onReveal;
   final VoidCallback onFinish;
 
@@ -851,7 +1104,6 @@ class _RevealingView extends StatelessWidget {
     super.key,
     required this.result,
     required this.revealed,
-    required this.allRevealed,
     required this.onReveal,
     required this.onFinish,
   });
@@ -860,7 +1112,6 @@ class _RevealingView extends StatelessWidget {
   Widget build(BuildContext context) {
     final cards = result.allCards;
     final total = cards.length;
-    final revealedCount = revealed.length;
 
     return Column(
       children: [
@@ -882,7 +1133,6 @@ class _RevealingView extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              // Indicadores cuadrados de progreso
               Row(
                 children: List.generate(total, (i) => Container(
                   width: 14, height: 14,
@@ -894,7 +1144,7 @@ class _RevealingView extends StatelessWidget {
           ),
         ),
 
-        // ── Leyenda rareza (igual al diseño)
+        // ── Leyenda rareza
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
           child: Row(
@@ -910,67 +1160,33 @@ class _RevealingView extends StatelessWidget {
 
         const SizedBox(height: 10),
 
-        // ── Grid 2×2
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: GridView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                childAspectRatio: 0.75,
-              ),
-              itemCount: total,
-              itemBuilder: (_, i) {
-                if (revealed.contains(i)) {
-                  return _ResultCard(
-                    card: cards[i],
-                    index: i,
-                    animate: revealed.length == revealed.where((r) => r <= i).length &&
-                        revealed.contains(i),
-                  );
-                }
-                return GestureDetector(
-                  onTap: () => onReveal(i),
-                  child: _HiddenRevealCard(index: i),
-                );
-              },
+        // ── Grid 2×2 — sin Expanded, el modal se ajusta al contenido
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+          child: GridView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 0.75,
             ),
-          ),
-        ),
-
-        // ── Footer
-        Container(
-          padding: const EdgeInsets.fromLTRB(14, 10, 14, 20),
-          decoration: const BoxDecoration(
-            border: Border(top: BorderSide(color: _border, width: 1)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'TOCA CADA CARTA PARA REVELARLA',
-                style: const TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  color: _muted,
-                  letterSpacing: 1,
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Text('·', style: TextStyle(color: _muted, fontSize: 9)),
-              const SizedBox(width: 8),
-              Text(
-                '$revealedCount/$total',
-                style: const TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w900,
-                  color: _accent,
-                ),
-              ),
-            ],
+            itemCount: total,
+            itemBuilder: (_, i) {
+              if (revealed.contains(i)) {
+                return _ResultCard(
+                  card: cards[i],
+                  index: i,
+                  animate: revealed.length == revealed.where((r) => r <= i).length &&
+                      revealed.contains(i),
+                );
+              }
+              return GestureDetector(
+                onTap: () => onReveal(i),
+                child: _HiddenRevealCard(index: i),
+              );
+            },
           ),
         ),
       ],
@@ -1513,13 +1729,11 @@ class _DashedCirclePainter extends CustomPainter {
 class _DoneView extends StatefulWidget {
   final PackOpenResult result;
   final int packsAvailable;
-  final VoidCallback? onOpenAnother;
 
   const _DoneView({
     super.key,
     required this.result,
     required this.packsAvailable,
-    this.onOpenAnother,
   });
 
   @override
@@ -1648,64 +1862,28 @@ class _DoneViewState extends State<_DoneView>
 
                 const SizedBox(height: 10),
 
-                // Botón ABRIR OTRO con contador
-                GestureDetector(
-                  onTap: widget.onOpenAnother,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      color: widget.onOpenAnother != null ? _accent : _muted,
-                      border: Border.all(color: _border, width: 1.5),
-                      boxShadow: widget.onOpenAnother != null
-                          ? const [BoxShadow(color: _shadow, offset: Offset(4, 4))]
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'ABRIR OTRO',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Container(
-                          width: 26, height: 26,
-                          color: Colors.white.withValues(alpha: 0.2),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '${widget.packsAvailable}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                // Link VER MI COLECCIÓN
+                // Botón principal VER MI COLECCIÓN
                 GestureDetector(
                   onTap: () => Navigator.of(context).pop(),
-                  child: const Text(
-                    'VER MI COLECCIÓN',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
                       color: _accent,
-                      letterSpacing: 0.5,
-                      decoration: TextDecoration.underline,
-                      decorationColor: _accent,
+                      border: Border.all(color: _border, width: 1.5),
+                      boxShadow: const [
+                        BoxShadow(color: _shadow, offset: Offset(4, 4)),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      'VER MI COLECCIÓN',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
