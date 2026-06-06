@@ -127,20 +127,20 @@ class _BrutalistSheet extends StatelessWidget {
             decoration: const BoxDecoration(
               color: _card,
               border: Border(
-                top: BorderSide(color: _accent, width: 5),
-                bottom: BorderSide(color: _text, width: 1.5),
+                top: BorderSide(color: _accent, width: 3),
+                bottom: BorderSide(color: _text, width: 1),
               ),
             ),
             child: Row(
               children: [
-                // Botón atrás — con borde brutalista
+                // Botón atrás
                 GestureDetector(
                   onTap: () => Navigator.of(context).pop(),
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: _bg,
-                      border: Border.all(color: _text, width: 1.5),
+                      border: Border.all(color: _text, width: 1),
                       boxShadow: const [_shadowXs],
                     ),
                     child: const Icon(Icons.arrow_back, color: _text, size: 16),
@@ -154,14 +154,14 @@ class _BrutalistSheet extends StatelessWidget {
                     style: _mono(color: _text, size: 14, weight: FontWeight.w700, letterSpacing: 2),
                   ),
                 ),
-                // Botón cerrar — con borde brutalista
+                // Botón cerrar
                 GestureDetector(
                   onTap: () => Navigator.of(context).pop(),
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: _bg,
-                      border: Border.all(color: _text, width: 1.5),
+                      border: Border.all(color: _text, width: 1),
                       boxShadow: const [_shadowXs],
                     ),
                     child: const Icon(Icons.close, color: _text, size: 16),
@@ -345,20 +345,20 @@ class _MatchSubPageSheetState extends ConsumerState<_MatchSubPageSheet> {
       decoration: const BoxDecoration(
         color: _card,
         border: Border(
-          top: BorderSide(color: _accent, width: 5),
-          bottom: BorderSide(color: _text, width: 1.5),
+          top: BorderSide(color: _accent, width: 3),
+          bottom: BorderSide(color: _text, width: 1),
         ),
       ),
       child: Row(
         children: [
-          // Botón atrás — borde brutalista
+          // Botón atrás
           GestureDetector(
             onTap: () => Navigator.of(context).pop(),
             child: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: _bg,
-                border: Border.all(color: _text, width: 1.5),
+                border: Border.all(color: _text, width: 1),
                 boxShadow: const [_shadowXs],
               ),
               child: const Icon(Icons.arrow_back, color: _text, size: 16),
@@ -379,7 +379,6 @@ class _MatchSubPageSheetState extends ConsumerState<_MatchSubPageSheet> {
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: _accent,
-                    border: Border.all(color: _text, width: 1.5),
                     boxShadow: const [_shadowXs],
                   ),
                   child: Text(
@@ -390,17 +389,14 @@ class _MatchSubPageSheetState extends ConsumerState<_MatchSubPageSheet> {
               ],
             ),
           ),
-          // Botón filtro — borde brutalista
+          // Botón filtro
           GestureDetector(
             onTap: () => setState(() => _showFilter = true),
             child: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: _leagueCat != 'all' ? _accent : _card,
-                border: Border.all(
-                  color: _leagueCat != 'all' ? _text : _text,
-                  width: 1.5,
-                ),
+                color: _leagueCat != 'all' ? _accent : _bg,
+                border: Border.all(color: _text, width: 1),
                 boxShadow: const [_shadowXs],
               ),
               child: Icon(
@@ -421,7 +417,7 @@ class _MatchSubPageSheetState extends ConsumerState<_MatchSubPageSheet> {
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
       decoration: const BoxDecoration(
         color: _surface,
-        border: Border(bottom: BorderSide(color: _text, width: 1.5)),
+        border: Border(bottom: BorderSide(color: _text, width: 1)),
       ),
       child: Column(
         children: [
@@ -456,7 +452,7 @@ class _MatchSubPageSheetState extends ConsumerState<_MatchSubPageSheet> {
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: _accent.withValues(alpha: 0.08),
-                  border: Border.all(color: _accent, width: 1.5),
+                  border: Border.all(color: _accent, width: 1),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -488,7 +484,7 @@ class _MatchSubPageSheetState extends ConsumerState<_MatchSubPageSheet> {
     return GestureDetector(
       onTap: () => setState(() => _showFilter = false),
       child: Container(
-        color: const Color(0x880A0814),
+        color: const Color(0x551A1A2E),
         child: Row(
           children: [
             Expanded(child: GestureDetector(onTap: () => setState(() => _showFilter = false))),
@@ -499,8 +495,8 @@ class _MatchSubPageSheetState extends ConsumerState<_MatchSubPageSheet> {
               decoration: const BoxDecoration(
                 color: _bg,
                 border: Border(
-                  left: BorderSide(color: _text, width: 1.5),
-                  top: BorderSide(color: _accent, width: 5),
+                  left: BorderSide(color: _text, width: 1),
+                  top: BorderSide(color: _accent, width: 3),
                 ),
               ),
               child: Column(
@@ -511,15 +507,14 @@ class _MatchSubPageSheetState extends ConsumerState<_MatchSubPageSheet> {
                     padding: EdgeInsets.fromLTRB(16, topPad + 16, 16, 14),
                     decoration: const BoxDecoration(
                       color: _card,
-                      border: Border(bottom: BorderSide(color: _text, width: 1.5)),
+                      border: Border(bottom: BorderSide(color: _text, width: 1)),
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: _accent,
-                            border: Border.all(color: _text, width: 1.5),
                           ),
                           child: const Icon(Icons.filter_list, size: 12, color: Colors.white),
                         ),
@@ -534,7 +529,7 @@ class _MatchSubPageSheetState extends ConsumerState<_MatchSubPageSheet> {
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: _bg,
-                                border: Border.all(color: _text, width: 1.5),
+                                border: Border.all(color: _text, width: 1),
                                 boxShadow: const [_shadowXs],
                               ),
                               child: Text('RESET',
@@ -548,7 +543,7 @@ class _MatchSubPageSheetState extends ConsumerState<_MatchSubPageSheet> {
                             width: 30, height: 30,
                             decoration: BoxDecoration(
                               color: _bg,
-                              border: Border.all(color: _text, width: 1.5),
+                              border: Border.all(color: _text, width: 1),
                               boxShadow: const [_shadowXs],
                             ),
                             child: const Icon(Icons.close, size: 14, color: _text),
@@ -560,34 +555,41 @@ class _MatchSubPageSheetState extends ConsumerState<_MatchSubPageSheet> {
                   // Lista de categorías
                   Expanded(
                     child: ListView(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
                       children: _leagueCats.map((cat) {
                         final isActive = _leagueCat == cat['id'];
                         return GestureDetector(
                           onTap: () => setState(() { _leagueCat = cat['id'] as String; _showFilter = false; }),
                           child: Container(
                             margin: const EdgeInsets.only(bottom: 6),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                             decoration: BoxDecoration(
-                              color: isActive ? _text : _card,
+                              color: isActive ? _accent : _card,
                               border: Border.all(
-                                color: _text,
-                                width: isActive ? 2 : 1.5,
+                                color: isActive ? _accent : _border,
+                                width: 1,
                               ),
                               boxShadow: isActive ? const [_shadowSm] : const [_shadowXs],
                             ),
                             child: Row(
                               children: [
-                                Text(cat['icon'] as String, style: const TextStyle(fontSize: 16, decoration: TextDecoration.none)),
-                                const SizedBox(width: 12),
                                 Text(
-                                  cat['name'] as String,
-                                  style: _mono(
-                                    color: isActive ? _bg : _text,
-                                    size: 12,
-                                    weight: FontWeight.w700,
+                                  cat['icon'] as String,
+                                  style: const TextStyle(fontSize: 15, decoration: TextDecoration.none),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    cat['name'] as String,
+                                    style: _mono(
+                                      color: isActive ? Colors.white : _text,
+                                      size: 11,
+                                      weight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
+                                if (isActive)
+                                  const Icon(Icons.check, size: 12, color: Colors.white),
                               ],
                             ),
                           ),
@@ -619,7 +621,7 @@ class _SortBtn extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
       decoration: BoxDecoration(
         color: active ? _accent : _card,
-        border: Border.all(color: _text, width: active ? 2 : 1.5),
+        border: Border.all(color: _text, width: 1),
         boxShadow: active ? const [_shadowSm] : const [_shadowXs],
       ),
       child: Text(
@@ -651,7 +653,7 @@ class _DateSeparator extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
             color: _text,
-            border: Border.all(color: _text, width: 1.5),
+            border: Border.all(color: _text, width: 1),
             boxShadow: const [_shadowXs],
           ),
           child: Text(
@@ -900,33 +902,40 @@ class _MatchPredictionCardState extends State<_MatchPredictionCard> {
 
     final isSavedNow = _saved || _myPred != null;
 
-    return Container(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
       decoration: BoxDecoration(
         color: _bg,
-        border: Border.all(color: _text, width: 1.5),
-        boxShadow: const [_shadow],
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _border, width: 1),
+        boxShadow: [
+          BoxShadow(color: const Color(0x112A2535), offset: const Offset(0, 4), blurRadius: 12),
+          BoxShadow(color: const Color(0x082A2535), offset: const Offset(0, 1), blurRadius: 3),
+        ],
       ),
       child: Column(
         children: [
           // ── Borde superior coloreado ──
-          Container(height: 4, color: ac),
+          Container(height: 3, color: ac),
 
           // ── Header: logo liga + nombre + KO badge + pill ──
           Container(
             padding: const EdgeInsets.fromLTRB(13, 9, 13, 9),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: _card,
-              border: Border(bottom: BorderSide(color: _borderH, width: 1)),
+              border: Border(bottom: BorderSide(color: _border, width: 1)),
             ),
             child: Row(
               children: [
-                // Logo liga cuadrado con borde duro
+                // Logo liga — borde suave
                 Container(
                   width: 22, height: 22,
                   decoration: BoxDecoration(
                     color: _bg,
-                    border: Border.all(color: _text, width: 1.5),
-                    boxShadow: const [_shadowXs],
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: _border, width: 1),
+                    boxShadow: [BoxShadow(color: const Color(0x1A2A2535), offset: const Offset(0, 2), blurRadius: 4)],
                   ),
                   child: m['league_logo_url'] != null
                       ? Image.network(
@@ -953,7 +962,7 @@ class _MatchPredictionCardState extends State<_MatchPredictionCard> {
                     padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                     decoration: BoxDecoration(
                       color: _red.withValues(alpha: 0.08),
-                      border: Border.all(color: _red, width: 1.5),
+                      border: Border.all(color: _red, width: 1),
                       boxShadow: const [_shadowXs],
                     ),
                     child: Text('KO', style: _mono(color: _red, size: 7, weight: FontWeight.w800, letterSpacing: 1)),
@@ -1026,9 +1035,9 @@ class _MatchPredictionCardState extends State<_MatchPredictionCard> {
           // ── Footer: hora | fecha | estado auto-guardado ──
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: _card,
-              border: Border(top: BorderSide(color: _text, width: 1.5)),
+              border: Border(top: BorderSide(color: _border, width: 1)),
             ),
             child: Row(
               children: [
@@ -1066,7 +1075,8 @@ class _MatchPredictionCardState extends State<_MatchPredictionCard> {
           ),
         ],
       ),
-    );
+      ), // Container
+    ); // ClipRRect
   }
 }
 
@@ -1163,7 +1173,7 @@ class _LeaguePredictionCardState extends State<_LeaguePredictionCard> {
     return Container(
       decoration: BoxDecoration(
         color: _bg,
-        border: Border.all(color: _text, width: 1.5),
+        border: Border.all(color: _text, width: 1),
         boxShadow: const [_shadow],
       ),
       child: Column(
@@ -1378,7 +1388,7 @@ class _AwardPredictionCardState extends State<_AwardPredictionCard> {
     return Container(
       decoration: BoxDecoration(
         color: _bg,
-        border: Border.all(color: _text, width: 1.5),
+        border: Border.all(color: _text, width: 1),
         boxShadow: const [_shadow],
       ),
       child: Column(
@@ -1596,16 +1606,30 @@ class _TeamScoreRow extends StatelessWidget {
                 isAccent: false,
               ),
               const SizedBox(width: 4),
-              // Score display — mismo estilo que botones del header
+              // Score display — efecto inset / pantalla LCD
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 width: 38,
                 height: 40,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: _bg,
-                  border: Border.all(color: _text, width: 1.5),
-                  boxShadow: const [_shadowXs],
+                  color: const Color(0xFFE8E5DF),
+                  borderRadius: BorderRadius.circular(5),
+                  border: Border.all(color: _borderH, width: 1),
+                  boxShadow: [
+                    // sombra interior (efecto hundido)
+                    BoxShadow(
+                      color: const Color(0x202A2535),
+                      offset: const Offset(0, 2),
+                      blurRadius: 4,
+                      spreadRadius: -1,
+                    ),
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      offset: const Offset(0, -1),
+                      blurRadius: 0,
+                    ),
+                  ],
                 ),
                 child: Text(
                   '$score',
@@ -1647,12 +1671,28 @@ class _ScoreBtnState extends State<_ScoreBtn> {
   @override
   Widget build(BuildContext context) {
     final active = widget.onTap != null;
-    // Mismo sistema visual que botones del header:
-    // fondo _bg crema con borde _text negro y sombra offset sólida
-    // El + mantiene fondo _accent pero mismo borde/sombra
-    final faceColor = !active
-        ? _bg
-        : widget.isAccent ? _accent : _bg;
+    final isPlus = widget.isAccent;
+
+    // ── Colores según estado ──
+    final Color faceTop = !active
+        ? const Color(0xFFDDDAD4)
+        : isPlus
+            ? const Color(0xFF7268E8)   // accent claro
+            : const Color(0xFFFBF9F5);  // crema claro
+    final Color faceBot = !active
+        ? const Color(0xFFC8C3B8)
+        : isPlus
+            ? _accent
+            : _card;
+    final Color shadowColor = !active
+        ? const Color(0xFF8E8A84)
+        : isPlus
+            ? const Color(0xFF3D32B0)   // accent oscuro
+            : const Color(0xFF9B95A8);
+
+    // Profundidad del "keycap" — aplasta al presionar
+    final double depth = _pressed ? 0 : 3;
+    final double topLight = _pressed ? 0 : 1;
 
     return GestureDetector(
       onTapDown: (_) {
@@ -1661,29 +1701,68 @@ class _ScoreBtnState extends State<_ScoreBtn> {
         setState(() => _pressed = true);
         widget.onTap?.call();
       },
-      onTapUp: (_) => setState(() => _pressed = false),
+      onTapUp: (_) => Future.delayed(
+        const Duration(milliseconds: 90),
+        () { if (mounted) setState(() => _pressed = false); },
+      ),
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 60),
+        duration: const Duration(milliseconds: 70),
         width: 36,
         height: 36,
         alignment: Alignment.center,
         transform: _pressed
-            ? (Matrix4.identity()..translate(2.0, 2.0))
+            ? (Matrix4.identity()..translate(0.0, depth))
             : Matrix4.identity(),
         decoration: BoxDecoration(
-          color: faceColor,
-          border: Border.all(color: _text, width: 1.5),
+          borderRadius: BorderRadius.circular(7),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [faceTop, faceBot],
+            stops: const [0.0, 1.0],
+          ),
+          border: Border.all(
+            color: active ? shadowColor.withValues(alpha: 0.6) : const Color(0xFFBDB8B0),
+            width: 1,
+          ),
           boxShadow: _pressed
-              ? []
-              : const [_shadowXs],
+              ? [
+                  BoxShadow(
+                    color: shadowColor.withValues(alpha: 0.3),
+                    offset: const Offset(0, 1),
+                    blurRadius: 2,
+                  ),
+                ]
+              : [
+                  // lado inferior — profundidad del keycap
+                  BoxShadow(
+                    color: shadowColor.withValues(alpha: 0.5),
+                    offset: Offset(0, depth),
+                    blurRadius: 0,
+                    spreadRadius: 0,
+                  ),
+                  // highlight superior
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.6),
+                    offset: Offset(0, -topLight),
+                    blurRadius: 0,
+                  ),
+                  // halo difuso
+                  BoxShadow(
+                    color: shadowColor.withValues(alpha: 0.15),
+                    offset: const Offset(0, 5),
+                    blurRadius: 6,
+                    spreadRadius: -2,
+                  ),
+                ],
         ),
         child: Text(
           widget.symbol,
           style: _mono(
             color: active
-                ? (widget.isAccent ? Colors.white : _text)
-                : _borderH,
+                ? (isPlus ? Colors.white : _text)
+                : _border,
             size: 18,
             weight: FontWeight.w700,
           ),
@@ -1729,7 +1808,7 @@ class _BrutalistField extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             color: disabled ? _bg : _surface,
-            border: Border.all(color: _text, width: 1.5),
+            border: Border.all(color: _text, width: 1),
             boxShadow: const [_shadowXs],
           ),
           child: IntrinsicHeight(
@@ -1810,7 +1889,7 @@ class _LogoBox extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: _bg,
-        border: Border.all(color: _text, width: 1.5),
+        border: Border.all(color: _text, width: 1),
         boxShadow: const [_shadowXs],
       ),
       child: url != null
@@ -1834,7 +1913,7 @@ class _StatusPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        border: Border.all(color: color, width: 1.5),
+        border: Border.all(color: color, width: 1),
         boxShadow: [BoxShadow(color: color.withValues(alpha: 0.3), offset: const Offset(2, 2), blurRadius: 0)],
       ),
       child: Text(label, style: _mono(color: color, size: 7, weight: FontWeight.w800, letterSpacing: 1)),
@@ -1859,7 +1938,7 @@ class _SaveButton extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: saving ? _muted : _accent,
-          border: Border.all(color: _text, width: 1.5),
+          border: Border.all(color: _text, width: 1),
           boxShadow: const [_shadow],
         ),
         child: Text(
@@ -1882,7 +1961,7 @@ class _PointsBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: hasPoints ? _green.withValues(alpha: 0.08) : _bg,
-        border: Border.all(color: hasPoints ? _green : _borderH, width: 1.5),
+        border: Border.all(color: hasPoints ? _green : _borderH, width: 1),
         boxShadow: hasPoints ? const [_shadowSm] : const [_shadowXs],
       ),
       child: Row(
@@ -1924,7 +2003,7 @@ class _EmptyState extends StatelessWidget {
             height: 56,
             decoration: BoxDecoration(
               color: _card,
-              border: Border.all(color: _text, width: 1.5),
+              border: Border.all(color: _text, width: 1),
               boxShadow: const [_shadow],
             ),
             child: const Icon(Icons.inbox_outlined, color: _muted, size: 24),
@@ -1953,7 +2032,7 @@ class _SheetLoader extends StatelessWidget {
           height: 34,
           decoration: BoxDecoration(
             color: _card,
-            border: Border.all(color: _text, width: 1.5),
+            border: Border.all(color: _text, width: 1),
             boxShadow: const [_shadow],
           ),
           child: const Padding(
