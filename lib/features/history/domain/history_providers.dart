@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/history_service.dart';
 import '../domain/history_models.dart';
@@ -21,11 +22,26 @@ final historySectionProvider =
     NotifierProvider<HistorySectionNotifier, String>(HistorySectionNotifier.new);
 
 // ══════════════════════════════════════════════════════════════
+//  HISTORIA — los datos históricos raramente cambian en producción,
+//  pero queremos que al volver a la app siempre estén frescos.
+//  Estrategia: keepAlive + polling suave cada 5 minutos.
+//  Esto es mucho mejor que recargar manualmente.
+// ══════════════════════════════════════════════════════════════
+
+// Helper interno: añade polling de refresco a cualquier FutureProvider
+// sin romper su firma pública.
+void _attachPolling(Ref ref, Duration interval) {
+  final timer = Timer.periodic(interval, (_) => ref.invalidateSelf());
+  ref.onDispose(timer.cancel);
+}
+
+// ══════════════════════════════════════════════════════════════
 //  STATS
 // ══════════════════════════════════════════════════════════════
 
 final historyStatsProvider = FutureProvider<HistoryStats>((ref) {
   ref.keepAlive();
+  _attachPolling(ref, const Duration(minutes: 5));
   return ref.watch(historyServiceProvider).fetchStats();
 });
 
@@ -35,10 +51,74 @@ final historyStatsProvider = FutureProvider<HistoryStats>((ref) {
 
 final historyPlayersProvider = FutureProvider<List<HistoricalPlayer>>((ref) {
   ref.keepAlive();
+  _attachPolling(ref, const Duration(minutes: 5));
   return ref.watch(historyServiceProvider).fetchPlayers();
 });
 
-// String filters — Riverpod 3: usa Notifier en lugar de StateProvider
+// ══════════════════════════════════════════════════════════════
+//  TEAMS
+// ══════════════════════════════════════════════════════════════
+
+final historyTeamsProvider = FutureProvider<List<HistoricalTeam>>((ref) {
+  ref.keepAlive();
+  _attachPolling(ref, const Duration(minutes: 5));
+  return ref.watch(historyServiceProvider).fetchTeams();
+});
+
+// ══════════════════════════════════════════════════════════════
+//  COMPETITIONS
+// ══════════════════════════════════════════════════════════════
+
+final historyCompetitionsProvider =
+    FutureProvider<List<HistoricalCompetition>>((ref) {
+  ref.keepAlive();
+  _attachPolling(ref, const Duration(minutes: 5));
+  return ref.watch(historyServiceProvider).fetchCompetitions();
+});
+
+// ══════════════════════════════════════════════════════════════
+//  EVENTS
+// ══════════════════════════════════════════════════════════════
+
+final historyEventsProvider = FutureProvider<List<HistoricalEvent>>((ref) {
+  ref.keepAlive();
+  _attachPolling(ref, const Duration(minutes: 5));
+  return ref.watch(historyServiceProvider).fetchEvents();
+});
+
+// ══════════════════════════════════════════════════════════════
+//  DETAIL PROVIDERS — familia, keepAlive, sin polling
+//  (se invalidan desde el AppLifecycleObserver cuando vuelve la app)
+// ══════════════════════════════════════════════════════════════
+
+final competitionDetailProvider =
+    FutureProvider.family<CompetitionDetail, String>((ref, id) {
+  ref.keepAlive();
+  return ref.watch(historyServiceProvider).fetchCompetitionDetail(id);
+});
+
+final eventDetailProvider =
+    FutureProvider.family<EventDetail, String>((ref, id) {
+  ref.keepAlive();
+  return ref.watch(historyServiceProvider).fetchEventDetail(id);
+});
+
+final playerDetailProvider =
+    FutureProvider.family<PlayerDetail, String>((ref, id) {
+  ref.keepAlive();
+  return ref.watch(historyServiceProvider).fetchPlayerDetail(id);
+});
+
+final teamDetailProvider =
+    FutureProvider.family<TeamDetail, String>((ref, id) {
+  ref.keepAlive();
+  return ref.watch(historyServiceProvider).fetchTeamDetail(id);
+});
+
+// ══════════════════════════════════════════════════════════════
+//  FILTERED PROVIDERS — sin cambios, dependen de los de arriba
+// ══════════════════════════════════════════════════════════════
+
 class _StringNotifier extends Notifier<String> {
   final String _initial;
   _StringNotifier(this._initial);
@@ -66,7 +146,6 @@ final eventCategoryFilterProvider =
 final eventTypeFilterProvider =
     NotifierProvider<_StringNotifier, String>(() => _StringNotifier(''));
 
-// Nullable entity selection notifiers
 class _PlayerNotifier extends Notifier<HistoricalPlayer?> {
   @override
   HistoricalPlayer? build() => null;
@@ -100,10 +179,6 @@ final selectedCompetitionProvider =
 final selectedEventProvider =
     NotifierProvider<_EventNotifier, HistoricalEvent?>(_EventNotifier.new);
 
-// ══════════════════════════════════════════════════════════════
-//  FILTERED PROVIDERS
-// ══════════════════════════════════════════════════════════════
-
 final filteredPlayersProvider =
     Provider<AsyncValue<List<HistoricalPlayer>>>((ref) {
   final playersAsync = ref.watch(historyPlayersProvider);
@@ -118,11 +193,6 @@ final filteredPlayersProvider =
       }).toList());
 });
 
-final historyTeamsProvider = FutureProvider<List<HistoricalTeam>>((ref) {
-  ref.keepAlive();
-  return ref.watch(historyServiceProvider).fetchTeams();
-});
-
 final filteredTeamsProvider =
     Provider<AsyncValue<List<HistoricalTeam>>>((ref) {
   final teamsAsync = ref.watch(historyTeamsProvider);
@@ -134,12 +204,6 @@ final filteredTeamsProvider =
         (t.country?.toLowerCase().contains(search) ?? false) ||
         (t.era?.toLowerCase().contains(search) ?? false)).toList();
   });
-});
-
-final historyCompetitionsProvider =
-    FutureProvider<List<HistoricalCompetition>>((ref) {
-  ref.keepAlive();
-  return ref.watch(historyServiceProvider).fetchCompetitions();
 });
 
 final filteredCompetitionsProvider =
@@ -156,17 +220,6 @@ final filteredCompetitionsProvider =
             (type.isEmpty || c.type == type) &&
             (format.isEmpty || c.format == format);
       }).toList());
-});
-
-final competitionDetailProvider =
-    FutureProvider.family<CompetitionDetail, String>((ref, id) {
-  ref.keepAlive();
-  return ref.watch(historyServiceProvider).fetchCompetitionDetail(id);
-});
-
-final historyEventsProvider = FutureProvider<List<HistoricalEvent>>((ref) {
-  ref.keepAlive();
-  return ref.watch(historyServiceProvider).fetchEvents();
 });
 
 final filteredEventsProvider =
@@ -186,34 +239,8 @@ final filteredEventsProvider =
       }).toList());
 });
 
-final eventDetailProvider =
-    FutureProvider.family<EventDetail, String>((ref, id) {
-  ref.keepAlive();
-  return ref.watch(historyServiceProvider).fetchEventDetail(id);
-});
-
 // ══════════════════════════════════════════════════════════════
-//  PLAYER DETAIL
-// ══════════════════════════════════════════════════════════════
-
-final playerDetailProvider =
-    FutureProvider.family<PlayerDetail, String>((ref, id) {
-  ref.keepAlive();
-  return ref.watch(historyServiceProvider).fetchPlayerDetail(id);
-});
-
-// ══════════════════════════════════════════════════════════════
-//  TEAM DETAIL
-// ══════════════════════════════════════════════════════════════
-
-final teamDetailProvider =
-    FutureProvider.family<TeamDetail, String>((ref, id) {
-  ref.keepAlive();
-  return ref.watch(historyServiceProvider).fetchTeamDetail(id);
-});
-
-// ══════════════════════════════════════════════════════════════
-//  RANDOM SPINNER
+//  RANDOM SPINNER — sin cambios
 // ══════════════════════════════════════════════════════════════
 
 class SpinnerNotifier extends Notifier<SpinnerState> {

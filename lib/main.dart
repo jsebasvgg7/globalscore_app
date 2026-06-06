@@ -2,10 +2,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/router/app_router.dart';
+import 'core/lifecycle/app_lifecycle_observer.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/app_secrets.dart';
 
 const String kSupabaseUrl = AppSecrets.supabaseUrl;
+
 void main() async {
   await Supabase.initialize(
     url: AppSecrets.supabaseUrl,
@@ -21,16 +23,20 @@ class GlobalScoreApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
 
-    return MaterialApp.router(
-      title: 'GlobalScore',
-      routerConfig: router,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF5B4FD8),
-          brightness: Brightness.light,
+    // AppLifecycleObserver envuelve toda la app y refresca
+    // los providers críticos cuando el usuario vuelve a primer plano.
+    return AppLifecycleObserver(
+      child: MaterialApp.router(
+        title: 'GlobalScore',
+        routerConfig: router,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF5B4FD8),
+            brightness: Brightness.light,
+          ),
+          textTheme: GoogleFonts.dmMonoTextTheme(),
+          useMaterial3: true,
         ),
-        textTheme: GoogleFonts.dmMonoTextTheme(),
-        useMaterial3: true,
       ),
     );
   }

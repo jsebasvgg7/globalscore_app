@@ -67,7 +67,7 @@ class _AlbumsBodyState extends ConsumerState<_AlbumsBody>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -115,10 +115,6 @@ class _AlbumsBodyState extends ConsumerState<_AlbumsBody>
                 ),
                 // Tab 1: COLECCIÓN
                 _ColeccionTab(model: model),
-                // Tab 2: SOBRES (próximamente)
-                const _ComingSoon(label: 'SOBRES'),
-                // Tab 3: MISIONES (próximamente)
-                const _ComingSoon(label: 'MISIONES'),
               ],
             ),
           ),
@@ -346,26 +342,6 @@ class _TabsBar extends StatelessWidget {
                 controller: controller,
                 icon:       Icons.menu_book_outlined,
                 label:      'COLECCIÓN',
-              ),
-            ),
-            Container(width: 1, color: Ds.borderSub),
-            Expanded(
-              child: _Tab(
-                index:      2,
-                controller: controller,
-                icon:       Icons.mail_outline,
-                label:      'SOBRES',
-                soon:       true,
-              ),
-            ),
-            Container(width: 1, color: Ds.borderSub),
-            Expanded(
-              child: _Tab(
-                index:      3,
-                controller: controller,
-                icon:       Icons.star_outline,
-                label:      'MISIONES',
-                soon:       true,
               ),
             ),
           ],
