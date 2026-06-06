@@ -3,16 +3,19 @@ import '../../domain/profile_models.dart';
 
 bool _hasUrl(String? url) => url != null && url.trim().isNotEmpty;
 
-// ── Paleta ────────────────────────────────────────────────────
-const _bg      = Color(0xFFF0EDE8);
-const _card    = Color(0xFFEAE7E1);
-const _border  = Color(0xFFC8C3B8);
-const _accent  = Color(0xFF5B4FD8);
-const _text    = Color(0xFF1A1A2E);
-const _muted   = Color(0xFF6B6580);
+// ── Paleta Neobrutalismo ──────────────────────────────────────────────
+const _bg     = Color(0xFFF0EDE8);
+const _card   = Color(0xFFEAE7E1);
+const _border = Color(0xFF1A1A2E);   // ← borde oscuro, igual que ranking/stats
+const _accent = Color(0xFF5B4FD8);
+const _text   = Color(0xFF1A1A2E);
+const _muted  = Color(0xFF6B6580);
 
-const _shadowSm = BoxShadow(color: Color(0x4D1A1A2E), offset: Offset(1, 1), blurRadius: 0);
+const _shadowColor = Color(0x661A1A2E);
+const _shadowSm    = BoxShadow(
+  color: _shadowColor, offset: Offset(1, 1), blurRadius: 0);
 
+// ─── Banner ───────────────────────────────────
 class ProfileHeroBanner extends StatelessWidget {
   final UserProfile profile;
   final bool isOwner;
@@ -30,14 +33,16 @@ class ProfileHeroBanner extends StatelessWidget {
     return Stack(
       children: [
         _BannerImage(url: profile.equippedBannerUrl, height: _bannerHeight),
-        // Badge neobrutalista
+        // Badge neobrutalista — borde oscuro sólido
         Positioned(
           bottom: 10,
           left: 14,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
               color: _accent,
+              border: Border.all(color: _border, width: 1),
               boxShadow: const [_shadowSm],
             ),
             child: const Text(
@@ -114,73 +119,80 @@ class ProfileIdentityRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: const BoxDecoration(
-          color: _card,
-          border: Border(bottom: BorderSide(color: _border, width: 1)),
-        ),
-        child: Row(
-          children: [
-            _NetworkAvatar(url: profile.avatarUrl, radius: 28),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    profile.name,
-                    style: const TextStyle(
+    return Material(
+      color: _card,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: _accent.withOpacity(0.06),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: const BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: _border, width: 1),
+            ),
+          ),
+          child: Row(
+            children: [
+              _NetworkAvatar(url: profile.avatarUrl, radius: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      profile.name,
+                      style: const TextStyle(
+                        fontFamily: 'DM Mono',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                        color: _text,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Container(width: 4, height: 4, color: _accent),
+                        const SizedBox(width: 5),
+                        Text(
+                          'GLOBAL · NIV.${profile.level}',
+                          style: const TextStyle(
+                            fontFamily: 'DM Mono',
+                            fontSize: 9,
+                            color: _muted,
+                            letterSpacing: 1.2,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (isOwner)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _card,
+                    border: Border.all(color: _border, width: 1),
+                    boxShadow: const [_shadowSm],
+                  ),
+                  child: const Text(
+                    'EDITAR',
+                    style: TextStyle(
                       fontFamily: 'DM Mono',
-                      fontSize: 16,
+                      fontSize: 8,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
                       color: _text,
+                      letterSpacing: 1.0,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Container(width: 4, height: 4, color: _accent),
-                      const SizedBox(width: 5),
-                      Text(
-                        'GLOBAL · NIV.${profile.level}',
-                        style: const TextStyle(
-                          fontFamily: 'DM Mono',
-                          fontSize: 9,
-                          color: _muted,
-                          letterSpacing: 1.2,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            if (isOwner)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _accent.withOpacity(0.08),
-                  border: Border.all(color: _accent.withOpacity(0.3), width: 1),
-                ),
-                child: const Text(
-                  'EDITAR',
-                  style: TextStyle(
-                    fontFamily: 'DM Mono',
-                    fontSize: 8,
-                    fontWeight: FontWeight.w800,
-                    color: _accent,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              )
-            else
-              const Icon(Icons.chevron_right, color: _muted, size: 20),
-          ],
+                )
+              else
+                const Icon(Icons.chevron_right, color: _muted, size: 20),
+            ],
+          ),
         ),
       ),
     );
@@ -249,6 +261,7 @@ class ProfileAvatar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
               decoration: BoxDecoration(
                 color: _accent,
+                border: Border.all(color: _border, width: 1),
                 boxShadow: const [_shadowSm],
               ),
               child: Row(

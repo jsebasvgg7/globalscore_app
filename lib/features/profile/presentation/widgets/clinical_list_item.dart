@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
-// ── Paleta ────────────────────────────────────────────────────
-const _bg      = Color(0xFFF0EDE8);
-const _card    = Color(0xFFEAE7E1);
-const _border  = Color(0xFFC8C3B8);
-const _borderH = Color(0xFF1A1A2E);
-const _accent  = Color(0xFF5B4FD8);
-const _text    = Color(0xFF1A1A2E);
-const _muted   = Color(0xFF6B6580);
+// ── Paleta Neobrutalismo ──────────────────────────────────────────────
+const _bg     = Color(0xFFF0EDE8);
+const _card   = Color(0xFFEAE7E1);
+const _border = Color(0xFF1A1A2E);   // ← borde oscuro, igual que ranking/stats
+const _accent = Color(0xFF5B4FD8);
+const _text   = Color(0xFF1A1A2E);
+const _muted  = Color(0xFF6B6580);
 
-const _shadowColor = Color(0x4D1A1A2E);
-const _shadowSm = BoxShadow(color: _shadowColor, offset: Offset(1, 1), blurRadius: 0);
+const _shadowColor = Color(0x661A1A2E);
+const _shadowSm    = BoxShadow(
+  color: _shadowColor, offset: Offset(1, 1), blurRadius: 0);
 
 /// Fila estilo neobrutalista: ícono cuadrado + título + subtítulo + chevron.
 class ClinicalListItem extends StatelessWidget {
@@ -44,7 +44,8 @@ class ClinicalListItem extends StatelessWidget {
             onTap: onTap,
             splashColor: iconColor.withOpacity(0.08),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
                   // Icon box — cuadrado neobrutalista
@@ -53,6 +54,7 @@ class ClinicalListItem extends StatelessWidget {
                     height: 38,
                     decoration: BoxDecoration(
                       color: iconColor,
+                      boxShadow: const [_shadowSm],
                     ),
                     child: Icon(icon, color: Colors.white, size: 19),
                   ),
@@ -97,7 +99,11 @@ class ClinicalListItem extends StatelessWidget {
           ),
         ),
         if (showDivider)
-          Container(height: 1, margin: const EdgeInsets.only(left: 68), color: _border),
+          Container(
+            height: 1,
+            margin: const EdgeInsets.only(left: 68),
+            color: _border.withOpacity(0.15),
+          ),
       ],
     );
   }
@@ -142,7 +148,7 @@ class SectionHeader extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             label.toUpperCase(),
-            style: TextStyle(
+            style: const TextStyle(
               fontFamily: 'DM Mono',
               fontSize: 9,
               fontWeight: FontWeight.w800,
@@ -156,4 +162,4 @@ class SectionHeader extends StatelessWidget {
       ),
     );
   }
-}
+} 

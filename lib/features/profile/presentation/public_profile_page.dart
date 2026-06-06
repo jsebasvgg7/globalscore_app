@@ -8,6 +8,18 @@ import '../presentation/tabs/achievements_tab.dart';
 import '../presentation/tabs/championships_tab.dart';
 import '../presentation/tabs/history_tab.dart';
 
+// ── Paleta Neobrutalismo ──────────────────────────────────────────────
+const _bg     = Color(0xFFF0EDE8);
+const _card   = Color(0xFFEAE7E1);
+const _border = Color(0xFF1A1A2E);
+const _accent = Color(0xFF5B4FD8);
+const _text   = Color(0xFF1A1A2E);
+const _muted  = Color(0xFF6B6580);
+
+const _shadowColor = Color(0x661A1A2E);
+const _shadowSm    = BoxShadow(
+  color: _shadowColor, offset: Offset(1, 1), blurRadius: 0);
+
 /// Perfil público — para ver el perfil de otro usuario.
 /// Solo muestra Overview, Historia, Logros y Campeonatos (sin Editar).
 class PublicProfilePage extends ConsumerStatefulWidget {
@@ -16,8 +28,7 @@ class PublicProfilePage extends ConsumerStatefulWidget {
   const PublicProfilePage({super.key, required this.userId});
 
   @override
-  ConsumerState<PublicProfilePage> createState() =>
-      _PublicProfilePageState();
+  ConsumerState<PublicProfilePage> createState() => _PublicProfilePageState();
 }
 
 class _PublicProfilePageState extends ConsumerState<PublicProfilePage>
@@ -38,29 +49,130 @@ class _PublicProfilePageState extends ConsumerState<PublicProfilePage>
 
   @override
   Widget build(BuildContext context) {
-    final profileAsync =
-        ref.watch(publicProfileProvider(widget.userId));
+    final profileAsync = ref.watch(publicProfileProvider(widget.userId));
 
     return profileAsync.when(
       loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        backgroundColor: _bg,
+        body: Center(
+          child: CircularProgressIndicator(color: _accent, strokeWidth: 2),
+        ),
       ),
       error: (e, _) => Scaffold(
-        appBar: AppBar(),
-        body: Center(child: Text('Error: $e')),
+        backgroundColor: _bg,
+        appBar: _NeoAppBar(title: 'ERROR'),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: _card,
+                border: Border.all(color: _border, width: 1),
+                boxShadow: const [_shadowSm],
+              ),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Row(children: [
+                  Container(width: 4, height: 20, color: Color(0xFFE24B4A)),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'ERROR',
+                    style: TextStyle(
+                      fontFamily: 'DM Mono',
+                      color: Color(0xFFE24B4A),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 10),
+                Text(
+                  'Error cargando perfil\n$e',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontFamily: 'DM Mono',
+                    color: _muted,
+                    fontSize: 11,
+                  ),
+                ),
+              ]),
+            ),
+          ),
+        ),
       ),
       data: (profile) {
         if (profile == null) {
           return Scaffold(
-            appBar: AppBar(),
-            body: const Center(child: Text('Usuario no encontrado')),
+            backgroundColor: _bg,
+            appBar: _NeoAppBar(title: 'PERFIL'),
+            body: const Center(
+              child: Text(
+                'USUARIO NO ENCONTRADO',
+                style: TextStyle(
+                  fontFamily: 'DM Mono',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: _muted,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ),
           );
         }
-        return _PublicScaffold(
-          profile: profile,
-          tabs: _tabs,
-        );
+        return _PublicScaffold(profile: profile, tabs: _tabs);
       },
+    );
+  }
+}
+
+// ─── AppBar neobrutalista ─────────────────────
+class _NeoAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final String title;
+  const _NeoAppBar({required this.title});
+
+  @override
+  Size get preferredSize => const Size.fromHeight(52);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 52,
+      decoration: const BoxDecoration(
+        color: _bg,
+        border: Border(bottom: BorderSide(color: _border, width: 1)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.of(context).maybePop(),
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: _card,
+                border: Border.all(color: _border, width: 1),
+                boxShadow: const [_shadowSm],
+              ),
+              child: const Icon(Icons.arrow_back, color: _text, size: 16),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(width: 3, height: 14, color: _accent),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              fontFamily: 'DM Mono',
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              color: _text,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -74,49 +186,31 @@ class _PublicScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: _bg,
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          SliverAppBar(
+          // ── Sliver AppBar neobrutalista ──
+          SliverPersistentHeader(
             pinned: true,
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            elevation: innerBoxIsScrolled ? 1 : 0,
-            title: Text(
-              profile.name,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+            delegate: _NeoSliverAppBar(
+              title: profile.name,
+              isScrolled: innerBoxIsScrolled,
             ),
           ),
+          // ── Banner + identity + stats ──
           SliverToBoxAdapter(
             child: Column(
               children: [
                 ProfileHeroBanner(profile: profile, isOwner: false),
-                ProfileIdentityRow(
-                  profile: profile,
-                  isOwner: false,
-                ),
+                ProfileIdentityRow(profile: profile, isOwner: false),
                 ProfileStatsBar(profile: profile),
               ],
             ),
           ),
+          // ── Tab bar neobrutalista ──
           SliverPersistentHeader(
             pinned: true,
-            delegate: _TabBarDelegate(
-              TabBar(
-                controller: tabs,
-                indicatorColor: const Color(0xFF60519B),
-                indicatorWeight: 3,
-                labelColor: const Color(0xFF60519B),
-                unselectedLabelColor: Colors.grey,
-                tabs: const [
-                  Tab(icon: Icon(Icons.home_outlined, size: 22)),
-                  Tab(icon: Icon(Icons.history, size: 22)),
-                  Tab(icon: Icon(Icons.emoji_events_outlined, size: 22)),
-                  Tab(icon: Icon(Icons.military_tech_outlined, size: 22)),
-                ],
-              ),
-            ),
+            delegate: _NeoTabBarDelegate(tabs),
           ),
         ],
         body: TabBarView(
@@ -137,25 +231,190 @@ class _PublicScaffold extends StatelessWidget {
   }
 }
 
-class _TabBarDelegate extends SliverPersistentHeaderDelegate {
-  final TabBar tabBar;
+// ─── SliverPersistentHeader para AppBar ──────
+class _NeoSliverAppBar extends SliverPersistentHeaderDelegate {
+  final String title;
+  final bool isScrolled;
 
-  const _TabBarDelegate(this.tabBar);
-
-  @override
-  double get minExtent => tabBar.preferredSize.height;
-
-  @override
-  double get maxExtent => tabBar.preferredSize.height;
+  const _NeoSliverAppBar({required this.title, required this.isScrolled});
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  double get minExtent => 52;
+  @override
+  double get maxExtent => 52;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      color: Theme.of(context).colorScheme.surface,
-      child: tabBar,
+      decoration: const BoxDecoration(
+        color: _bg,
+        border: Border(bottom: BorderSide(color: _border, width: 1)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.of(context).maybePop(),
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: _card,
+                border: Border.all(color: _border, width: 1),
+                boxShadow: const [_shadowSm],
+              ),
+              child: const Icon(Icons.arrow_back, color: _text, size: 16),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(width: 3, height: 14, color: _accent),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              title.toUpperCase(),
+              style: const TextStyle(
+                fontFamily: 'DM Mono',
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                color: _text,
+                letterSpacing: 1.2,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          // Badge PERFIL PÚBLICO
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: _card,
+              border: Border.all(color: _border, width: 1),
+              boxShadow: const [_shadowSm],
+            ),
+            child: const Text(
+              'PERFIL PÚBLICO',
+              style: TextStyle(
+                fontFamily: 'DM Mono',
+                fontSize: 7,
+                fontWeight: FontWeight.w900,
+                color: _muted,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   @override
-  bool shouldRebuild(covariant _TabBarDelegate old) => tabBar != old.tabBar;
+  bool shouldRebuild(covariant _NeoSliverAppBar old) =>
+      title != old.title || isScrolled != old.isScrolled;
+}
+
+// ─── Tab bar neobrutalista ────────────────────
+class _NeoTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabController controller;
+
+  static const _tabs = [
+    (Icons.home_outlined,            'RESUMEN'),
+    (Icons.history,                  'HISTORIAL'),
+    (Icons.emoji_events_outlined,    'LOGROS'),
+    (Icons.military_tech_outlined,   'COPAS'),
+  ];
+
+  const _NeoTabBarDelegate(this.controller);
+
+  @override
+  double get minExtent => 50;
+  @override
+  double get maxExtent => 50;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        return Container(
+          height: 50,
+          decoration: const BoxDecoration(
+            color: _bg,
+            border: Border(
+              top:    BorderSide(color: _border, width: 1),
+              bottom: BorderSide(color: _border, width: 1),
+            ),
+          ),
+          child: Row(
+            children: List.generate(_tabs.length, (i) {
+              final (icon, label) = _tabs[i];
+              final isActive = controller.index == i;
+
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => controller.animateTo(i),
+                  behavior: HitTestBehavior.opaque,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? _accent.withOpacity(0.06)
+                          : Colors.transparent,
+                      border: Border(
+                        right: i < _tabs.length - 1
+                            ? const BorderSide(color: _border, width: 1)
+                            : BorderSide.none,
+                        bottom: BorderSide(
+                          color: isActive ? _accent : Colors.transparent,
+                          width: 2.5,
+                        ),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: isActive ? 26 : 22,
+                          height: isActive ? 26 : 22,
+                          decoration: isActive
+                              ? BoxDecoration(
+                                  color: _accent,
+                                  boxShadow: const [_shadowSm],
+                                )
+                              : null,
+                          alignment: Alignment.center,
+                          child: Icon(
+                            icon,
+                            size: 12,
+                            color: isActive ? Colors.white : _muted,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontFamily: 'DM Mono',
+                            fontSize: 8,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            color: isActive ? _accent : _muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _NeoTabBarDelegate old) =>
+      controller != old.controller;
 }
