@@ -9,6 +9,8 @@ import 'core/app_secrets.dart';
 const String kSupabaseUrl = AppSecrets.supabaseUrl;
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   await Supabase.initialize(
     url: AppSecrets.supabaseUrl,
     anonKey: AppSecrets.supabaseAnonKey,
@@ -23,8 +25,6 @@ class GlobalScoreApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
 
-    // AppLifecycleObserver envuelve toda la app y refresca
-    // los providers críticos cuando el usuario vuelve a primer plano.
     return AppLifecycleObserver(
       child: MaterialApp.router(
         title: 'GlobalScore',

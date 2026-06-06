@@ -2,7 +2,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_theme.dart';
-import 'login_page.dart';   // AuthDivider, AuthField, AuthMessage, AuthCtaButton, AuthSubHeader, AuthMessageType
+import 'login_page.dart'; // AuthDivider, AuthField, AuthMessage, AuthCtaButton, AuthSubHeader, AuthMessageType
 
 // ═══════════════════════════════════════════════════════════
 //  REGISTER PAGE
@@ -63,6 +63,7 @@ class _RegisterPageState extends State<RegisterPage>
   Future<void> _register() async {
     final name     = _nameController.text.trim();
     final email    = _emailController.text.trim();
+    // BUG FIX: No trim() en contraseña
     final password = _passwordController.text;
 
     if (name.isEmpty || email.isEmpty || password.isEmpty) {
@@ -106,7 +107,7 @@ class _RegisterPageState extends State<RegisterPage>
 
         if (mounted) {
           setState(() {
-            _successMessage = '¡Cuenta creada! Revisa tu correo para verificar tu cuenta.';
+            _successMessage = '¡Cuenta creada! Revisa tu correo para verificar.';
             _isLoading = false;
           });
           await Future.delayed(const Duration(milliseconds: 1500));
@@ -121,8 +122,15 @@ class _RegisterPageState extends State<RegisterPage>
               : e.message;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _errorMessage = 'Error inesperado. Intenta de nuevo.');
+    } on Exception catch (e) {
+      if (mounted) {
+        final msg = e.toString().toLowerCase();
+        setState(() {
+          _errorMessage = msg.contains('network') || msg.contains('socket')
+              ? 'Sin conexión. Verifica tu internet.'
+              : 'Error inesperado. Intenta de nuevo.';
+        });
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -148,112 +156,145 @@ class _RegisterPageState extends State<RegisterPage>
                 child: SlideTransition(
                   position: _slideAnim,
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Title
-                        const Text(
-                          'Únete a\nGlobalscore',
-                          style: TextStyle(
-                            fontFamily: AuthTheme.fontSans,
-                            fontSize: 30, fontWeight: FontWeight.w800,
-                            color: AuthTheme.dark, height: 1.1, letterSpacing: -1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          '· REGÍSTRATE GRATIS ·',
-                          style: TextStyle(
-                            fontFamily: AuthTheme.fontMono, fontSize: 10,
-                            fontWeight: FontWeight.w700, color: AuthTheme.muted,
-                            letterSpacing: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-
-                        const AuthDivider(),
-                        const SizedBox(height: 20),
-
-                        // NOMBRE
-                        AuthField(
-                          label: 'NOMBRE', hint: 'Tu nombre',
-                          controller: _nameController,
-                          icon: Icons.person_outline_rounded,
-                          onChanged: (_) => setState(() => _errorMessage = null),
-                        ),
-                        const SizedBox(height: 10),
-
-                        // CORREO
-                        AuthField(
-                          label: 'CORREO', hint: 'usuario@email.com',
-                          controller: _emailController,
-                          icon: Icons.mail_outline_rounded,
-                          keyboardType: TextInputType.emailAddress,
-                          onChanged: (_) => setState(() => _errorMessage = null),
-                        ),
-                        const SizedBox(height: 10),
-
-                        // CONTRASEÑA
-                        AuthField(
-                          label: 'CONTRASEÑA', hint: 'Mín. 6 caracteres',
-                          controller: _passwordController,
-                          icon: Icons.lock_outline_rounded,
-                          obscureText: _obscurePassword,
-                          onChanged: (_) => setState(() => _errorMessage = null),
-                          suffixIcon: GestureDetector(
-                            onTap: () => setState(() => _obscurePassword = !_obscurePassword),
-                            child: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              size: 16, color: AuthTheme.muted,
-                            ),
-                          ),
-                        ),
-
-                        // Strength indicator
-                        ValueListenableBuilder(
-                          valueListenable: _passwordController,
-                          builder: (_, value, __) {
-                            if (value.text.isEmpty) return const SizedBox.shrink();
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: _PasswordStrength(
-                                strength: _getPasswordStrength(value.text),
+                        // Title row with dot grid
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'ÚNETE A\nGLOBALSCORE',
+                                    style: TextStyle(
+                                      fontFamily: AuthTheme.fontSans,
+                                      fontSize: 24, fontWeight: FontWeight.w900,
+                                      color: AuthTheme.dark, height: 1.1, letterSpacing: -1.0,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 5),
+                                  const Text(
+                                    '· REGÍSTRATE GRATIS ·',
+                                    style: TextStyle(
+                                      fontFamily: AuthTheme.fontMono, fontSize: 9,
+                                      fontWeight: FontWeight.w700, color: AuthTheme.muted,
+                                      letterSpacing: 1.4,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            );
-                          },
+                            ),
+                            _RegisterDotGrid(),
+                          ],
                         ),
                         const SizedBox(height: 16),
 
-                        // Info box
-                        _InfoBox(),
-                        const SizedBox(height: 16),
+                        // ── Form card ──────────────────────────────
+                        Container(
+                          decoration: _neoBox(),
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Section label
+                              Row(
+                                children: [
+                                  Container(width: 3, height: 14, color: AuthTheme.accent),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'DATOS DE CUENTA',
+                                    style: TextStyle(
+                                      fontFamily: AuthTheme.fontMono, fontSize: 9,
+                                      fontWeight: FontWeight.w800, color: AuthTheme.muted,
+                                      letterSpacing: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+
+                              // NOMBRE
+                              AuthField(
+                                label: 'NOMBRE',
+                                hint: 'Tu nombre',
+                                controller: _nameController,
+                                icon: Icons.person_outline_rounded,
+                                onChanged: (_) => setState(() => _errorMessage = null),
+                              ),
+                              const SizedBox(height: 10),
+
+                              // CORREO
+                              AuthField(
+                                label: 'CORREO',
+                                hint: 'usuario@email.com',
+                                controller: _emailController,
+                                icon: Icons.mail_outline_rounded,
+                                keyboardType: TextInputType.emailAddress,
+                                onChanged: (_) => setState(() => _errorMessage = null),
+                              ),
+                              const SizedBox(height: 10),
+
+                              // CONTRASEÑA
+                              AuthField(
+                                label: 'CONTRASEÑA',
+                                hint: 'Mín. 6 caracteres',
+                                controller: _passwordController,
+                                icon: Icons.lock_outline_rounded,
+                                obscureText: _obscurePassword,
+                                onChanged: (_) => setState(() => _errorMessage = null),
+                                suffixIcon: GestureDetector(
+                                  onTap: () => setState(() => _obscurePassword = !_obscurePassword),
+                                  child: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                    size: 15, color: AuthTheme.muted,
+                                  ),
+                                ),
+                              ),
+
+                              // Strength indicator
+                              ValueListenableBuilder(
+                                valueListenable: _passwordController,
+                                builder: (_, value, __) {
+                                  if (value.text.isEmpty) return const SizedBox.shrink();
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: _PasswordStrength(
+                                      strength: _getPasswordStrength(value.text),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Info box
+                              _InfoBox(),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 14),
 
                         // Error / Success
                         if (_errorMessage != null) ...[
                           AuthMessage(message: _errorMessage!, type: AuthMessageType.error),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 10),
                         ],
                         if (_successMessage != null) ...[
                           AuthMessage(message: _successMessage!, type: AuthMessageType.success),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 10),
                         ],
 
-                        // CTA
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            AuthCtaButton(
-                              label: 'REGISTRAR',
-                              loadingLabel: 'CREANDO',
-                              isLoading: _isLoading,
-                              onTap: _isLoading ? null : _register,
-                            ),
-                          ],
+                        // CTA full width
+                        _RegisterButton(
+                          isLoading: _isLoading,
+                          onTap: _isLoading ? null : _register,
                         ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 20),
 
                         // Alt link
                         Row(
@@ -271,7 +312,7 @@ class _RegisterPageState extends State<RegisterPage>
                                 'Inicia sesión',
                                 style: TextStyle(
                                   fontFamily: AuthTheme.fontMono, fontSize: 10,
-                                  fontWeight: FontWeight.w700, color: AuthTheme.accent,
+                                  fontWeight: FontWeight.w800, color: AuthTheme.accent,
                                   decoration: TextDecoration.underline,
                                   decorationColor: AuthTheme.accent,
                                 ),
@@ -293,8 +334,116 @@ class _RegisterPageState extends State<RegisterPage>
 }
 
 // ═══════════════════════════════════════════════════════════
+//  HELPERS PRIVADOS (también usados en login_page)
+// ═══════════════════════════════════════════════════════════
+
+BoxDecoration _neoBox({
+  Color bg = AuthTheme.cream,
+  double shadowX = 3,
+  double shadowY = 3,
+}) =>
+    BoxDecoration(
+      color: bg,
+      border: Border.all(color: AuthTheme.dark, width: 1.5),
+      boxShadow: [
+        BoxShadow(
+          color: AuthTheme.dark.withOpacity(0.35),
+          offset: Offset(shadowX, shadowY),
+          blurRadius: 0,
+        ),
+      ],
+    );
+
+// ═══════════════════════════════════════════════════════════
 //  WIDGETS PRIVADOS DE REGISTER
 // ═══════════════════════════════════════════════════════════
+
+class _RegisterDotGrid extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: 0.18,
+      child: SizedBox(
+        width: 60, height: 40,
+        child: CustomPaint(painter: _MiniDotPainter()),
+      ),
+    );
+  }
+}
+
+class _MiniDotPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    const cols = 5;
+    const rows = 3;
+    final paint = Paint()..color = AuthTheme.dark;
+    final cw = size.width / cols;
+    final rh = size.height / rows;
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        canvas.drawCircle(Offset(c * cw + cw / 2, r * rh + rh / 2), 2.0, paint);
+      }
+    }
+  }
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
+}
+
+class _RegisterButton extends StatelessWidget {
+  final bool isLoading;
+  final VoidCallback? onTap;
+  const _RegisterButton({required this.isLoading, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedOpacity(
+        opacity: onTap == null ? 0.55 : 1.0,
+        duration: const Duration(milliseconds: 150),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: AuthTheme.accent,
+            border: Border.all(color: AuthTheme.dark, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: AuthTheme.dark.withOpacity(0.35),
+                offset: const Offset(3, 3),
+                blurRadius: 0,
+              ),
+            ],
+          ),
+          child: Center(
+            child: isLoading
+                ? const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AuthLoadingDots(),
+                      SizedBox(width: 8),
+                      Text(
+                        'CREANDO CUENTA',
+                        style: TextStyle(
+                          fontFamily: AuthTheme.fontMono, fontSize: 12,
+                          fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  )
+                : const Text(
+                    'REGISTRAR',
+                    style: TextStyle(
+                      fontFamily: AuthTheme.fontMono, fontSize: 12,
+                      fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 1.4,
+                    ),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _PasswordStrength extends StatelessWidget {
   final int strength; // 0–4
@@ -320,7 +469,13 @@ class _PasswordStrength extends StatelessWidget {
             child: Container(
               height: 3,
               margin: EdgeInsets.only(right: i < 3 ? 3 : 0),
-              color: i < strength ? _colors[strength] : AuthTheme.border,
+              decoration: BoxDecoration(
+                color: i < strength ? _colors[strength] : AuthTheme.border,
+                border: Border.all(
+                  color: i < strength ? AuthTheme.dark.withOpacity(0.25) : Colors.transparent,
+                  width: 0.5,
+                ),
+              ),
             ),
           )),
         ),
@@ -342,19 +497,14 @@ class _InfoBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
         color: const Color(0x0D5B4FD8),
-        border: Border(
-          left:   const BorderSide(color: AuthTheme.accent, width: 2),
-          top:    BorderSide(color: AuthTheme.accent.withOpacity(0.18), width: 0.5),
-          right:  BorderSide(color: AuthTheme.accent.withOpacity(0.18), width: 0.5),
-          bottom: BorderSide(color: AuthTheme.accent.withOpacity(0.18), width: 0.5),
-        ),
+        border: Border.all(color: AuthTheme.accent.withOpacity(0.40), width: 1.0),
       ),
       child: const Row(
         children: [
-          Text('🔒 ', style: TextStyle(fontSize: 12)),
+          Text('🔒 ', style: TextStyle(fontSize: 11)),
           Text(
             'Tus datos están seguros y protegidos',
             style: TextStyle(

@@ -49,7 +49,8 @@ class _LoginPageState extends State<LoginPage>
 
   Future<void> _login() async {
     final email    = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+    // BUG FIX: No usar .trim() en contraseña — espacios son parte de ella
+    final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
       setState(() => _errorMessage = 'Por favor completa todos los campos');
@@ -59,9 +60,14 @@ class _LoginPageState extends State<LoginPage>
     setState(() { _isLoading = true; _errorMessage = null; });
 
     try {
-      await Supabase.instance.client.auth.signInWithPassword(
-        email: email, password: password,
+      final response = await Supabase.instance.client.auth.signInWithPassword(
+        email: email,
+        password: password,
       );
+      // BUG FIX: En release, el router_notifier puede tardar; verificar sesión activa
+      if (response.session == null && mounted) {
+        setState(() => _errorMessage = 'No se pudo iniciar sesión. Intenta de nuevo.');
+      }
       // go_router / router_notifier detecta el cambio de sesión
     } on AuthException catch (e) {
       if (mounted) {
@@ -73,8 +79,16 @@ class _LoginPageState extends State<LoginPage>
                   : 'Error al iniciar sesión';
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _errorMessage = 'Error inesperado. Intenta de nuevo.');
+    } on Exception catch (e) {
+      // BUG FIX: captura errores de red/SSL en release builds (no solo AuthException)
+      if (mounted) {
+        final msg = e.toString().toLowerCase();
+        setState(() {
+          _errorMessage = msg.contains('network') || msg.contains('socket') || msg.contains('connection')
+              ? 'Sin conexión. Verifica tu internet.'
+              : 'Error inesperado. Intenta de nuevo.';
+        });
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -90,124 +104,161 @@ class _LoginPageState extends State<LoginPage>
           child: SlideTransition(
             position: _slideAnim,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Brand
-                  const AuthBrandMark(),
-                  const SizedBox(height: 28),
+                  // ── Brand ──────────────────────────────────────────
+                  _NeoBrandHeader(),
+                  const SizedBox(height: 22),
 
-                  // Title
-                  const Text(
-                    'Iniciar\nsesión',
-                    style: TextStyle(
-                      fontFamily: AuthTheme.fontSans,
-                      fontSize: 30, fontWeight: FontWeight.w800,
-                      color: AuthTheme.dark, height: 1.1, letterSpacing: -1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    '· ACCEDE A TU CUENTA ·',
-                    style: TextStyle(
-                      fontFamily: AuthTheme.fontMono, fontSize: 10,
-                      fontWeight: FontWeight.w700, color: AuthTheme.muted,
-                      letterSpacing: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  const AuthDivider(),
-                  const SizedBox(height: 20),
-
-                  // Correo
-                  AuthField(
-                    label: 'CORREO', hint: 'usuario@email.com',
-                    controller: _emailController,
-                    icon: Icons.mail_outline_rounded,
-                    keyboardType: TextInputType.emailAddress,
-                    onChanged: (_) => setState(() => _errorMessage = null),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Contraseña
-                  AuthField(
-                    label: 'CONTRASEÑA', hint: '••••••••',
-                    controller: _passwordController,
-                    icon: Icons.lock_outline_rounded,
-                    obscureText: _obscurePassword,
-                    onChanged: (_) => setState(() => _errorMessage = null),
-                    suffixIcon: GestureDetector(
-                      onTap: () => setState(() => _obscurePassword = !_obscurePassword),
-                      child: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                        size: 16, color: AuthTheme.muted,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-
-                  // Forgot
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: GestureDetector(
-                      onTap: () => context.push('/forgot-password'),
-                      child: const Text(
-                        '¿Olvidaste tu contraseña?',
-                        style: TextStyle(
-                          fontFamily: AuthTheme.fontMono, fontSize: 10,
-                          fontWeight: FontWeight.w700, color: AuthTheme.accent,
-                          letterSpacing: 0.6,
+                  // ── Login card ─────────────────────────────────────
+                  Container(
+                    decoration: _neoBox(),
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Título
+                        Row(
+                          children: [
+                            Container(width: 3, height: 16, color: AuthTheme.accent),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'INICIAR SESIÓN',
+                              style: TextStyle(
+                                fontFamily: AuthTheme.fontMono,
+                                fontSize: 11, fontWeight: FontWeight.w800,
+                                color: AuthTheme.dark, letterSpacing: 1.4,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                  // Error
-                  if (_errorMessage != null) ...[
-                    AuthMessage(message: _errorMessage!, type: AuthMessageType.error),
-                    const SizedBox(height: 12),
-                  ],
+                        // CORREO
+                        AuthField(
+                          label: 'EMAIL',
+                          hint: 'tu@email.com',
+                          controller: _emailController,
+                          icon: Icons.mail_outline_rounded,
+                          keyboardType: TextInputType.emailAddress,
+                          onChanged: (_) => setState(() => _errorMessage = null),
+                        ),
+                        const SizedBox(height: 10),
 
-                  // CTA
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      AuthCtaButton(
-                        label: 'ENTRAR',
-                        loadingLabel: 'ENTRANDO',
-                        isLoading: _isLoading,
-                        onTap: _isLoading ? null : _login,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 40),
-
-                  // Alt link
-                  Row(
-                    children: [
-                      const Text(
-                        '¿Sin cuenta? ',
-                        style: TextStyle(fontFamily: AuthTheme.fontMono,
-                            fontSize: 10, color: AuthTheme.muted),
-                      ),
-                      GestureDetector(
-                        onTap: () => context.go('/register'),
-                        child: const Text(
-                          'Regístrate',
-                          style: TextStyle(
-                            fontFamily: AuthTheme.fontMono, fontSize: 10,
-                            fontWeight: FontWeight.w700, color: AuthTheme.accent,
-                            decoration: TextDecoration.underline,
-                            decorationColor: AuthTheme.accent,
+                        // CONTRASEÑA
+                        AuthField(
+                          label: 'CONTRASEÑA',
+                          hint: '••••••••••',
+                          controller: _passwordController,
+                          icon: Icons.lock_outline_rounded,
+                          obscureText: _obscurePassword,
+                          onChanged: (_) => setState(() => _errorMessage = null),
+                          suffixIcon: GestureDetector(
+                            onTap: () => setState(() => _obscurePassword = !_obscurePassword),
+                            child: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              size: 15, color: AuthTheme.muted,
+                            ),
                           ),
                         ),
+                        const SizedBox(height: 10),
+
+                        // Remember + forgot row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _NeoCheckbox(),
+                            GestureDetector(
+                              onTap: () => context.push('/forgot-password'),
+                              child: const Text(
+                                '¿OLVIDASTE TU CONTRASEÑA?',
+                                style: TextStyle(
+                                  fontFamily: AuthTheme.fontMono, fontSize: 9,
+                                  fontWeight: FontWeight.w700, color: AuthTheme.accent,
+                                  letterSpacing: 0.6,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: AuthTheme.accent,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Error
+                        if (_errorMessage != null) ...[
+                          const SizedBox(height: 12),
+                          AuthMessage(message: _errorMessage!, type: AuthMessageType.error),
+                        ],
+                        const SizedBox(height: 16),
+
+                        // CTA full-width
+                        _NeoButton(
+                          label: 'INICIAR SESIÓN',
+                          loadingLabel: 'ENTRANDO',
+                          isLoading: _isLoading,
+                          onTap: _isLoading ? null : _login,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // ── Register link ──────────────────────────────────
+                  GestureDetector(
+                    onTap: () => context.go('/register'),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AuthTheme.cream,
+                        border: Border.all(color: AuthTheme.dark, width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AuthTheme.dark.withOpacity(0.30),
+                            offset: const Offset(3, 3),
+                            blurRadius: 0,
+                          ),
+                        ],
                       ),
-                    ],
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            '¿NO TIENES CUENTA?',
+                            style: TextStyle(
+                              fontFamily: AuthTheme.fontMono, fontSize: 10,
+                              fontWeight: FontWeight.w600, color: AuthTheme.dark,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AuthTheme.accent,
+                              border: Border.all(color: AuthTheme.dark, width: 1.5),
+                            ),
+                            child: const Text(
+                              'REGÍSTRATE',
+                              style: TextStyle(
+                                fontFamily: AuthTheme.fontMono, fontSize: 10,
+                                fontWeight: FontWeight.w800, color: Colors.white,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Decorative dots bottom
+                  const SizedBox(height: 28),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: _DotGrid(cols: 5, rows: 3),
                   ),
                 ],
               ),
@@ -220,10 +271,232 @@ class _LoginPageState extends State<LoginPage>
 }
 
 // ═══════════════════════════════════════════════════════════
-//  SHARED AUTH WIDGETS  (exportados, usados en Register también)
+//  NEOBRUTALIST HELPERS  (private)
 // ═══════════════════════════════════════════════════════════
 
-/// Marca de la app con cuadrado púrpura + nombre mono
+BoxDecoration _neoBox({
+  Color bg = AuthTheme.cream,
+  double shadowX = 3,
+  double shadowY = 3,
+}) =>
+    BoxDecoration(
+      color: bg,
+      border: Border.all(color: AuthTheme.dark, width: 1.5),
+      boxShadow: [
+        BoxShadow(
+          color: AuthTheme.dark.withOpacity(0.35),
+          offset: Offset(shadowX, shadowY),
+          blurRadius: 0,
+        ),
+      ],
+    );
+
+class _NeoBrandHeader extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Logo square
+        Stack(
+          children: [
+            // Offset shadow layer
+            Positioned(
+              left: 4, top: 4,
+              child: Container(
+                width: 52, height: 52,
+                color: AuthTheme.dark.withOpacity(0.35),
+              ),
+            ),
+            Container(
+              width: 52, height: 52,
+              decoration: BoxDecoration(
+                color: AuthTheme.accent,
+                border: Border.all(color: AuthTheme.dark, width: 1.5),
+              ),
+              child: const Center(
+                child: Icon(Icons.emoji_events_rounded, color: Colors.white, size: 28),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // App name
+        const Text(
+          'GLOBALSCORE',
+          style: TextStyle(
+            fontFamily: AuthTheme.fontSans,
+            fontSize: 28, fontWeight: FontWeight.w900,
+            color: AuthTheme.dark, letterSpacing: -1.0, height: 1.0,
+          ),
+        ),
+        const SizedBox(height: 4),
+        // Underline decoration
+        Container(
+          height: 3,
+          width: 140,
+          color: AuthTheme.accent,
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'COMPITE. COLECCIONA. DOMINA.',
+          style: TextStyle(
+            fontFamily: AuthTheme.fontMono, fontSize: 9,
+            fontWeight: FontWeight.w700, color: AuthTheme.muted,
+            letterSpacing: 1.6,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _NeoButton extends StatelessWidget {
+  final String label;
+  final String loadingLabel;
+  final bool isLoading;
+  final VoidCallback? onTap;
+
+  const _NeoButton({
+    required this.label,
+    this.loadingLabel = 'CARGANDO',
+    required this.isLoading,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedOpacity(
+        opacity: onTap == null ? 0.55 : 1.0,
+        duration: const Duration(milliseconds: 150),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: AuthTheme.accent,
+            border: Border.all(color: AuthTheme.dark, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: AuthTheme.dark.withOpacity(0.35),
+                offset: const Offset(3, 3),
+                blurRadius: 0,
+              ),
+            ],
+          ),
+          child: Center(
+            child: isLoading
+                ? const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AuthLoadingDots(),
+                      SizedBox(width: 8),
+                      Text(
+                        'ENTRANDO',
+                        style: TextStyle(
+                          fontFamily: AuthTheme.fontMono, fontSize: 12,
+                          fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  )
+                : Text(
+                    label,
+                    style: const TextStyle(
+                      fontFamily: AuthTheme.fontMono, fontSize: 12,
+                      fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 1.4,
+                    ),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NeoCheckbox extends StatefulWidget {
+  @override
+  State<_NeoCheckbox> createState() => _NeoCheckboxState();
+}
+
+class _NeoCheckboxState extends State<_NeoCheckbox> {
+  bool _checked = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => setState(() => _checked = !_checked),
+      child: Row(
+        children: [
+          Container(
+            width: 16, height: 16,
+            decoration: BoxDecoration(
+              color: _checked ? AuthTheme.accent : Colors.transparent,
+              border: Border.all(color: AuthTheme.dark, width: 1.5),
+            ),
+            child: _checked
+                ? const Icon(Icons.check, size: 11, color: Colors.white)
+                : null,
+          ),
+          const SizedBox(width: 7),
+          const Text(
+            'RECORDARME',
+            style: TextStyle(
+              fontFamily: AuthTheme.fontMono, fontSize: 9,
+              fontWeight: FontWeight.w600, color: AuthTheme.dark,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DotGrid extends StatelessWidget {
+  final int cols;
+  final int rows;
+  const _DotGrid({required this.cols, required this.rows});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: cols * 12.0,
+      height: rows * 12.0,
+      child: CustomPaint(painter: _DotPainter(cols: cols, rows: rows)),
+    );
+  }
+}
+
+class _DotPainter extends CustomPainter {
+  final int cols;
+  final int rows;
+  _DotPainter({required this.cols, required this.rows});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AuthTheme.dark.withOpacity(0.18)
+      ..style = PaintingStyle.fill;
+    final cw = size.width / cols;
+    final rh = size.height / rows;
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        canvas.drawCircle(Offset(c * cw + cw / 2, r * rh + rh / 2), 1.8, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SHARED AUTH WIDGETS  (exportados)
+// ═══════════════════════════════════════════════════════════
+
+/// Marca original (kept for backward compat)
 class AuthBrandMark extends StatelessWidget {
   const AuthBrandMark({super.key});
 
@@ -232,23 +505,21 @@ class AuthBrandMark extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 24, height: 24, color: AuthTheme.accent,
-          child: Center(
-            child: Container(
-              width: 9, height: 9,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.white, width: 1.5),
-              ),
-            ),
+          width: 22, height: 22,
+          decoration: BoxDecoration(
+            color: AuthTheme.accent,
+            border: Border.all(color: AuthTheme.dark, width: 1.5),
+          ),
+          child: const Center(
+            child: Icon(Icons.emoji_events_rounded, color: Colors.white, size: 13),
           ),
         ),
-        const SizedBox(width: 9),
+        const SizedBox(width: 8),
         const Text(
           'GLOBALSCORE',
           style: TextStyle(
-            fontFamily: AuthTheme.fontMono, fontSize: 13,
-            fontWeight: FontWeight.w700, color: AuthTheme.dark,
-            letterSpacing: 0.8,
+            fontFamily: AuthTheme.fontMono, fontSize: 11,
+            fontWeight: FontWeight.w800, color: AuthTheme.dark, letterSpacing: 1.2,
           ),
         ),
       ],
@@ -256,7 +527,6 @@ class AuthBrandMark extends StatelessWidget {
   }
 }
 
-/// Separador con punto central púrpura
 class AuthDivider extends StatelessWidget {
   const AuthDivider({super.key});
 
@@ -264,28 +534,29 @@ class AuthDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(child: Container(height: 0.5, color: AuthTheme.border)),
-        Container(
-          width: 5, height: 5,
-          margin: const EdgeInsets.symmetric(horizontal: 8),
-          color: AuthTheme.accent.withOpacity(0.5),
+        Expanded(child: Container(height: 1, color: AuthTheme.border)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Container(
+            width: 5, height: 5,
+            color: AuthTheme.accent,
+          ),
         ),
-        Expanded(child: Container(height: 0.5, color: AuthTheme.border)),
+        Expanded(child: Container(height: 1, color: AuthTheme.border)),
       ],
     );
   }
 }
 
-/// Campo de texto con label mono mayúscula + ícono izquierdo
 class AuthField extends StatelessWidget {
   final String label;
   final String hint;
   final TextEditingController controller;
   final IconData icon;
   final bool obscureText;
-  final TextInputType keyboardType;
-  final ValueChanged<String>? onChanged;
+  final TextInputType? keyboardType;
   final Widget? suffixIcon;
+  final void Function(String)? onChanged;
 
   const AuthField({
     super.key,
@@ -294,9 +565,9 @@ class AuthField extends StatelessWidget {
     required this.controller,
     required this.icon,
     this.obscureText = false,
-    this.keyboardType = TextInputType.text,
-    this.onChanged,
+    this.keyboardType,
     this.suffixIcon,
+    this.onChanged,
   });
 
   @override
@@ -308,22 +579,34 @@ class AuthField extends StatelessWidget {
           label,
           style: const TextStyle(
             fontFamily: AuthTheme.fontMono, fontSize: 9,
-            fontWeight: FontWeight.w700, color: AuthTheme.muted,
+            fontWeight: FontWeight.w800, color: AuthTheme.accent,
             letterSpacing: 1.4,
           ),
         ),
         const SizedBox(height: 5),
         Container(
-          height: 44,
           decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: AuthTheme.border, width: 0.5),
+            color: AuthTheme.surface,
+            border: Border.all(color: AuthTheme.dark, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: AuthTheme.dark.withOpacity(0.20),
+                offset: const Offset(2, 2),
+                blurRadius: 0,
+              ),
+            ],
           ),
           child: Row(
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Icon(icon, size: 14, color: AuthTheme.muted),
+              Container(
+                width: 36, height: 42,
+                decoration: BoxDecoration(
+                  color: AuthTheme.accent,
+                  border: Border(
+                    right: BorderSide(color: AuthTheme.dark, width: 1.5),
+                  ),
+                ),
+                child: Center(child: Icon(icon, size: 15, color: Colors.white)),
               ),
               Expanded(
                 child: TextField(
@@ -343,7 +626,7 @@ class AuthField extends StatelessWidget {
                     ),
                     border: InputBorder.none,
                     isDense: true,
-                    contentPadding: EdgeInsets.zero,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
                   ),
                 ),
               ),
@@ -362,7 +645,6 @@ class AuthField extends StatelessWidget {
 
 enum AuthMessageType { error, success, info }
 
-/// Banner de error / éxito / info con borde izquierdo de color
 class AuthMessage extends StatelessWidget {
   final String message;
   final AuthMessageType type;
@@ -412,7 +694,7 @@ class AuthMessage extends StatelessWidget {
   }
 }
 
-/// Botón CTA principal: fondo oscuro, flecha derecha con borde
+/// Botón CTA secundario (pequeño, para usos específicos)
 class AuthCtaButton extends StatelessWidget {
   final String label;
   final String loadingLabel;
@@ -435,8 +717,18 @@ class AuthCtaButton extends StatelessWidget {
         opacity: onTap == null ? 0.5 : 1.0,
         duration: const Duration(milliseconds: 150),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          color: AuthTheme.dark,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+          decoration: BoxDecoration(
+            color: AuthTheme.dark,
+            border: Border.all(color: AuthTheme.dark, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: AuthTheme.dark.withOpacity(0.30),
+                offset: const Offset(2, 2),
+                blurRadius: 0,
+              ),
+            ],
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -462,12 +754,12 @@ class AuthCtaButton extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Container(
-                  width: 20, height: 20,
+                  width: 18, height: 18,
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.white38, width: 1.5),
                   ),
                   child: const Center(
-                    child: Text('→', style: TextStyle(color: Colors.white, fontSize: 12)),
+                    child: Text('→', style: TextStyle(color: Colors.white, fontSize: 11)),
                   ),
                 ),
               ],
@@ -479,7 +771,6 @@ class AuthCtaButton extends StatelessWidget {
   }
 }
 
-/// Tres puntos animados para estado de carga
 class AuthLoadingDots extends StatefulWidget {
   const AuthLoadingDots({super.key});
 
@@ -531,7 +822,6 @@ class _AuthLoadingDotsState extends State<AuthLoadingDots>
   }
 }
 
-/// Sub-header para páginas secundarias (Register, Forgot, Reset)
 class AuthSubHeader extends StatelessWidget {
   final String title;
   final VoidCallback onBack;
@@ -541,23 +831,25 @@ class AuthSubHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      height: 46,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
         color: AuthTheme.surface,
-        border: Border(bottom: BorderSide(color: AuthTheme.border, width: 0.5)),
+        border: Border(
+          bottom: BorderSide(color: AuthTheme.dark, width: 1.5),
+        ),
       ),
       child: Row(
         children: [
           GestureDetector(
             onTap: onBack,
             child: Container(
-              width: 30, height: 30,
+              width: 28, height: 28,
               decoration: BoxDecoration(
-                border: Border.all(color: AuthTheme.border, width: 0.5),
+                border: Border.all(color: AuthTheme.dark, width: 1.5),
               ),
               child: const Center(
-                child: Text('←', style: TextStyle(color: AuthTheme.accent, fontSize: 16)),
+                child: Text('←', style: TextStyle(color: AuthTheme.accent, fontSize: 15)),
               ),
             ),
           ),
@@ -566,8 +858,8 @@ class AuthSubHeader extends StatelessWidget {
             title,
             style: const TextStyle(
               fontFamily: AuthTheme.fontMono, fontSize: 11,
-              fontWeight: FontWeight.w700, color: AuthTheme.dark,
-              letterSpacing: 0.8,
+              fontWeight: FontWeight.w800, color: AuthTheme.dark,
+              letterSpacing: 1.0,
             ),
           ),
         ],
