@@ -1,13 +1,18 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../presentation/albums_page.dart' show GsColors;
+import '../presentation/albums_page.dart' show Ds, GsColors;
 import '../domain/albums_model.dart';
 
+// ════════════════════════════════════════════════════════════
+//  STICKER CARD — LIGHT NEOBRUTALISTA
+//  (API y lógica interna 100% intactas)
+// ════════════════════════════════════════════════════════════
 class StickerCard extends StatelessWidget {
-  final int index;
-  final AlbumCard? card;
+  final int                index;
+  final AlbumCard?         card;
   final AlbumCollectionItem? collectionItem;
-  final Color accent;
-  final String slotType; // 'req5' | 'req4' | 'req3' | 'req2' | 'general'
+  final Color              accent;
+  final String             slotType; // 'req5'|'req4'|'req3'|'req2'|'general'
 
   const StickerCard({
     super.key,
@@ -18,227 +23,329 @@ class StickerCard extends StatelessWidget {
     this.slotType = 'general',
   });
 
+  // ── helpers (sin cambios) ─────────────────────────────────
   bool get _isReqSlot => slotType != 'general';
-  bool get _isFilled => collectionItem != null;
-  bool get _isGoat => card?.isGoat == true;
+  bool get _isFilled  => collectionItem != null;
+  bool get _isGoat    => card?.isGoat == true;
+
+  bool get _isNew {
+    if (collectionItem == null) return false;
+    final last = DateTime.tryParse(collectionItem!.lastObtainedAt);
+    if (last == null) return false;
+    return DateTime.now().difference(last).inHours < 48;
+  }
 
   int get _reqStars => switch (slotType) {
         'req5' => 5,
         'req4' => 4,
         'req3' => 3,
         'req2' => 2,
-        _ => 0,
+        _      => 0,
       };
 
   String get _num => (index + 1).toString().padLeft(3, '0');
 
   @override
   Widget build(BuildContext context) {
-    if (_isFilled) return _FilledSticker(this);
-    return _EmptySticker(this);
+    if (_isFilled) return _FilledCard(w: this);
+    if (_isReqSlot) return _SecretCard(w: this);
+    return _EmptyCard(w: this);
   }
 }
 
-// ── Carta con contenido ───────────────────────────────────
-class _FilledSticker extends StatelessWidget {
+// ════════════════════════════════════════════════════════════
+//  CARTA OBTENIDA
+// ════════════════════════════════════════════════════════════
+class _FilledCard extends StatelessWidget {
   final StickerCard w;
-  const _FilledSticker(this.w);
+  const _FilledCard({required this.w});
 
   @override
   Widget build(BuildContext context) {
-    final stars = w.card?.significanceLevel ?? 0;
+    final stars  = w.card?.significanceLevel ?? 0;
     final copies = w.collectionItem?.copies ?? 1;
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0A0A14),
+        color: Colors.white,
         border: Border.all(
-          color: w._isGoat
-              ? GsColors.gold
-              : w.accent.withValues(alpha: 0.5),
-          width: w._isGoat ? 1.8 : 1.2,
+          color: w._isGoat ? Ds.gold : Ds.borderSub,
+          width: w._isGoat ? 2 : 1.5,
         ),
-        boxShadow: w._isGoat
-            ? [
-                BoxShadow(
-                  color: GsColors.gold.withValues(alpha: 0.35),
-                  blurRadius: 10,
-                  spreadRadius: 1,
-                )
-              ]
-            : null,
-      ),
-      child: Stack(
-        children: [
-          // Fondo gradiente del accent
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    w.accent.withValues(alpha: 0.12),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          Column(
-            children: [
-              // Banda top
-              Container(
-                height: 3,
-                color: w.accent,
-              ),
-
-              // Header: número + copias
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-                child: Row(
-                  children: [
-                    Text(
-                      w._num,
-                      style: TextStyle(
-                        fontFamily: GsColors.fontMono,
-                        fontSize: 7,
-                        fontWeight: FontWeight.w900,
-                        color: w.accent.withValues(alpha: 0.7),
-                      ),
-                    ),
-                    const Spacer(),
-                    if (copies > 1)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 3, vertical: 1),
-                        color: w.accent.withValues(alpha: 0.2),
-                        child: Text(
-                          '×$copies',
-                          style: TextStyle(
-                            fontSize: 7,
-                            fontWeight: FontWeight.w900,
-                            color: w.accent,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-
-              // Avatar zone
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: _AvatarZone(
-                    imagePath: w.card?.imagePath,
-                    name: w.card?.name ?? '',
-                    accent: w.accent,
-                    isGoat: w._isGoat,
-                  ),
-                ),
-              ),
-
-              // Estrellas
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: _Stars(filled: stars, accent: w.accent),
-              ),
-
-              // Nombre
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
-                child: Text(
-                  w.card?.name ?? '',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 8,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    height: 1.2,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          // Foil shimmer overlay
-          const Positioned.fill(
-            child: _FoilOverlay(),
+        boxShadow: [
+          BoxShadow(
+            color: w._isGoat
+                ? Ds.gold.withValues(alpha: 0.25)
+                : const Color(0xFFB0AAA0),
+            offset: const Offset(2, 2),
           ),
         ],
       ),
-    );
-  }
-}
-
-// ── Carta vacía ───────────────────────────────────────────
-class _EmptySticker extends StatelessWidget {
-  final StickerCard w;
-  const _EmptySticker(this.w);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF080810),
-        border: Border.all(
-          color: w._isReqSlot
-              ? w.accent.withValues(alpha: 0.25)
-              : Colors.white.withValues(alpha: 0.06),
-          width: 1,
-        ),
-      ),
       child: Column(
         children: [
-          // Header
+          // Franja de color
+          Container(
+            height: 3,
+            color: w._isGoat ? Ds.gold : w.accent,
+          ),
+
+          // Header: número / NUEVO + checkmark
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+            padding: const EdgeInsets.fromLTRB(4, 3, 4, 0),
             child: Row(
               children: [
-                Text(
-                  w._num,
-                  style: const TextStyle(
-                    fontFamily: GsColors.fontMono,
-                    fontSize: 7,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white24,
+                if (!w._isNew)
+                  Text(
+                    w._num,
+                    style: TextStyle(
+                      fontFamily: GsColors.fontMono,
+                      fontSize: 7,
+                      fontWeight: FontWeight.w900,
+                      color: w.accent.withValues(alpha: 0.8),
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                    color: w.accent,
+                    child: const Text(
+                      'NUEVO',
+                      style: TextStyle(
+                        fontFamily: GsColors.fontMono,
+                        fontSize: 5.5,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
                   ),
+                const Spacer(),
+                // Badge ✓
+                Container(
+                  width: 14, height: 14,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: w._isGoat ? Ds.gold : w.accent,
+                  ),
+                  child: const Icon(Icons.check, size: 9, color: Colors.white),
                 ),
               ],
             ),
           ),
 
-          // Silueta
+          // Avatar circular
           Expanded(
             child: Center(
-              child: _SilhouetteIcon(accent: w.accent),
+              child: _AvatarCircle(
+                imagePath: w.card?.imagePath,
+                name:      w.card?.name ?? '',
+                accent:    w.accent,
+                isGoat:    w._isGoat,
+              ),
             ),
           ),
 
-          // Stars requeridas (si es slot req)
-          if (w._isReqSlot && w._reqStars > 0)
+          // Nombre
+          Padding(
+            padding: const EdgeInsets.fromLTRB(3, 0, 3, 2),
+            child: Text(
+              (w.card?.name ?? '').toUpperCase(),
+              maxLines: 2,
+              overflow:  TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily:  GsColors.fontMono,
+                fontSize:    7,
+                fontWeight:  FontWeight.w900,
+                color:       Ds.ink,
+                height:      1.2,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+
+          // Estrellas
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: _Stars(filled: stars, accent: w.accent),
+          ),
+
+          // Badge de copias extra
+          if (copies > 1)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              color: w.accent.withValues(alpha: 0.1),
+              child: Text(
+                '×$copies',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: GsColors.fontMono,
+                  fontSize: 7,
+                  fontWeight: FontWeight.w900,
+                  color: w.accent,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  CARTA SECRETA / SLOT REQUERIDO VACÍO
+// ════════════════════════════════════════════════════════════
+class _SecretCard extends StatelessWidget {
+  final StickerCard w;
+  const _SecretCard({required this.w});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      foregroundPainter: _DashedBorderPainter(
+        color: w.accent.withValues(alpha: 0.45),
+      ),
+      child: Container(
+        color: w.accent.withValues(alpha: 0.04),
+        child: Column(
+          children: [
+            // Franja tenue
+            Container(height: 3, color: w.accent.withValues(alpha: 0.25)),
+
+            // Número
             Padding(
-              padding: const EdgeInsets.only(bottom: 3),
-              child: _Stars(filled: 0, total: w._reqStars, accent: w.accent),
+              padding: const EdgeInsets.fromLTRB(4, 3, 4, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  w._num,
+                  style: TextStyle(
+                    fontFamily: GsColors.fontMono,
+                    fontSize: 7,
+                    fontWeight: FontWeight.w900,
+                    color: w.accent.withValues(alpha: 0.4),
+                  ),
+                ),
+              ),
             ),
 
-          // Nombre vacío
+            // Icono de candado
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 28, height: 28,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: w.accent.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.lock_outline,
+                        size: 14,
+                        color: w.accent.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'LEYENDA\nSECRETA',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: GsColors.fontMono,
+                        fontSize: 6.5,
+                        fontWeight: FontWeight.w700,
+                        color: w.accent.withValues(alpha: 0.5),
+                        letterSpacing: 0.3,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Estrellas vacías (indica rareza requerida)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 5),
+              child: _Stars(
+                filled: 0,
+                total:  w._reqStars > 0 ? w._reqStars : 5,
+                accent: w.accent,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  CARTA VACÍA GENÉRICA
+// ════════════════════════════════════════════════════════════
+class _EmptyCard extends StatelessWidget {
+  final StickerCard w;
+  const _EmptyCard({required this.w});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Ds.bgCard,
+        border: Border.all(color: Ds.borderSub, width: 1),
+      ),
+      child: Column(
+        children: [
+          Container(height: 3, color: Ds.borderSub),
+
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
-            child: Text(
+            padding: const EdgeInsets.fromLTRB(4, 3, 4, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                w._num,
+                style: const TextStyle(
+                  fontFamily: GsColors.fontMono,
+                  fontSize: 7,
+                  fontWeight: FontWeight.w900,
+                  color: Ds.muted,
+                ),
+              ),
+            ),
+          ),
+
+          Expanded(
+            child: Center(
+              child: Icon(
+                Icons.person_outline,
+                size: 28,
+                color: Ds.muted.withValues(alpha: 0.3),
+              ),
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(3, 0, 3, 2),
+            child: const Text(
               '???',
               style: TextStyle(
-                fontFamily: GsColors.fontMono,
-                fontSize: 8,
-                fontWeight: FontWeight.w900,
-                color: Colors.white.withValues(alpha: 0.15),
+                fontFamily:  GsColors.fontMono,
+                fontSize:    7,
+                fontWeight:  FontWeight.w900,
+                color:       Ds.muted,
                 letterSpacing: 2,
               ),
             ),
+          ),
+
+          const Padding(
+            padding: EdgeInsets.only(bottom: 5),
+            child: _Stars(filled: 0, accent: Ds.borderSub),
           ),
         ],
       ),
@@ -246,14 +353,16 @@ class _EmptySticker extends StatelessWidget {
   }
 }
 
-// ── Avatar con imagen o iniciales ─────────────────────────
-class _AvatarZone extends StatelessWidget {
+// ════════════════════════════════════════════════════════════
+//  AVATAR CIRCULAR
+// ════════════════════════════════════════════════════════════
+class _AvatarCircle extends StatelessWidget {
   final String? imagePath;
-  final String name;
-  final Color accent;
-  final bool isGoat;
+  final String  name;
+  final Color   accent;
+  final bool    isGoat;
 
-  const _AvatarZone({
+  const _AvatarCircle({
     required this.imagePath,
     required this.name,
     required this.accent,
@@ -270,15 +379,27 @@ class _AvatarZone extends StatelessWidget {
     return Stack(
       alignment: Alignment.center,
       children: [
-        // Anillo exterior
+        // Halo GOAT exterior
+        if (isGoat)
+          Container(
+            width: 50, height: 50,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Ds.gold.withValues(alpha: 0.45),
+                width: 2,
+              ),
+            ),
+          ),
+
+        // Anillo principal
         Container(
-          width: 48,
-          height: 48,
+          width: 42, height: 42,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
-              color: isGoat ? GsColors.gold : accent.withValues(alpha: 0.6),
-              width: isGoat ? 1.5 : 1,
+              color: isGoat ? Ds.gold : accent.withValues(alpha: 0.5),
+              width: isGoat ? 2 : 1.2,
             ),
           ),
         ),
@@ -286,44 +407,29 @@ class _AvatarZone extends StatelessWidget {
         // Imagen o iniciales
         ClipOval(
           child: Container(
-            width: 42,
-            height: 42,
-            color: accent.withValues(alpha: 0.1),
+            width: 36, height: 36,
+            color: accent.withValues(alpha: 0.08),
             child: imagePath != null
                 ? Image.network(
                     imagePath!,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _InitialsBox(
-                      text: _initials(),
+                    errorBuilder: (_, __, ___) => _Initials(
+                      text:   _initials(),
                       accent: accent,
                     ),
                   )
-                : _InitialsBox(text: _initials(), accent: accent),
+                : _Initials(text: _initials(), accent: accent),
           ),
         ),
-
-        // Halo GOAT
-        if (isGoat)
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: GsColors.gold.withValues(alpha: 0.3),
-                width: 3,
-              ),
-            ),
-          ),
       ],
     );
   }
 }
 
-class _InitialsBox extends StatelessWidget {
+class _Initials extends StatelessWidget {
   final String text;
-  final Color accent;
-  const _InitialsBox({required this.text, required this.accent});
+  final Color  accent;
+  const _Initials({required this.text, required this.accent});
 
   @override
   Widget build(BuildContext context) {
@@ -331,38 +437,22 @@ class _InitialsBox extends StatelessWidget {
       child: Text(
         text.isEmpty ? '?' : text,
         style: TextStyle(
-          fontFamily: GsColors.fontMono,
-          fontSize: 14,
-          fontWeight: FontWeight.w900,
-          color: accent.withValues(alpha: 0.7),
+          fontFamily:  GsColors.fontMono,
+          fontSize:    12,
+          fontWeight:  FontWeight.w900,
+          color:       accent,
         ),
       ),
     );
   }
 }
 
-// ── Silueta vacía ─────────────────────────────────────────
-class _SilhouetteIcon extends StatelessWidget {
-  final Color accent;
-  const _SilhouetteIcon({required this.accent});
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: 0.22,
-      child: Icon(
-        Icons.person,
-        size: 36,
-        color: accent,
-      ),
-    );
-  }
-}
-
-// ── Estrellas ─────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════
+//  ESTRELLAS
+// ════════════════════════════════════════════════════════════
 class _Stars extends StatelessWidget {
-  final int filled;
-  final int total;
+  final int   filled;
+  final int   total;
   final Color accent;
 
   const _Stars({
@@ -376,13 +466,14 @@ class _Stars extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(total, (i) {
+        final on = i < filled;
         return Text(
           '★',
           style: TextStyle(
             fontSize: 8,
-            color: i < filled
-                ? (filled >= 5 ? GsColors.gold : accent)
-                : Colors.white.withValues(alpha: 0.15),
+            color: on
+                ? (filled >= 5 ? Ds.gold : accent)
+                : Ds.borderSub,
           ),
         );
       }),
@@ -390,28 +481,61 @@ class _Stars extends StatelessWidget {
   }
 }
 
-// ── Foil shimmer overlay ──────────────────────────────────
-class _FoilOverlay extends StatelessWidget {
-  const _FoilOverlay();
+// ════════════════════════════════════════════════════════════
+//  DASHED BORDER PAINTER (para cartas secretas)
+// ════════════════════════════════════════════════════════════
+class _DashedBorderPainter extends CustomPainter {
+  final Color  color;
+  final double strokeWidth;
+  final double dashLen;
+  final double gapLen;
+
+  const _DashedBorderPainter({
+    required this.color,
+    this.strokeWidth = 1.4,
+    this.dashLen     = 4.0,
+    this.gapLen      = 3.0,
+  });
+
+  void _dash(Canvas canvas, Paint paint, Offset a, Offset b) {
+    final dx  = b.dx - a.dx;
+    final dy  = b.dy - a.dy;
+    final len = math.sqrt(dx * dx + dy * dy);
+    final nx  = dx / len;
+    final ny  = dy / len;
+    double d  = 0;
+    bool draw = true;
+
+    while (d < len) {
+      final seg = draw ? dashLen : gapLen;
+      final end = math.min(d + seg, len);
+      if (draw) {
+        canvas.drawLine(
+          Offset(a.dx + nx * d,   a.dy + ny * d),
+          Offset(a.dx + nx * end, a.dy + ny * end),
+          paint,
+        );
+      }
+      d    = end;
+      draw = !draw;
+    }
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.white.withValues(alpha: 0.0),
-              Colors.white.withValues(alpha: 0.04),
-              Colors.white.withValues(alpha: 0.08),
-              Colors.white.withValues(alpha: 0.0),
-            ],
-            stops: const [0.0, 0.4, 0.6, 1.0],
-          ),
-        ),
-      ),
-    );
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color       = color
+      ..strokeWidth = strokeWidth
+      ..style       = PaintingStyle.stroke
+      ..strokeCap   = StrokeCap.round;
+
+    _dash(canvas, paint, Offset.zero,                Offset(size.width, 0));
+    _dash(canvas, paint, Offset(size.width, 0),      Offset(size.width, size.height));
+    _dash(canvas, paint, Offset(size.width, size.height), Offset(0, size.height));
+    _dash(canvas, paint, Offset(0, size.height),     Offset.zero);
   }
+
+  @override
+  bool shouldRepaint(_DashedBorderPainter old) =>
+      old.color != color || old.strokeWidth != strokeWidth;
 }
