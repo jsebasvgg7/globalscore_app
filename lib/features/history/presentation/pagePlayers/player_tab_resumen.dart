@@ -429,14 +429,13 @@ class _StatsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      (totalGoals > 0 ? '$totalGoals' : '—', 'GOLES'),
+      ((totalGoals + nationalGoals) > 0 ? '${totalGoals + nationalGoals}' : '—', 'GOLES'),
       (totalAssists > 0 ? '$totalAssists' : '—', 'ASISTENCIAS'),
-      (totalCaps > 0 ? '$totalCaps' : '—', "INT'L GOLES"),
+      (nationalGoals > 0 ? '$nationalGoals' : '—', "INT'L GOLES"),
       (clubsCount > 0 ? '$clubsCount' : '—', 'CLUBES'),
       (totalCaps > 0 ? '$totalCaps' : '—', "INT'L PARTIDOS"),
       (titlesCount > 0 ? '$titlesCount' : '—', 'TÍTULOS'),
     ];
-
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       decoration: neoBox(shadowX: 4, shadowY: 4),

@@ -3,9 +3,140 @@ import 'package:flutter/material.dart';
 import '../../domain/history_models.dart';
 import 'history_teams_shared.dart';
 
+const _kFormationDefaults = <String, List<_DefaultPos>>{
+  '4-3-3': [
+    _DefaultPos(1,  'GK',  50, 88),
+    _DefaultPos(2,  'RB',  20, 70),
+    _DefaultPos(6,  'CB',  40, 70),
+    _DefaultPos(4,  'CB',  60, 70),
+    _DefaultPos(3,  'LB',  80, 70),
+    _DefaultPos(5,  'CDM', 50, 52),
+    _DefaultPos(10, 'CM',  30, 52),
+    _DefaultPos(8,  'CM',  70, 52),
+    _DefaultPos(9,  'ST',  50, 20),
+    _DefaultPos(7,  'LW',  20, 20),
+    _DefaultPos(11, 'RW',  80, 20),
+  ],
+  '4-4-2': [
+    _DefaultPos(1,  'GK',  50, 88),
+    _DefaultPos(2,  'RB',  20, 70),
+    _DefaultPos(3,  'CB',  38, 70),
+    _DefaultPos(4,  'CB',  62, 70),
+    _DefaultPos(5,  'LB',  80, 70),
+    _DefaultPos(6,  'RM',  20, 46),
+    _DefaultPos(7,  'CM',  38, 46),
+    _DefaultPos(8,  'CM',  62, 46),
+    _DefaultPos(9,  'LM',  80, 46),
+    _DefaultPos(10, 'ST',  38, 18),
+    _DefaultPos(11, 'ST',  62, 18),
+  ],
+  '3-5-2': [
+    _DefaultPos(1,  'GK',  50, 88),
+    _DefaultPos(2,  'CB',  25, 70),
+    _DefaultPos(3,  'CB',  50, 70),
+    _DefaultPos(4,  'CB',  75, 70),
+    _DefaultPos(5,  'RM',  15, 50),
+    _DefaultPos(6,  'CM',  35, 50),
+    _DefaultPos(7,  'CDM', 50, 50),
+    _DefaultPos(8,  'CM',  65, 50),
+    _DefaultPos(9,  'LM',  85, 50),
+    _DefaultPos(10, 'ST',  35, 18),
+    _DefaultPos(11, 'ST',  65, 18),
+  ],
+  '4-2-3-1': [
+    _DefaultPos(1,  'GK',  50, 88),
+    _DefaultPos(2,  'RB',  20, 70),
+    _DefaultPos(3,  'CB',  40, 70),
+    _DefaultPos(4,  'CB',  60, 70),
+    _DefaultPos(5,  'LB',  80, 70),
+    _DefaultPos(6,  'CDM', 38, 56),
+    _DefaultPos(7,  'CDM', 62, 56),
+    _DefaultPos(8,  'RW',  20, 36),
+    _DefaultPos(9,  'CAM', 50, 36),
+    _DefaultPos(10, 'LW',  80, 36),
+    _DefaultPos(11, 'ST',  50, 16),
+  ],
+  // Formaciones adicionales (fallback genérico si no hay posDB)
+  '5-3-2': [
+    _DefaultPos(1,  'GK',  50, 88),
+    _DefaultPos(2,  'CB',  15, 70),
+    _DefaultPos(3,  'CB',  32, 70),
+    _DefaultPos(4,  'CB',  50, 70),
+    _DefaultPos(5,  'CB',  68, 70),
+    _DefaultPos(6,  'CB',  85, 70),
+    _DefaultPos(7,  'CM',  28, 48),
+    _DefaultPos(8,  'CM',  50, 48),
+    _DefaultPos(9,  'CM',  72, 48),
+    _DefaultPos(10, 'ST',  35, 18),
+    _DefaultPos(11, 'ST',  65, 18),
+  ],
+  '3-4-3': [
+    _DefaultPos(1,  'GK',  50, 88),
+    _DefaultPos(2,  'CB',  25, 70),
+    _DefaultPos(3,  'CB',  50, 70),
+    _DefaultPos(4,  'CB',  75, 70),
+    _DefaultPos(5,  'RM',  15, 48),
+    _DefaultPos(6,  'CM',  38, 48),
+    _DefaultPos(7,  'CM',  62, 48),
+    _DefaultPos(8,  'LM',  85, 48),
+    _DefaultPos(9,  'LW',  20, 20),
+    _DefaultPos(10, 'ST',  50, 20),
+    _DefaultPos(11, 'RW',  80, 20),
+  ],
+};
+
+class _DefaultPos {
+  final int shirtNumber;
+  final String role;
+  final double posX;
+  final double posY;
+  const _DefaultPos(this.shirtNumber, this.role, this.posX, this.posY);
+}
+
+// ─── Etiquetas de posición (igual que React) ──────────────────────────────────
+const _kPosLabel = <String, String>{
+  'GK': 'Portero',
+  'CB': 'Defensa Central',
+  'LB': 'Lateral Izq.',
+  'RB': 'Lateral Der.',
+  'CDM': 'Med. Def.',
+  'CM': 'Centrocampista',
+  'CAM': 'Med. Ofensivo',
+  'LM': 'Mediapunta Izq.',
+  'RM': 'Mediapunta Der.',
+  'LW': 'Extremo Izq.',
+  'RW': 'Extremo Der.',
+  'ST': 'Delantero Centro',
+  'SS': 'Segundo Delantero',
+};
+
+// ─── Dimensiones del SVG del campo (idénticas al React) ──────────────────────
+//  viewBox="0 0 300 420"
+//  Área jugable: x 12..288 (276px), y 12..408 (396px)
+//  pos_x 0-100 → x = 12 + (pos_x/100)*276
+//  pos_y 0-100 → y = 12 + (pos_y/100)*396
+//  Luego normalizar: nx = x/300, ny = y/420
+const double _svgW = 300;
+const double _svgH = 420;
+const double _playX = 12;    // margen inicio x
+const double _playY = 12;    // margen inicio y
+const double _playW = 276;   // 300 - 12 - 12
+const double _playH = 396;   // 420 - 12 - 12
+
+/// Convierte pos_x, pos_y (0-100) al offset normalizado [0,1] del canvas,
+/// usando el MISMO cálculo que el componente React RetroField.
+Offset _posToOffset(double posX, double posY) {
+  final cx = _playX + (posX / 100) * _playW;
+  final cy = _playY + (posY / 100) * _playH;
+  return Offset(cx / _svgW, cy / _svgH);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  TAB ALINEACIÓN
+// ══════════════════════════════════════════════════════════════
+
 class TeamTabAlineacion extends StatefulWidget {
   final TeamDetail detail;
-
   const TeamTabAlineacion({super.key, required this.detail});
 
   @override
@@ -28,16 +159,12 @@ class _TeamTabAlineacionState extends State<TeamTabAlineacion> {
           children: [
             Icon(Icons.sports_soccer_outlined, size: 40, color: kTeamBorderL),
             const SizedBox(height: 12),
-            Text(
-              'Sin alineación registrada',
-              style: teamMono(size: 14, color: kTeamMuted),
-            ),
+            Text('Sin alineación registrada', style: teamMono(size: 14, color: kTeamMuted)),
           ],
         ),
       );
     }
 
-    // Separar titulares (shirt_number <= 11 o role contains 'Starter') del resto
     final starters = lineup
         .where((p) => (p.shirtNumber ?? 99) <= 11)
         .toList()
@@ -54,16 +181,14 @@ class _TeamTabAlineacionState extends State<TeamTabAlineacion> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header ───────────────────────────────────────────
           _AlineacionHeader(
             team: widget.detail.team,
             teamColor: primaryColor,
             starterCount: starters.length,
           ),
-
-          // ── Cancha táctica ────────────────────────────────────
           _TacticalPitch(
             starters: starters,
+            formation: team.formation,
             teamColor: primaryColor,
             selectedPlayer: selected,
             onPlayerTap: (player) {
@@ -73,12 +198,8 @@ class _TeamTabAlineacionState extends State<TeamTabAlineacion> {
               });
             },
           ),
-
-          // ── Info del jugador seleccionado ─────────────────────
           if (selected != null)
             _PlayerDetailCard(player: selected, teamColor: primaryColor),
-
-          // ── Lista completa ────────────────────────────────────
           const TeamSectionLabel(label: 'PLANTILLA COMPLETA', icon: Icons.group_outlined),
           _PlayerList(
             starters: starters,
@@ -92,7 +213,6 @@ class _TeamTabAlineacionState extends State<TeamTabAlineacion> {
               });
             },
           ),
-
           const SizedBox(height: 32),
         ],
       ),
@@ -101,80 +221,74 @@ class _TeamTabAlineacionState extends State<TeamTabAlineacion> {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  CANCHA TÁCTICA — CustomPainter
+//  CANCHA TÁCTICA
 // ══════════════════════════════════════════════════════════════
 
 class _TacticalPitch extends StatelessWidget {
   final List<TeamLineup> starters;
+  final String? formation;
   final Color teamColor;
   final TeamLineup? selectedPlayer;
   final void Function(TeamLineup) onPlayerTap;
 
   const _TacticalPitch({
     required this.starters,
+    required this.formation,
     required this.teamColor,
     required this.selectedPlayer,
     required this.onPlayerTap,
   });
 
-  /// Retorna posición normalizada [0,1] en la cancha.
-  /// Usa posX/posY de la DB (0-100) si están disponibles,
-  /// y hace fallback a posición estimada por número/rol.
-  Offset _positionFor(TeamLineup p, int index, int total) {
-    // ── Usar coordenadas reales de la base de datos ──────────
+  /// Devuelve el offset normalizado [0,1] para colocar el token del jugador.
+  ///
+  /// Prioridad:
+  ///  1. pos_x / pos_y de la BD  (coordenadas reales, idéntico al React)
+  ///  2. Fallback por formación + número de camiseta
+  ///  3. Fallback genérico por índice
+  Offset _offsetFor(TeamLineup p, int index) {
+    // ── 1. Coordenadas reales de la BD ──────────────────────────────────────
     if (p.posX != null && p.posY != null) {
-      return Offset(
-        (p.posX! / 100).clamp(0.05, 0.95),
-        (p.posY! / 100).clamp(0.05, 0.95),
-      );
+      return _posToOffset(p.posX!, p.posY!);
     }
 
-    // ── Fallback: estimación por número/rol ──────────────────
-    final pos = (p.positionRole ?? '').toLowerCase();
-    final num = p.shirtNumber ?? (index + 1);
+    // ── 2. Buscar en FORMATION_DEFAULTS por número de camiseta ──────────────
+    final form = formation ?? '4-3-3';
+    final defaults = _kFormationDefaults[form];
+    if (defaults != null) {
+      // Primero buscar por número exacto
+      final byNum = defaults.where((d) => d.shirtNumber == (p.shirtNumber ?? -1));
+      if (byNum.isNotEmpty) {
+        return _posToOffset(byNum.first.posX, byNum.first.posY);
+      }
+      // Si no, usar posición por índice en la lista defaults
+      if (index < defaults.length) {
+        return _posToOffset(defaults[index].posX, defaults[index].posY);
+      }
+    }
 
-    if (num == 1 || pos.contains('goal')) {
-      return const Offset(0.5, 0.88);
-    }
-    if (pos.contains('defend') || pos.contains('back') || (num >= 2 && num <= 5)) {
-      const defs = [0.2, 0.4, 0.6, 0.8];
-      final defIndex = (num - 2).clamp(0, 3);
-      return Offset(defs[defIndex], 0.68);
-    }
-    if (pos.contains('mid') || pos.contains('pivot') || (num >= 6 && num <= 8)) {
-      const mids = [0.25, 0.5, 0.75];
-      final midIndex = (num - 6).clamp(0, 2);
-      return Offset(mids[midIndex], 0.45);
-    }
-    if (pos.contains('wing')) {
-      return num <= 9 ? const Offset(0.15, 0.25) : const Offset(0.85, 0.25);
-    }
-    if (pos.contains('forward') || pos.contains('striker') || pos.contains('attack') || (num >= 9 && num <= 11)) {
-      const fwds = [0.25, 0.5, 0.75];
-      final fwdIndex = (num - 9).clamp(0, 2);
-      return Offset(fwds[fwdIndex], 0.22);
-    }
-    return Offset((index % 3 + 1) * 0.25, 0.3 + (index ~/ 3) * 0.2);
+    // ── 3. Fallback genérico ─────────────────────────────────────────────────
+    final col = index % 3;
+    final row = index ~/ 3;
+    return _posToOffset(20.0 + col * 30.0, 20.0 + row * 20.0);
   }
 
   @override
   Widget build(BuildContext context) {
-    const pitchH = 340.0;
-
+    // El campo usa un viewBox 300:420 — ratio 5:7
     return Container(
       margin: const EdgeInsets.all(16),
-      height: pitchH,
       decoration: BoxDecoration(
         border: Border.all(color: kTeamBorder, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: kTeamDark.withOpacity(0.45),
+            color: kTeamDark.withValues(alpha: 0.45),
             offset: const Offset(4, 4),
             blurRadius: 0,
           ),
         ],
       ),
-      child: ClipRect(
+      child: AspectRatio(
+        aspectRatio: _svgW / _svgH, // 300/420 ≈ 0.714
         child: LayoutBuilder(
           builder: (ctx, constraints) {
             final w = constraints.maxWidth;
@@ -182,28 +296,30 @@ class _TacticalPitch extends StatelessWidget {
 
             return Stack(
               children: [
-                // Cancha dibujada
+                // Campo dibujado
                 CustomPaint(
                   size: Size(w, h),
                   painter: _PitchPainter(teamColor: teamColor),
                 ),
 
-                // Jugadores
+                // Jugadores posicionados
                 ...starters.asMap().entries.map((e) {
-                  final pos = _positionFor(e.value, e.key, starters.length);
-                  final x = pos.dx * w;
-                  final y = pos.dy * h;
-                  final isSelected = selectedPlayer == e.value;
+                  final norm = _offsetFor(e.value, e.key);
+                  // El token mide 44×52; centramos el ancla en el centro
+                  const tokenW = 44.0;
+                  const tokenH = 52.0;
+                  final left = norm.dx * w - tokenW / 2;
+                  final top  = norm.dy * h - tokenH / 2;
 
                   return Positioned(
-                    left: x - 22,
-                    top: y - 26,
+                    left: left.clamp(0, w - tokenW),
+                    top:  top.clamp(0, h - tokenH),
                     child: GestureDetector(
                       onTap: () => onPlayerTap(e.value),
                       child: _PitchPlayer(
                         player: e.value,
                         teamColor: teamColor,
-                        isSelected: isSelected,
+                        isSelected: selectedPlayer == e.value,
                       ),
                     ),
                   );
@@ -217,10 +333,11 @@ class _TacticalPitch extends StatelessWidget {
   }
 }
 
-/// Dibuja el césped y las líneas del campo de fútbol
+// ──────────────────────────────────────────────────────────────
+//  Painter del campo (versión mejorada, proporción SVG 300×420)
+// ──────────────────────────────────────────────────────────────
 class _PitchPainter extends CustomPainter {
   final Color teamColor;
-
   const _PitchPainter({required this.teamColor});
 
   @override
@@ -228,112 +345,104 @@ class _PitchPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    // ── Fondo — césped en franjas alternadas ──────────────────
-    final stripePaint = Paint();
-    const stripes = 8;
-    final stripeW = w / stripes;
-    for (int i = 0; i < stripes; i++) {
-      stripePaint.color = i.isEven
-          ? const Color(0xFF1A6B35)
-          : const Color(0xFF1D7A3E);
-      canvas.drawRect(Rect.fromLTWH(i * stripeW, 0, stripeW, h), stripePaint);
+    // Escala relativa al viewBox 300×420
+    final sx = w / _svgW;
+    final sy = h / _svgH;
+
+    // ── Franjas de césped ──────────────────────────────────────
+    final paint = Paint();
+    const stripeH = 30.0;
+    int stripeCount = (_svgH / stripeH).ceil();
+    for (int i = 0; i < stripeCount; i++) {
+      paint.color = i.isEven ? const Color(0xFF2d7a2d) : const Color(0xFF267226);
+      canvas.drawRect(
+        Rect.fromLTWH(0, i * stripeH * sy, w, stripeH * sy),
+        paint,
+      );
     }
 
     // ── Líneas del campo ──────────────────────────────────────
-    final linePaint = Paint()
-      ..color = Colors.white.withOpacity(0.55)
-      ..strokeWidth = 1.2
+    final line = Paint()
+      ..color = Colors.white.withValues(alpha: 0.70)
+      ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
+
+    void rect(double x, double y, double rw, double rh) =>
+        canvas.drawRect(Rect.fromLTWH(x * sx, y * sy, rw * sx, rh * sy), line);
+
+    void circle(double cx, double cy, double r) =>
+        canvas.drawCircle(Offset(cx * sx, cy * sy), r * math.min(sx, sy), line);
+
+    void dot(double cx, double cy, double r) {
+      canvas.drawCircle(
+        Offset(cx * sx, cy * sy),
+        r * math.min(sx, sy),
+        Paint()..color = Colors.white.withValues(alpha: 0.80),
+      );
+    }
 
     // Borde exterior
-    canvas.drawRect(
-      Rect.fromLTWH(4, 4, w - 8, h - 8),
-      linePaint,
-    );
-
+    rect(12, 12, 276, 396);
     // Línea central
-    canvas.drawLine(Offset(4, h / 2), Offset(w - 4, h / 2), linePaint);
-
+    canvas.drawLine(Offset(12 * sx, 210 * sy), Offset(288 * sx, 210 * sy), line);
     // Círculo central
-    canvas.drawCircle(Offset(w / 2, h / 2), h * 0.12, linePaint);
-    canvas.drawCircle(
-      Offset(w / 2, h / 2),
-      2.5,
-      Paint()..color = Colors.white.withOpacity(0.7),
+    circle(150, 210, 42);
+    dot(150, 210, 2.5);
+
+    // Área grande arriba (y=12..70)
+    rect(72, 12, 156, 58);
+    // Área pequeña arriba
+    rect(108, 12, 84, 26);
+    dot(150, 56, 2);
+    // Arco área arriba
+    canvas.drawArc(
+      Rect.fromCenter(center: Offset(150 * sx, 70 * sy), width: 88 * sx, height: 88 * sy),
+      math.pi, math.pi, false, line..color = Colors.white.withValues(alpha: 0.65),
     );
+    line.color = Colors.white.withValues(alpha: 0.70);
 
-    // Área grande atacante (arriba)
-    final boxW = w * 0.52;
-    final boxH = h * 0.14;
-    canvas.drawRect(
-      Rect.fromLTWH((w - boxW) / 2, 4, boxW, boxH),
-      linePaint,
+    // Área grande abajo (y=350..408)
+    rect(72, 350, 156, 58);
+    // Área pequeña abajo
+    rect(108, 382, 84, 26);
+    dot(150, 364, 2);
+    // Arco área abajo
+    canvas.drawArc(
+      Rect.fromCenter(center: Offset(150 * sx, 350 * sy), width: 88 * sx, height: 88 * sy),
+      0, math.pi, false, line..color = Colors.white.withValues(alpha: 0.65),
     );
+    line.color = Colors.white.withValues(alpha: 0.70);
 
-    // Área chica atacante (arriba)
-    final smallW = w * 0.26;
-    final smallH = h * 0.07;
-    canvas.drawRect(
-      Rect.fromLTWH((w - smallW) / 2, 4, smallW, smallH),
-      linePaint,
-    );
-
-    // Área grande defensiva (abajo)
-    canvas.drawRect(
-      Rect.fromLTWH((w - boxW) / 2, h - 4 - boxH, boxW, boxH),
-      linePaint,
-    );
-
-    // Área chica defensiva (abajo)
-    canvas.drawRect(
-      Rect.fromLTWH((w - smallW) / 2, h - 4 - smallH, smallW, smallH),
-      linePaint,
-    );
-
-    // Penales (puntos)
-    final dotPaint = Paint()..color = Colors.white.withOpacity(0.7);
-    canvas.drawCircle(Offset(w / 2, h * 0.22), 2.5, dotPaint);
-    canvas.drawCircle(Offset(w / 2, h * 0.78), 2.5, dotPaint);
-
-    // Semicírculo área arriba
-    final arcRect = Rect.fromCenter(
-      center: Offset(w / 2, h * 0.14),
-      width: h * 0.2,
-      height: h * 0.2,
-    );
-    canvas.drawArc(arcRect, math.pi, math.pi, false, linePaint);
-
-    // Semicírculo área abajo
-    final arcRectB = Rect.fromCenter(
-      center: Offset(w / 2, h * 0.86),
-      width: h * 0.2,
-      height: h * 0.2,
-    );
-    canvas.drawArc(arcRectB, 0, math.pi, false, linePaint);
-
-    // Porterías (línea gruesa)
-    final goalPaint = Paint()
-      ..color = Colors.white.withOpacity(0.8)
-      ..strokeWidth = 3
+    // Porterías
+    final goal = Paint()
+      ..color = Colors.white.withValues(alpha: 0.50)
+      ..strokeWidth = 1.2
       ..style = PaintingStyle.stroke;
-    final goalW = w * 0.15;
-    canvas.drawLine(
-      Offset((w - goalW) / 2, 4),
-      Offset((w + goalW) / 2, 4),
-      goalPaint,
-    );
-    canvas.drawLine(
-      Offset((w - goalW) / 2, h - 4),
-      Offset((w + goalW) / 2, h - 4),
-      goalPaint,
-    );
+    rect(120, 6, 60, 10);
+    canvas.drawRect(Rect.fromLTWH(120 * sx, 404 * sy, 60 * sx, 10 * sy), goal);
+
+    // Banderines (círculos esquinas)
+    final flag = Paint()
+      ..color = Colors.white.withValues(alpha: 0.45)
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+    for (final corner in [
+      Offset(12 * sx, 12 * sy),
+      Offset(288 * sx, 12 * sy),
+      Offset(12 * sx, 408 * sy),
+      Offset(288 * sx, 408 * sy),
+    ]) {
+      canvas.drawCircle(corner, 3 * math.min(sx, sy), flag);
+    }
   }
 
   @override
   bool shouldRepaint(_PitchPainter old) => old.teamColor != teamColor;
 }
 
-/// Token de jugador en la cancha
+// ──────────────────────────────────────────────────────────────
+//  Token de jugador en el campo
+// ──────────────────────────────────────────────────────────────
 class _PitchPlayer extends StatelessWidget {
   final TeamLineup player;
   final Color teamColor;
@@ -345,11 +454,19 @@ class _PitchPlayer extends StatelessWidget {
     required this.isSelected,
   });
 
+  bool get _isGK =>
+      player.shirtNumber == 1 ||
+      (player.positionRole ?? '').toUpperCase() == 'GK';
+
   @override
   Widget build(BuildContext context) {
     final num = player.shirtNumber;
-    final isGK = num == 1 ||
-        (player.positionRole ?? '').toLowerCase().contains('goal');
+    final circleColor = _isGK
+        ? const Color(0xFFF59E0B)
+        : (isSelected ? Colors.white : teamColor);
+    final textColor = _isGK
+        ? kTeamDark
+        : (isSelected ? teamColor : Colors.white);
 
     return SizedBox(
       width: 44,
@@ -357,56 +474,36 @@ class _PitchPlayer extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Círculo del jugador
           AnimatedContainer(
             duration: const Duration(milliseconds: 150),
             width: 34,
             height: 34,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isGK
-                  ? const Color(0xFFF59E0B)
-                  : (isSelected ? Colors.white : teamColor),
+              color: circleColor,
               border: Border.all(
-                color: isSelected ? kTeamDark : Colors.white.withOpacity(0.8),
+                color: isSelected ? kTeamDark : Colors.white.withValues(alpha: 0.8),
                 width: isSelected ? 2.5 : 1.5,
               ),
               boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: kTeamDark.withOpacity(0.6),
-                        offset: const Offset(2, 2),
-                        blurRadius: 0,
-                      ),
-                    ]
+                  ? [BoxShadow(color: kTeamDark.withValues(alpha: 0.6), offset: const Offset(2, 2), blurRadius: 0)]
                   : null,
             ),
             child: Center(
               child: Text(
                 num != null ? '$num' : '?',
-                style: teamMono(
-                  size: 12,
-                  weight: FontWeight.w900,
-                  color: isSelected
-                      ? teamColor
-                      : (isGK ? kTeamDark : Colors.white),
-                ),
+                style: teamMono(size: 12, weight: FontWeight.w900, color: textColor),
               ),
             ),
           ),
-          // Nombre corto
           const SizedBox(height: 2),
           Container(
             constraints: const BoxConstraints(maxWidth: 44),
             padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
-            color: kTeamDark.withOpacity(0.72),
+            color: kTeamDark.withValues(alpha: 0.72),
             child: Text(
               _shortName(player.playerName),
-              style: teamMono(
-                size: 7,
-                color: Colors.white,
-                weight: FontWeight.w700,
-              ),
+              style: teamMono(size: 7, color: Colors.white, weight: FontWeight.w700),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
@@ -418,8 +515,9 @@ class _PitchPlayer extends StatelessWidget {
   }
 
   String _shortName(String name) {
-    final parts = name.split(' ');
-    if (parts.length == 1) return name.substring(0, name.length.clamp(0, 8));
+    final parts = name.trim().split(' ');
+    if (parts.length == 1) return name.substring(0, name.length.clamp(0, 9));
+    // Apellido (última palabra)
     return parts.last.substring(0, parts.last.length.clamp(0, 9));
   }
 }
@@ -436,21 +534,17 @@ class _PlayerDetailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pos = positionAbbr[player.positionRole] ?? player.positionRole ?? '—';
-    final isGK = (player.shirtNumber ?? 99) == 1 ||
-        (player.positionRole ?? '').toLowerCase().contains('goal');
+    final role = player.positionRole ?? '';
+    final posLabel = _kPosLabel[role] ?? (role.isNotEmpty ? role : '—');
+    final isGK = player.shirtNumber == 1 ||
+        role.toUpperCase() == 'GK';
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      decoration: teamNeoBox(
-        bg: kTeamDark,
-        shadowX: 3,
-        shadowY: 3,
-      ),
+      decoration: teamNeoBox(bg: kTeamDark, shadowX: 3, shadowY: 3),
       padding: const EdgeInsets.all(14),
       child: Row(
         children: [
-          // Número grande
           Container(
             width: 56,
             height: 56,
@@ -458,47 +552,31 @@ class _PlayerDetailCard extends StatelessWidget {
             child: Center(
               child: Text(
                 player.shirtNumber != null ? '${player.shirtNumber}' : '?',
-                style: teamMono(
-                  size: 26,
-                  weight: FontWeight.w900,
-                  color: Colors.white,
-                ),
+                style: teamMono(size: 26, weight: FontWeight.w900, color: Colors.white),
               ),
             ),
           ),
           const SizedBox(width: 14),
-
-          // Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  player.playerName,
-                  style: teamMono(
-                    size: 15,
-                    weight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
+                Text(player.playerName,
+                    style: teamMono(size: 15, weight: FontWeight.w800, color: Colors.white)),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 8,
                   children: [
-                    _InfoTag(label: pos, color: teamColor),
-                    if (player.teamSide != null)
-                      _InfoTag(label: player.teamSide!, color: kTeamMuted),
+                    _InfoTag(label: posLabel, color: teamColor),
                     if (isGK) _InfoTag(label: 'PORTERO', color: kTeamGold),
                   ],
                 ),
                 if (player.notes != null) ...[
                   const SizedBox(height: 6),
-                  Text(
-                    player.notes!,
-                    style: teamMono(size: 10, color: Colors.white54),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(player.notes!,
+                      style: teamMono(size: 10, color: Colors.white54),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis),
                 ],
               ],
             ),
@@ -512,18 +590,15 @@ class _PlayerDetailCard extends StatelessWidget {
 class _InfoTag extends StatelessWidget {
   final String label;
   final Color color;
-
   const _InfoTag({required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-      color: color.withOpacity(0.2),
-      child: Text(
-        label.toUpperCase(),
-        style: teamMono(size: 8, weight: FontWeight.w800, color: color),
-      ),
+      color: color.withValues(alpha: 0.2),
+      child: Text(label.toUpperCase(),
+          style: teamMono(size: 8, weight: FontWeight.w800, color: color)),
     );
   }
 }
@@ -551,7 +626,6 @@ class _PlayerList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Titulares
         if (starters.isNotEmpty) ...[
           _ListSubheader(label: 'TITULARES', count: starters.length),
           ...starters.map((p) => _PlayerRow(
@@ -561,7 +635,6 @@ class _PlayerList extends StatelessWidget {
                 onTap: () => onTap(p),
               )),
         ],
-        // Suplentes/reservas
         if (bench.isNotEmpty) ...[
           _ListSubheader(label: 'SUPLENTES', count: bench.length),
           ...bench.map((p) => _PlayerRow(
@@ -579,7 +652,6 @@ class _PlayerList extends StatelessWidget {
 class _ListSubheader extends StatelessWidget {
   final String label;
   final int count;
-
   const _ListSubheader({required this.label, required this.count});
 
   @override
@@ -592,23 +664,14 @@ class _ListSubheader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text(
-            label,
-            style: teamMono(
-              size: 9,
-              weight: FontWeight.w700,
-              letterSpacing: 1.2,
-              color: kTeamMuted,
-            ),
-          ),
+          Text(label,
+              style: teamMono(size: 9, weight: FontWeight.w700, letterSpacing: 1.2, color: kTeamMuted)),
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
             color: kTeamAccent,
-            child: Text(
-              '$count',
-              style: teamMono(size: 8, color: Colors.white, weight: FontWeight.w800),
-            ),
+            child: Text('$count',
+                style: teamMono(size: 8, color: Colors.white, weight: FontWeight.w800)),
           ),
         ],
       ),
@@ -631,9 +694,9 @@ class _PlayerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pos = positionAbbr[player.positionRole] ?? player.positionRole ?? '—';
-    final isGK = (player.shirtNumber ?? 99) == 1 ||
-        (player.positionRole ?? '').toLowerCase().contains('goal');
+    final role = player.positionRole ?? '';
+    final posLabel = _kPosLabel[role] ?? role;
+    final isGK = player.shirtNumber == 1 || role.toUpperCase() == 'GK';
     final rowColor = isGK ? kTeamGold : teamColor;
 
     return GestureDetector(
@@ -652,11 +715,10 @@ class _PlayerRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            // Número de camiseta
             Container(
               width: 32,
               height: 32,
-              color: isSelected ? rowColor : rowColor.withOpacity(0.12),
+              color: isSelected ? rowColor : rowColor.withValues(alpha: 0.12),
               child: Center(
                 child: Text(
                   player.shirtNumber != null ? '${player.shirtNumber}' : '?',
@@ -669,27 +731,21 @@ class _PlayerRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-
-            // Nombre
             Expanded(
-              child: Text(
-                player.playerName,
-                style: teamMono(
-                  size: 13,
-                  weight: FontWeight.w700,
-                  color: isSelected ? Colors.white : kTeamDark,
-                ),
-              ),
+              child: Text(player.playerName,
+                  style: teamMono(
+                    size: 13,
+                    weight: FontWeight.w700,
+                    color: isSelected ? Colors.white : kTeamDark,
+                  )),
             ),
-
-            // Posición
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
               color: isSelected
-                  ? teamColor.withOpacity(0.3)
-                  : kTeamBorderL.withOpacity(0.5),
+                  ? teamColor.withValues(alpha: 0.3)
+                  : kTeamBorderL.withValues(alpha: 0.5),
               child: Text(
-                pos.toUpperCase(),
+                posLabel.toUpperCase(),
                 style: teamMono(
                   size: 8,
                   weight: FontWeight.w800,
@@ -740,38 +796,27 @@ class _AlineacionHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'ALINEACIÓN',
-                  style: teamMono(
-                    size: 16,
-                    weight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: -0.3,
-                  ),
-                ),
+                Text('ALINEACIÓN',
+                    style: teamMono(size: 16, weight: FontWeight.w900, color: Colors.white, letterSpacing: -0.3)),
                 const SizedBox(height: 3),
-                Text(
-                  'Toca un jugador para ver su detalle',
-                  style: teamMono(size: 9, color: kTeamMuted),
-                ),
+                Text('Toca un jugador para ver su detalle',
+                    style: teamMono(size: 9, color: kTeamMuted)),
               ],
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              border: Border.all(color: teamColor.withOpacity(0.5)),
-              color: teamColor.withOpacity(0.1),
+              border: Border.all(color: teamColor.withValues(alpha: 0.5)),
+              color: teamColor.withValues(alpha: 0.1),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.group_outlined, size: 10, color: teamColor),
                 const SizedBox(width: 5),
-                Text(
-                  '$starterCount',
-                  style: teamMono(size: 13, weight: FontWeight.w900, color: teamColor),
-                ),
+                Text('$starterCount',
+                    style: teamMono(size: 13, weight: FontWeight.w900, color: teamColor)),
               ],
             ),
           ),

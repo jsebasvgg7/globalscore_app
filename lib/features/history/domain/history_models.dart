@@ -60,6 +60,7 @@ class HistoricalTeam {
   final String? country;
   final String? eraDominance;
   final String? activeYears;
+  final String? formation;
   final String? legacyType;
   final String? imagePath;
   final String? description;
@@ -74,6 +75,7 @@ class HistoricalTeam {
     this.country,
     this.eraDominance,
     this.activeYears,
+    this.formation,
     this.legacyType,
     this.imagePath,
     this.description,
@@ -91,6 +93,7 @@ class HistoricalTeam {
         country: m['country'] as String?,
         eraDominance: m['era_dominance'] as String?,
         activeYears: m['active_years'] as String?,
+        formation: m['formation'] as String?,
         legacyType: m['legacy_type'] as String?,
         imagePath: m['image_path'] as String?,
         description: m['description'] as String?,

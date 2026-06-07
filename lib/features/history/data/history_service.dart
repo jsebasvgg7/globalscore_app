@@ -96,7 +96,7 @@ class HistoryService {
         .select(
           'id, name, country, era_dominance, active_years, legacy_type, '
           'image_path, description, primary_color, secondary_color, '
-          'titles_count, is_published',
+          'titles_count, formation, is_published',
         )
         .eq('is_published', true)
         .order('name', ascending: true);
@@ -271,7 +271,7 @@ class HistoryService {
         .select(
           'id, name, country, era_dominance, active_years, legacy_type, '
           'image_path, description, primary_color, secondary_color, '
-          'titles_count, is_published',
+          'titles_count, formation, is_published',
         )
         .eq('id', teamId)
         .eq('is_published', true)
