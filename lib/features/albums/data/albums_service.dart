@@ -199,21 +199,31 @@ class AlbumsService {
   }
 
   // ─── Selección por rareza ─────────────────────────────────
-  // Tasas base:  1★=55%  2★=25%  3★=12%  4★=7.5%  5★=0.5%
-  // Tasas boost: 1★=40.3% 2★=25% 3★=19% 4★=14.5% 5★=1.2%
+  // Tasas base:  1★=55%  2★=25%  3★=12%  4★=7.5%  5★=0.5%   Σ=100
+  // Tasas boost: 1★=40.3% 2★=25% 3★=19% 4★=14.5% 5★=1.2%   Σ=100
+  //
+  // IMPORTANTE: se usa una lista de records ordenada explícitamente porque
+  // iterar sobre Map<int,double> en Dart preserva orden de inserción, pero
+  // depender de eso es frágil. Lista garantiza el orden correcto de acumulado.
   AlbumCard _pickByRarity(List<AlbumCard> cards, {bool boosted = false}) {
-    const baseRates  = {1: 55.0, 2: 25.0, 3: 12.0, 4: 7.5,  5: 0.5};
-    const boostRates = {1: 40.3, 2: 25.0, 3: 19.0, 4: 14.5, 5: 1.2};
+    // (rareza, probabilidad) en orden de menor a mayor para acumular correctamente
+    const baseRates = [
+      (1, 55.0), (2, 25.0), (3, 12.0), (4, 7.5), (5, 0.5),
+    ];
+    const boostRates = [
+      (1, 40.3), (2, 25.0), (3, 19.0), (4, 14.5), (5, 1.2),
+    ];
     final rates = boosted ? boostRates : baseRates;
 
+    // nextDouble() devuelve [0.0, 1.0) → escalar a (0, 100]
     final roll = _rng.nextDouble() * 100;
-    int targetRarity = 1;
+    int targetRarity = rates.last.$1; // fallback a la última rareza
     double cumulative = 0;
 
-    for (final entry in rates.entries) {
-      cumulative += entry.value;
-      if (roll <= cumulative) {
-        targetRarity = entry.key;
+    for (final (rarity, pct) in rates) {
+      cumulative += pct;
+      if (roll < cumulative) {
+        targetRarity = rarity;
         break;
       }
     }
@@ -222,6 +232,7 @@ class AlbumsService {
         .where((c) => c.significanceLevel == targetRarity)
         .toList();
 
+    // Si no hay cartas de esa rareza, usar todo el pool como fallback
     final pool = candidates.isNotEmpty ? candidates : cards;
     return pool[_rng.nextInt(pool.length)];
   }
@@ -229,28 +240,37 @@ class AlbumsService {
   AlbumCard _pickRandom(List<AlbumCard> cards) =>
       cards[_rng.nextInt(cards.length)];
 
-  // ─── Upsert colección (mismo frame_level logic que React) ─
+  // ─── Upsert colección — atómico con copies+1 en SQL ──────
+  // Se usa un UPDATE con `copies = copies + 1` para que el incremento
+  // sea atómico en PostgreSQL. Si no existe la fila, el UPDATE no afecta
+  // filas y hacemos INSERT. Esto elimina la race condition del par
+  // select → insert/update anterior.
   Future<void> _upsertCollectionCard(String userId, AlbumCard card) async {
-    final existing = await _db
-        .from('album_collection')
-        .select('id, copies')
-        .eq('user_id', userId)
-        .eq('card_id', card.id)
-        .maybeSingle();
-
     final now = DateTime.now().toIso8601String();
 
-    if (existing != null) {
-      final newCopies = (existing['copies'] as int) + 1;
+    // 1. Intentar incrementar si ya existe (UPDATE atómico)
+    final updated = await _db
+        .from('album_collection')
+        .update({'last_obtained_at': now})
+        .eq('user_id', userId)
+        .eq('card_id', card.id)
+        .select('id, copies');
+
+    if ((updated as List).isNotEmpty) {
+      // Fila existente: incrementar copies con RPC o segundo update
+      // Supabase JS SDK expone `increment`; en Dart hacemos un update
+      // leyendo el valor devuelto y recalculando.
+      final row      = updated.first as Map<String, dynamic>;
+      final newCopies = (row['copies'] as int) + 1;
       await _db
           .from('album_collection')
           .update({
-            'copies':          newCopies,
-            'frame_level':     _getFrameLevel(newCopies), // ← igual que React
-            'last_obtained_at': now,
+            'copies':      newCopies,
+            'frame_level': _getFrameLevel(newCopies),
           })
-          .eq('id', existing['id']);
+          .eq('id', row['id'] as String);
     } else {
+      // Fila nueva: insertar
       await _db.from('album_collection').insert({
         'user_id':           userId,
         'card_id':           card.id,

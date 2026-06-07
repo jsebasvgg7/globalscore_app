@@ -35,38 +35,66 @@ final albumsProvider = StreamProvider<AlbumsModel>((ref) async* {
 
   final controller = StreamController<AlbumsModel>();
 
+  // Debounce: si llegan varios eventos Realtime en ráfaga (ej. album_packs +
+  // album_collection al mismo tiempo al abrir un sobre), no disparamos 4
+  // fetchAll en paralelo — esperamos 400ms y hacemos uno solo.
+  Timer? debounce;
   Future<void> reload() async {
     if (controller.isClosed) return;
-    try {
-      final model = await service.fetchAll(userId);
-      if (!controller.isClosed) controller.add(model);
-    } catch (_) {}
+    debounce?.cancel();
+    debounce = Timer(const Duration(milliseconds: 400), () async {
+      if (controller.isClosed) return;
+      try {
+        final model = await service.fetchAll(userId);
+        if (!controller.isClosed) controller.add(model);
+      } catch (_) {}
+    });
   }
 
-  // Canal único que escucha las 3 tablas que cambian con frecuencia
+  // Nombre de canal con timestamp para evitar colisión si el provider
+  // se descarta y re-crea rápidamente (ej. por ref.invalidate externo)
+  final channelName =
+      'realtime-albums-$userId-${DateTime.now().millisecondsSinceEpoch}';
+
   final channel = Supabase.instance.client
-      .channel('realtime-albums-$userId')
+      .channel(channelName)
       .onPostgresChanges(
         event: PostgresChangeEvent.all,
         schema: 'public',
         table: 'album_packs',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'user_id',
+          value: userId,
+        ),
         callback: (_) => reload(),
       )
       .onPostgresChanges(
         event: PostgresChangeEvent.all,
         schema: 'public',
         table: 'album_collection',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'user_id',
+          value: userId,
+        ),
         callback: (_) => reload(),
       )
       .onPostgresChanges(
         event: PostgresChangeEvent.all,
         schema: 'public',
         table: 'album_progress',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'user_id',
+          value: userId,
+        ),
         callback: (_) => reload(),
       )
       .subscribe();
 
   ref.onDispose(() {
+    debounce?.cancel();
     channel.unsubscribe();
     controller.close();
   });

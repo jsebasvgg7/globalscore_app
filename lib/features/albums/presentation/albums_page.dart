@@ -30,11 +30,44 @@ abstract class Ds {
 // ════════════════════════════════════════════════════════════
 //  ALBUMS PAGE
 // ════════════════════════════════════════════════════════════
-class AlbumsPage extends ConsumerWidget {
+class AlbumsPage extends ConsumerStatefulWidget {
   const AlbumsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AlbumsPage> createState() => _AlbumsPageState();
+}
+
+class _AlbumsPageState extends ConsumerState<AlbumsPage>
+    with WidgetsBindingObserver {
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // El StreamProvider ya emite el estado inicial y escucha Realtime.
+    // NO invalidamos aquí para no destruir el canal recién creado.
+    // Si la pantalla se abre por primera vez, el StreamProvider ya
+    // habrá hecho fetchAll() al construirse.
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // Refrescar solo cuando la app vuelve del fondo (el canal Realtime
+  // puede haberse desconectado mientras la app estaba suspendida)
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      // Invalidar para reconectar el StreamProvider y su canal Realtime
+      ref.invalidate(albumsProvider);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final albumsAsync = ref.watch(albumsProvider);
     return albumsAsync.when(
       loading: () => const Center(
@@ -78,7 +111,8 @@ class _AlbumsBodyState extends ConsumerState<_AlbumsBody>
 
   @override
   Widget build(BuildContext context) {
-    final model = widget.model;
+    // Siempre usa el dato más fresco disponible del provider
+    final model = ref.watch(albumsProvider).value ?? widget.model;
 
     final activeAlbum = model.legendaryAlbums
             .where((d) => model.progressFor(d.id)?.isCompleted != true)
@@ -186,7 +220,10 @@ class _ResumenTab extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: PackCard(
               packsAvailable: model.packs?.packsAvailable ?? 0,
-              onOpen: () => showPackOpeningModal(context, ref),  // ← ref correcto
+             onOpen: () => showPackOpeningModal(
+              context, ref,
+              onViewCollection: onVerColeccion,
+            ),
             ),
           ),
  

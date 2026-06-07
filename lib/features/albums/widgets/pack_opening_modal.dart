@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/albums_model.dart';
 import '../domain/albums_provider.dart';
 import '../data/albums_service.dart';
-import '../../../shared/layout/scaffold_with_nav_bar.dart';
 
 // ── Paleta ───────────────────────────────────────────────────
 const _bg         = Color(0xFFF5F2EC);
@@ -43,54 +42,62 @@ IconData _typeIcon(String t) => switch (t) {
     };
 
 // ════════════════════════════════════════════════════════════
-//  ENTRY POINT — sin cambios
+//  ENTRY POINT
+//  Ahora acepta onViewCollection para navegar al tab colección
 // ════════════════════════════════════════════════════════════
-void showPackOpeningModal(BuildContext context, WidgetRef ref) {
-  ref.read(hideTopBarProvider.notifier).hide();
-  ref.read(hideBottomNavProvider.notifier).hide();
-
-  showModalBottomSheet(
+void showPackOpeningModal(
+  BuildContext context,
+  WidgetRef ref, {
+  VoidCallback? onViewCollection,
+}) {
+  showDialog<void>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withValues(alpha: 0.78),
     builder: (_) => UncontrolledProviderScope(
       container: ProviderScope.containerOf(context),
-      child: const _PackOpeningSheet(),
+      child: _PackOpeningDialog(onViewCollection: onViewCollection),
     ),
   ).then((_) {
-    ref.read(hideTopBarProvider.notifier).show();
-    ref.read(hideBottomNavProvider.notifier).show();
     ref.read(packOpenProvider.notifier).reset();
     ref.invalidate(albumsProvider);
   });
 }
 
 // ════════════════════════════════════════════════════════════
-//  SHEET CONTAINER
+//  DIALOG CONTAINER — modal flotante centrado
 // ════════════════════════════════════════════════════════════
-class _PackOpeningSheet extends StatelessWidget {
-  const _PackOpeningSheet();
+class _PackOpeningDialog extends StatelessWidget {
+  final VoidCallback? onViewCollection;
+  const _PackOpeningDialog({this.onViewCollection});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: _bg,
-        borderRadius: BorderRadius.zero,
-        border: Border(top: BorderSide(color: _border, width: 2.5)),
+    final screenH = MediaQuery.of(context).size.height;
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 36),
+      child: Container(
+        height: (screenH * 0.85).clamp(500.0, 720.0),
+        decoration: BoxDecoration(
+          color: _bg,
+          border: Border.all(color: _border, width: 2.5),
+          boxShadow: const [BoxShadow(color: _shadow, offset: Offset(6, 6))],
+        ),
+        child: _PackOpeningFlow(onViewCollection: onViewCollection),
       ),
-      child: const _PackOpeningFlow(),
     );
   }
 }
 
 // ════════════════════════════════════════════════════════════
-//  MÁQUINA DE ESTADOS — sin cambios
+//  MÁQUINA DE ESTADOS
 // ════════════════════════════════════════════════════════════
 enum _Phase { idle, opening, revealing, done }
 
 class _PackOpeningFlow extends ConsumerStatefulWidget {
-  const _PackOpeningFlow();
+  final VoidCallback? onViewCollection;
+  const _PackOpeningFlow({this.onViewCollection});
+
   @override
   ConsumerState<_PackOpeningFlow> createState() => _PackOpeningFlowState();
 }
@@ -101,16 +108,16 @@ class _PackOpeningFlowState extends ConsumerState<_PackOpeningFlow> {
   String? _errorMsg;
   bool _isOpening = false;
   final Set<int> _revealed = {};
-  int _openedThisSession = 0;
 
   int get _packsAvailable {
-    final fromProvider =
-        ref.read(albumsProvider).value?.packs?.packsAvailable ?? 0;
-    return (fromProvider - _openedThisSession).clamp(0, 9999);
+    // Reactivo: se reconstruye cuando el StreamProvider emite un nuevo valor
+    // (el Realtime de album_packs dispara el reload automáticamente)
+    return ref.watch(albumsProvider).value?.packs?.packsAvailable ?? 0;
   }
 
   Future<void> _startOpening() async {
     if (_isOpening) return;
+    if (_packsAvailable <= 0) return;
     setState(() {
       _isOpening = true;
       _phase    = _Phase.opening;
@@ -129,12 +136,16 @@ class _PackOpeningFlowState extends ConsumerState<_PackOpeningFlow> {
       }
       debugPrint('╚═══════════════════════════════════════');
 
+      // NO invalidar aquí: el StreamProvider ya detecta el cambio
+      // en album_packs vía Realtime y recarga solo.
+      // Invalidar mientras el modal está abierto destruiría el canal
+      // y crearía una ventana sin escucha de eventos.
+
       if (mounted) {
         setState(() {
-          _result            = result;
-          _phase             = _Phase.revealing;
-          _openedThisSession += 1;
-          _isOpening         = false;
+          _result    = result;
+          _phase     = _Phase.revealing;
+          _isOpening = false;
         });
       }
     } catch (e) {
@@ -159,14 +170,20 @@ class _PackOpeningFlowState extends ConsumerState<_PackOpeningFlow> {
     }
   }
 
+  // Cierra el dialog y navega al tab de colección
+  void _goToCollection() {
+    Navigator.of(context).pop();
+    widget.onViewCollection?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final screenH = MediaQuery.of(context).size.height;
     final isRevealing = _phase == _Phase.revealing;
     final total = _result?.allCards.length ?? 0;
     final revealedCount = _revealed.length;
     final allDone = isRevealing && total > 0 && revealedCount >= total;
 
+    // ── Fase revealing: layout especial (mínimo) ──────────────
     if (isRevealing) {
       return Column(
         mainAxisSize: MainAxisSize.min,
@@ -178,80 +195,113 @@ class _PackOpeningFlowState extends ConsumerState<_PackOpeningFlow> {
             onReveal: _revealCard,
             onFinish: () => setState(() => _phase = _Phase.done),
           ),
-          // Footer
+          // Footer: botón REVELAR TODO o contador progreso
           Container(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 22),
-            decoration: BoxDecoration(
-              color: _bg,
-              border: const Border(top: BorderSide(color: _border, width: 1)),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: _border, width: 1)),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  allDone ? '¡LISTO!' : 'TOCA CADA CARTA PARA REVELARLA',
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    color: allDone ? _accent : _muted,
-                    letterSpacing: 1.2,
+            child: allDone
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '¡LISTO!',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          color: _accent,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '$revealedCount/$total',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          color: _accent,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  )
+                : GestureDetector(
+                    onTap: () {
+                      for (int i = 0; i < total; i++) {
+                        _revealCard(i);
+                      }
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      decoration: BoxDecoration(
+                        color: _bgDark,
+                        border: Border.all(color: _border, width: 1.5),
+                        boxShadow: const [
+                          BoxShadow(color: _shadow, offset: Offset(3, 3)),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.auto_awesome,
+                            size: 12,
+                            color: Colors.white70,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'REVELAR TODO  ·  $revealedCount/$total',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.8,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Container(width: 3, height: 3, color: _muted),
-                const SizedBox(width: 10),
-                Text(
-                  '$revealedCount/$total',
-                  style: const TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                    color: _accent,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       );
     }
 
-    return SizedBox(
-      height: screenH * 0.92,
-      child: Column(
-        children: [
-          _GaHeader(packsAvailable: _packsAvailable),
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 280),
-              transitionBuilder: (child, anim) =>
-                  FadeTransition(opacity: anim, child: child),
-              child: switch (_phase) {
-                _Phase.idle => _IdleView(
-                    key: const ValueKey('idle'),
-                    packsAvailable: _packsAvailable,
-                    onOpen: _startOpening,
-                    errorMsg: _errorMsg,
-                  ),
-                _Phase.opening => const _OpeningView(key: ValueKey('opening')),
-                _Phase.revealing => const SizedBox.shrink(),
-                _Phase.done => _DoneView(
-                    key: const ValueKey('done'),
-                    result: _result!,
-                    packsAvailable: _packsAvailable,
-                    onOpenAnother: _startOpening,
-                  ),
-              },
-            ),
+    // ── Resto de fases ────────────────────────────────────────
+    return Column(
+      children: [
+        _GaHeader(packsAvailable: _packsAvailable),
+        Expanded(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 280),
+            transitionBuilder: (child, anim) =>
+                FadeTransition(opacity: anim, child: child),
+            child: switch (_phase) {
+              _Phase.idle => _IdleView(
+                  key: const ValueKey('idle'),
+                  packsAvailable: _packsAvailable,
+                  onOpen: _startOpening,
+                  errorMsg: _errorMsg,
+                ),
+              _Phase.opening => const _OpeningView(key: ValueKey('opening')),
+              _Phase.revealing => const SizedBox.shrink(),
+              _Phase.done => _DoneView(
+                  key: const ValueKey('done'),
+                  result: _result!,
+                  onViewCollection: _goToCollection,
+                ),
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
 // ════════════════════════════════════════════════════════════
-//  HEADER — fondo negro/oscuro, logo GA cuadrado, X cierre
+//  HEADER — fondo negro, logo GA, X cierre
 // ════════════════════════════════════════════════════════════
 class _GaHeader extends StatelessWidget {
   final int packsAvailable;
@@ -268,7 +318,7 @@ class _GaHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Logo GA cuadrado morado con borde blanco
+          // Logo GA cuadrado morado
           Container(
             width: 34, height: 34,
             decoration: BoxDecoration(
@@ -312,13 +362,12 @@ class _GaHeader extends StatelessWidget {
             ],
           ),
           const Spacer(),
-          // Botón cerrar — cuadrado con borde
+          // Botón cerrar
           GestureDetector(
             onTap: () => Navigator.of(context).pop(),
             child: Container(
               width: 32, height: 32,
               decoration: BoxDecoration(
-                color: Colors.transparent,
                 border: Border.all(color: Colors.white30, width: 1.5),
               ),
               child: const Icon(Icons.close, size: 16, color: Colors.white),
@@ -331,7 +380,7 @@ class _GaHeader extends StatelessWidget {
 }
 
 // ════════════════════════════════════════════════════════════
-//  FASE idle — fondo crema con dots, sobre 3D grande, contador
+//  FASE idle — sobre plano 2D + contador
 // ════════════════════════════════════════════════════════════
 class _IdleView extends StatefulWidget {
   final int packsAvailable;
@@ -361,7 +410,7 @@ class _IdleViewState extends State<_IdleView>
       vsync: this,
       duration: const Duration(milliseconds: 2400),
     )..repeat(reverse: true);
-    _floatAnim = Tween<double>(begin: 0, end: -12).animate(
+    _floatAnim = Tween<double>(begin: 0, end: -10).animate(
       CurvedAnimation(parent: _floatCtrl, curve: Curves.easeInOut),
     );
   }
@@ -381,63 +430,42 @@ class _IdleViewState extends State<_IdleView>
         // Fondo de dots grid sutil
         Positioned.fill(child: CustomPaint(painter: _DotGridPainter())),
 
-        // ── Marcos viewfinder en las 4 esquinas del área de contenido ──
-        Positioned(top: 22, left: 22,
-          child: CustomPaint(size: const Size(28, 28),
-            painter: _BracketPainter(color: _accent.withValues(alpha: 0.38), strokeWidth: 2.0))),
-        Positioned(top: 22, right: 22,
+        // Marcos viewfinder en esquinas
+        Positioned(top: 18, left: 18,
+          child: CustomPaint(size: const Size(24, 24),
+            painter: _BracketPainter(color: _accent.withValues(alpha: 0.35), strokeWidth: 2.0))),
+        Positioned(top: 18, right: 18,
           child: Transform.scale(scaleX: -1,
-            child: CustomPaint(size: const Size(28, 28),
-              painter: _BracketPainter(color: _accent.withValues(alpha: 0.38), strokeWidth: 2.0)))),
-        Positioned(bottom: 110, left: 22,
+            child: CustomPaint(size: const Size(24, 24),
+              painter: _BracketPainter(color: _accent.withValues(alpha: 0.35), strokeWidth: 2.0)))),
+        Positioned(bottom: 108, left: 18,
           child: Transform.scale(scaleY: -1,
-            child: CustomPaint(size: const Size(28, 28),
-              painter: _BracketPainter(color: _accent.withValues(alpha: 0.38), strokeWidth: 2.0)))),
-        Positioned(bottom: 110, right: 22,
+            child: CustomPaint(size: const Size(24, 24),
+              painter: _BracketPainter(color: _accent.withValues(alpha: 0.35), strokeWidth: 2.0)))),
+        Positioned(bottom: 108, right: 18,
           child: Transform.scale(scaleX: -1, scaleY: -1,
-            child: CustomPaint(size: const Size(28, 28),
-              painter: _BracketPainter(color: _accent.withValues(alpha: 0.38), strokeWidth: 2.0)))),
+            child: CustomPaint(size: const Size(24, 24),
+              painter: _BracketPainter(color: _accent.withValues(alpha: 0.35), strokeWidth: 2.0)))),
 
         Column(
           children: [
-            // Zona sobre — expandida
+            // Zona sobre
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Barcode + GS-25/26 arriba del sobre
-                  Column(
-                    children: [
-                      CustomPaint(
-                        size: const Size(80, 12),
-                        painter: _BarcodePainter(color: _border.withValues(alpha: 0.35)),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'GS-25/26',
-                        style: TextStyle(
-                          fontSize: 8,
-                          fontWeight: FontWeight.w700,
-                          color: _border.withValues(alpha: 0.4),
-                          letterSpacing: 2,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
                   // Sobre flotando
                   AnimatedBuilder(
                     animation: _floatAnim,
                     builder: (_, __) => Transform.translate(
                       offset: Offset(0, _floatAnim.value),
-                      child: const _Pack3D(scale: 1.55),
+                      child: const _FlatPack(scale: 1.15),
                     ),
                   ),
 
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 20),
 
-                  // Contador de sobres — cuadro estilo neobrutalista
+                  // Contador de sobres
                   Column(
                     children: [
                       Container(
@@ -484,7 +512,7 @@ class _IdleViewState extends State<_IdleView>
               decoration: const BoxDecoration(
                 border: Border(top: BorderSide(color: _border, width: 1)),
               ),
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               child: Column(
                 children: [
                   // Error si lo hay
@@ -556,10 +584,11 @@ class _IdleViewState extends State<_IdleView>
 }
 
 // ════════════════════════════════════════════════════════════
-//  FASE opening — copia visual de idle + loading overlay
+//  FASE opening — sobre plano + loading
 // ════════════════════════════════════════════════════════════
 class _OpeningView extends StatefulWidget {
   const _OpeningView({super.key});
+
   @override
   State<_OpeningView> createState() => _OpeningViewState();
 }
@@ -576,7 +605,7 @@ class _OpeningViewState extends State<_OpeningView>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
-    _float = Tween<double>(begin: 0, end: -14).animate(
+    _float = Tween<double>(begin: 0, end: -12).animate(
       CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
     );
   }
@@ -599,10 +628,10 @@ class _OpeningViewState extends State<_OpeningView>
               animation: _float,
               builder: (_, __) => Transform.translate(
                 offset: Offset(0, _float.value),
-                child: const _Pack3D(scale: 1.55),
+                child: const _FlatPack(scale: 1.15),
               ),
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 44),
             const Text(
               'ABRIENDO SOBRE...',
               style: TextStyle(
@@ -638,7 +667,7 @@ class _OpeningViewState extends State<_OpeningView>
 }
 
 // ════════════════════════════════════════════════════════════
-//  FASE revealing — grid 2×2, cartas ocultas con escudo GA
+//  FASE revealing — grid 2×2, cartas ocultas/reveladas
 // ════════════════════════════════════════════════════════════
 class _RevealingView extends StatelessWidget {
   final PackOpenResult result;
@@ -661,7 +690,7 @@ class _RevealingView extends StatelessWidget {
 
     return Column(
       children: [
-        // Sub-header "TUS CARTAS" + cuadraditos indicadores
+        // Sub-header "TUS CARTAS" + indicadores
         Container(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
           decoration: const BoxDecoration(
@@ -690,25 +719,9 @@ class _RevealingView extends StatelessWidget {
           ),
         ),
 
-        // Leyenda rareza
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-          child: Row(
-            children: [
-              _RarityDot(color: const Color(0xFF5B4FD8), label: 'RARO'),
-              const SizedBox(width: 16),
-              _RarityDot(color: const Color(0xFFE0435A), label: 'ÉPICO'),
-              const SizedBox(width: 16),
-              _RarityDot(color: _gold, label: 'LEGENDARIO'),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 12),
-
         // Grid 2×2
         Padding(
-          padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
           child: GridView.builder(
             physics: const NeverScrollableScrollPhysics(),
             shrinkWrap: true,
@@ -736,18 +749,16 @@ class _RevealingView extends StatelessWidget {
 }
 
 // ════════════════════════════════════════════════════════════
-//  FASE done — misma grid + botones al pie
+//  FASE done — grid revelado + botón VER COLECCIÓN
 // ════════════════════════════════════════════════════════════
 class _DoneView extends StatefulWidget {
   final PackOpenResult result;
-  final int packsAvailable;
-  final VoidCallback onOpenAnother;
+  final VoidCallback onViewCollection;
 
   const _DoneView({
     super.key,
     required this.result,
-    required this.packsAvailable,
-    required this.onOpenAnother,
+    required this.onViewCollection,
   });
 
   @override
@@ -777,7 +788,6 @@ class _DoneViewState extends State<_DoneView>
   @override
   Widget build(BuildContext context) {
     final cards = widget.result.allCards;
-    final canOpen = widget.packsAvailable > 0;
 
     return FadeTransition(
       opacity: _fade,
@@ -812,128 +822,69 @@ class _DoneViewState extends State<_DoneView>
             ),
           ),
 
-          // Leyenda rareza
+          // ¡SOBRE COMPLETADO! debajo del header
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-            child: Row(
-              children: [
-                _RarityDot(color: const Color(0xFF5B4FD8), label: 'RARO'),
-                const SizedBox(width: 16),
-                _RarityDot(color: const Color(0xFFE0435A), label: 'ÉPICO'),
-                const SizedBox(width: 16),
-                _RarityDot(color: _gold, label: 'LEGENDARIO'),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          // Grid de cartas reveladas
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: GridView.builder(
-                physics: const NeverScrollableScrollPhysics(),
-                shrinkWrap: true,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                  childAspectRatio: 0.72,
-                ),
-                itemCount: cards.length,
-                itemBuilder: (_, i) => _CardContent(card: cards[i], index: i),
+            child: const Text(
+              '¡SOBRE COMPLETADO!',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                color: _accent,
+                letterSpacing: 2,
               ),
             ),
           ),
 
-          // Pie: ¡SOBRE COMPLETADO! + botones
-          Container(
-            decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: _border, width: 1.5)),
-            ),
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-            child: Column(
-              children: [
-                // Banner completado
-                const Text(
-                  '¡SOBRE COMPLETADO!',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    color: _accent,
-                    letterSpacing: 2,
-                  ),
-                ),
+          const SizedBox(height: 10),
 
-                const SizedBox(height: 12),
-
-                // Botón ABRIR OTRO con contador integrado
-                GestureDetector(
-                  onTap: canOpen ? widget.onOpenAnother : null,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      color: canOpen ? _accent : _muted,
-                      border: Border.all(color: _border, width: 2),
-                      boxShadow: canOpen
-                          ? const [BoxShadow(color: _accentDark, offset: Offset(4, 4))]
-                          : null,
+          // Grid de cartas + botón VER COLECCIÓN en scroll — nada se tapa
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
+              child: Column(
+                children: [
+                  GridView.builder(
+                    physics: const NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      childAspectRatio: 0.72,
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'ABRIR OTRO',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2,
-                            color: Colors.white,
-                          ),
-                        ),
-                        if (canOpen) ...[
-                          const SizedBox(width: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              border: Border.all(color: Colors.white30, width: 1),
-                            ),
-                            child: Text(
-                              '${widget.packsAvailable}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
+                    itemCount: cards.length,
+                    itemBuilder: (_, i) => _CardContent(card: cards[i], index: i),
+                  ),
+                  const SizedBox(height: 16),
+                  // Botón VER COLECCIÓN al final del scroll
+                  GestureDetector(
+                    onTap: widget.onViewCollection,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 17),
+                      decoration: BoxDecoration(
+                        color: _accent,
+                        border: Border.all(color: _border, width: 2),
+                        boxShadow: const [
+                          BoxShadow(color: _accentDark, offset: Offset(4, 4)),
                         ],
-                      ],
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'VER MI COLECCIÓN',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2.5,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // Enlace VER MI COLECCIÓN — subrayado
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: const Text(
-                    'VER MI COLECCIÓN',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: _accent,
-                      letterSpacing: 1.5,
-                      decoration: TextDecoration.underline,
-                      decorationColor: _accent,
-                    ),
-                  ),
-                ),
-              ],
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
         ],
@@ -943,83 +894,221 @@ class _DoneViewState extends State<_DoneView>
 }
 
 // ════════════════════════════════════════════════════════════
-//  SOBRE 3D — cuerpo principal con capas traseras y glow
+//  SOBRE 2D — diseño mejorado sin zigzags
+//  Gradiente oscuro · banda lateral morada · bordes redondeados
+//  Escudo trofeo · "GLOBAL ALBUMS" · "25 / 26"
 // ════════════════════════════════════════════════════════════
-class _Pack3D extends StatelessWidget {
+class _FlatPack extends StatelessWidget {
   final double scale;
-  const _Pack3D({this.scale = 1.0});
+  const _FlatPack({this.scale = 1.0});
 
   @override
   Widget build(BuildContext context) {
-    final w   = 155.0 * scale;
-    final h   = 210.0 * scale;
-    final off = 8.0   * scale;
+    final w     = 160.0 * scale;
+    final h     = 240.0 * scale;
+    final leftW = w * 0.22;   // banda morada ≈ 22%
+    final ipad  = 10.0 * scale;
+    final r     = 8.0 * scale; // radio de esquinas
 
     return SizedBox(
-      width: w + off * 2,
-      height: h + off,
+      width: w,
+      height: h,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          // Sombra difusa
+          // ── Sombra externa decorativa ───────────────────────
           Positioned(
-            top: off + 6, left: off + 4,
+            top: 6 * scale, left: 6 * scale,
             child: Container(
-              width: w, height: h,
+              width: w,
+              height: h,
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 18,
-                    spreadRadius: 2,
-                  ),
-                ],
+                borderRadius: BorderRadius.circular(r),
+                color: _accentDark.withValues(alpha: 0.5),
               ),
             ),
           ),
-          // Capa más trasera
-          Positioned(
-            top: off, left: off * 1.6,
-            child: CustomPaint(
-              size: Size(w, h),
-              painter: _EnvelopePainter(
-                bodyColor:   const Color(0xFF18144A),
-                borderColor: const Color(0xFF2E2870),
-                flapColor:   const Color(0xFF100D32),
-                isFront: false,
-              ),
-            ),
-          ),
-          // Capa media
-          Positioned(
-            top: off * 0.5, left: off * 0.8,
-            child: CustomPaint(
-              size: Size(w, h),
-              painter: _EnvelopePainter(
-                bodyColor:   const Color(0xFF1E1860),
-                borderColor: const Color(0xFF3A318A),
-                flapColor:   const Color(0xFF150F44),
-                isFront: false,
-              ),
-            ),
-          ),
-          // Cara frontal
-          Positioned(
-            top: 0, left: 0,
+
+          // ── Cuerpo principal con clip redondeado ────────────
+          ClipRRect(
+            borderRadius: BorderRadius.circular(r),
             child: SizedBox(
-              width: w, height: h,
+              width: w,
+              height: h,
               child: Stack(
                 children: [
-                  CustomPaint(
-                    size: Size(w, h),
-                    painter: _EnvelopePainter(
-                      bodyColor:   const Color(0xFF1C1480),
-                      borderColor: const Color(0xFF7868F0),
-                      flapColor:   const Color(0xFF050214),
-                      isFront: true,
+                  // Fondo degradado oscuro
+                  Positioned.fill(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFF1C1830),
+                            Color(0xFF0E0C1A),
+                            Color(0xFF1A1428),
+                          ],
+                          stops: [0.0, 0.55, 1.0],
+                        ),
+                      ),
                     ),
                   ),
-                  _EnvelopeFrontContent(w: w, h: h, scale: scale),
+
+                  // Stripes diagonales sutiles de fondo
+                  Positioned.fill(
+                    child: CustomPaint(painter: _PackBgStripePainter()),
+                  ),
+
+                  // Banda morada izquierda
+                  Positioned(
+                    top: 0, left: 0, bottom: 0,
+                    child: Container(
+                      width: leftW,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            _accent,
+                            _accentDark,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Línea separadora banda/panel
+                  Positioned(
+                    top: 0, bottom: 0,
+                    left: leftW,
+                    child: Container(
+                      width: 1.5,
+                      color: Colors.white.withValues(alpha: 0.12),
+                    ),
+                  ),
+
+                  // Marco interior con borde sutil
+                  Positioned(
+                    top: ipad,
+                    left: leftW + ipad,
+                    right: ipad,
+                    bottom: ipad,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4 * scale),
+                        border: Border.all(
+                          color: _accent.withValues(alpha: 0.30),
+                          width: 1.0,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Puntos decorativos sup-izq
+                  Positioned(
+                    top: ipad + 7 * scale,
+                    left: leftW + ipad + 6 * scale,
+                    child: _PackDots(scale: scale * 0.85),
+                  ),
+
+                  // Puntos decorativos inf-der
+                  Positioned(
+                    bottom: ipad + 6 * scale,
+                    right: ipad + 6 * scale,
+                    child: _PackDots(scale: scale * 0.85),
+                  ),
+
+                  // Cuadraditos esquinas del marco
+                  Positioned(
+                    top: ipad - 3 * scale,
+                    left: leftW + ipad - 3 * scale,
+                    child: Container(width: 6 * scale, height: 6 * scale,
+                      color: _accent.withValues(alpha: 0.7)),
+                  ),
+                  Positioned(
+                    top: ipad - 3 * scale,
+                    right: ipad - 3 * scale,
+                    child: Container(width: 6 * scale, height: 6 * scale,
+                      color: Colors.white.withValues(alpha: 0.6)),
+                  ),
+                  Positioned(
+                    bottom: ipad - 3 * scale,
+                    left: leftW + ipad - 3 * scale,
+                    child: Container(width: 6 * scale, height: 6 * scale,
+                      color: Colors.white.withValues(alpha: 0.3)),
+                  ),
+                  Positioned(
+                    bottom: ipad - 3 * scale,
+                    right: ipad - 3 * scale,
+                    child: Container(width: 6 * scale, height: 6 * scale,
+                      color: _accent.withValues(alpha: 0.7)),
+                  ),
+
+                  // Reflejo/luz superior sutil
+                  Positioned(
+                    top: 0, left: leftW, right: 0,
+                    child: Container(
+                      height: h * 0.28,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.white.withValues(alpha: 0.06),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Contenido centrado
+                  Positioned(
+                    top: 0, bottom: 0,
+                    left: leftW, right: 0,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _TrophyShield(size: 54 * scale),
+                        SizedBox(height: 10 * scale),
+                        Text(
+                          'GLOBAL ALBUMS',
+                          style: TextStyle(
+                            fontSize: 8.5 * scale,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white.withValues(alpha: 0.90),
+                            letterSpacing: 2.2,
+                          ),
+                        ),
+                        SizedBox(height: 8 * scale),
+                        _PackSeparator(width: 68 * scale, scale: scale),
+                        SizedBox(height: 8 * scale),
+                        Text(
+                          '25 / 26',
+                          style: TextStyle(
+                            fontSize: 13 * scale,
+                            fontWeight: FontWeight.w700,
+                            color: _accent.withValues(alpha: 0.9),
+                            letterSpacing: 2.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Borde exterior del sobre
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(r),
+                        border: Border.all(
+                          color: _accent.withValues(alpha: 0.45),
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1030,91 +1119,15 @@ class _Pack3D extends StatelessWidget {
   }
 }
 
-// Painter sobre: cuerpo rect + flap triangular
-class _EnvelopePainter extends CustomPainter {
-  final Color bodyColor, borderColor, flapColor;
-  final bool isFront;
-
-  const _EnvelopePainter({
-    required this.bodyColor,
-    required this.borderColor,
-    required this.flapColor,
-    required this.isFront,
-  });
-
+// Stripes diagonales muy sutiles para el fondo del sobre
+class _PackBgStripePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final flapH = h * 0.26;
-
-    // ── Cuerpo ────────────────────────────────────────────────
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, w, h),
-      Paint()..color = bodyColor..style = PaintingStyle.fill,
-    );
-
-    // ── Rayas diagonales en el cuerpo (bajo el pliegue) ───────
-    if (isFront) {
-      canvas.save();
-      canvas.clipRect(Rect.fromLTWH(0, flapH, w, h - flapH));
-      _drawStripes(canvas, size, alpha: 0.13);
-      canvas.restore();
-    }
-
-    // ── Flap triangular ────────────────────────────────────────
-    final flapPath = Path()
-      ..moveTo(0, 0)
-      ..lineTo(w / 2, flapH)
-      ..lineTo(w, 0)
-      ..close();
-    canvas.drawPath(flapPath, Paint()..color = flapColor..style = PaintingStyle.fill);
-
-    // Rayas sutiles en el flap
-    if (isFront) {
-      canvas.save();
-      canvas.clipPath(flapPath);
-      _drawStripes(canvas, size, alpha: 0.06);
-      canvas.restore();
-    }
-
-    // ── Borde exterior ─────────────────────────────────────────
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, w, h),
-      Paint()
-        ..color = borderColor.withValues(alpha: isFront ? 1.0 : 0.35)
-        ..strokeWidth = isFront ? 2.0 : 1.0
-        ..style = PaintingStyle.stroke,
-    );
-
-    // ── Borde del flap ─────────────────────────────────────────
-    canvas.drawPath(
-      flapPath,
-      Paint()
-        ..color = borderColor.withValues(alpha: isFront ? 0.55 : 0.2)
-        ..strokeWidth = isFront ? 1.1 : 0.7
-        ..style = PaintingStyle.stroke,
-    );
-
-    // ── Línea de pliegue — marcada y visible ───────────────────
-    if (isFront) {
-      canvas.drawLine(
-        Offset(0, flapH),
-        Offset(w, flapH),
-        Paint()
-          ..color = borderColor.withValues(alpha: 0.82)
-          ..strokeWidth = 1.6
-          ..style = PaintingStyle.stroke,
-      );
-    }
-  }
-
-  void _drawStripes(Canvas canvas, Size size, {double alpha = 0.13}) {
     final paint = Paint()
-      ..color = Colors.white.withValues(alpha: alpha)
-      ..strokeWidth = 14
+      ..color = Colors.white.withValues(alpha: 0.025)
+      ..strokeWidth = 18
       ..style = PaintingStyle.stroke;
-    for (double x = -size.height; x < size.width + size.height; x += 28) {
+    for (double x = -size.height; x < size.width + size.height; x += 36) {
       canvas.drawLine(
         Offset(x, 0),
         Offset(x + size.height, size.height),
@@ -1124,102 +1137,133 @@ class _EnvelopePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_EnvelopePainter old) => false;
+  bool shouldRepaint(_PackBgStripePainter old) => false;
 }
 
-// Contenido superpuesto al frente del sobre
-class _EnvelopeFrontContent extends StatelessWidget {
-  final double w, h, scale;
-  const _EnvelopeFrontContent({required this.w, required this.h, required this.scale});
+// ── Escudo pentagonal con icono trofeo ───────────────────────
+class _TrophyShield extends StatelessWidget {
+  final double size;
+  const _TrophyShield({required this.size});
 
   @override
   Widget build(BuildContext context) {
-    final flapH = h * 0.26;
-
     return SizedBox(
-      width: w,
-      height: h,
-      child: Stack(
+      width: size,
+      height: size * 1.1,
+      child: CustomPaint(
+        painter: _TrophyShieldPainter(),
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: size * 0.05),
+            child: Icon(
+              Icons.emoji_events,
+              color: Colors.white,
+              size: size * 0.44,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TrophyShieldPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    final path = Path()
+      ..moveTo(w * 0.1, 0)
+      ..lineTo(w * 0.9, 0)
+      ..lineTo(w, h * 0.18)
+      ..lineTo(w, h * 0.58)
+      ..quadraticBezierTo(w, h * 0.82, w * 0.5, h)
+      ..quadraticBezierTo(0, h * 0.82, 0, h * 0.58)
+      ..lineTo(0, h * 0.18)
+      ..close();
+
+    canvas.drawPath(
+      path,
+      Paint()..color = Colors.white.withValues(alpha: 0.1)..style = PaintingStyle.fill,
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.88)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_TrophyShieldPainter old) => false;
+}
+
+// ── Puntos 3×3 decorativos ───────────────────────────────────
+class _PackDots extends StatelessWidget {
+  final double scale;
+  const _PackDots({required this.scale});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size(17 * scale, 11 * scale),
+      painter: _PackDotsPainter(scale: scale),
+    );
+  }
+}
+
+class _PackDotsPainter extends CustomPainter {
+  final double scale;
+  const _PackDotsPainter({required this.scale});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = _accent.withValues(alpha: 0.50)
+      ..style = PaintingStyle.fill;
+    final r = 1.3 * scale;
+    const cols = 4;
+    const rows = 3;
+    for (int row = 0; row < rows; row++) {
+      for (int col = 0; col < cols; col++) {
+        canvas.drawCircle(
+          Offset(col * 5.0 * scale + r, row * 5.0 * scale + r),
+          r,
+          paint,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PackDotsPainter old) => false;
+}
+
+// ── Separador horizontal con cuadraditos en extremos ─────────
+class _PackSeparator extends StatelessWidget {
+  final double width;
+  final double scale;
+  const _PackSeparator({required this.width, required this.scale});
+
+  @override
+  Widget build(BuildContext context) {
+    final sqSize = 4.0 * scale;
+    return SizedBox(
+      width: width,
+      height: sqSize,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // ── Barcode en el flap ────────────────────────────────
-          Positioned(
-            top: flapH * 0.28,
-            left: 0, right: 0,
-            child: Center(
-              child: CustomPaint(
-                size: Size(60 * scale, 10 * scale),
-                painter: _BarcodePainter(color: Colors.white.withValues(alpha: 0.45)),
-              ),
+          Container(width: sqSize, height: sqSize, color: _accent),
+          Expanded(
+            child: Container(
+              height: 1,
+              color: _accent.withValues(alpha: 0.55),
             ),
           ),
-
-          // ── GS-25/26 ─────────────────────────────────────────
-          Positioned(
-            top: flapH * 0.65,
-            left: 0, right: 0,
-            child: Center(
-              child: Text(
-                'GS-25/26',
-                style: TextStyle(
-                  fontSize: 6.5 * scale,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white.withValues(alpha: 0.55),
-                  letterSpacing: 1.5,
-                ),
-              ),
-            ),
-          ),
-
-          // ── Escudo GA pentagonal ───────────────────────────────
-          Positioned(
-            top: flapH + 22 * scale,
-            left: 0, right: 0,
-            child: Center(child: _GaShield(scale: scale * 0.95, accentColor: _accent)),
-          ),
-
-          // ── GLOBAL ALBUMS ─────────────────────────────────────
-          Positioned(
-            bottom: 42 * scale,
-            left: 0, right: 0,
-            child: Center(
-              child: Text(
-                'GLOBAL ALBUMS',
-                style: TextStyle(
-                  fontSize: 9 * scale,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white.withValues(alpha: 0.92),
-                  letterSpacing: 2.5,
-                ),
-              ),
-            ),
-          ),
-
-          // ── Temporada ─────────────────────────────────────────
-          Positioned(
-            bottom: 24 * scale,
-            left: 0, right: 0,
-            child: Center(
-              child: Text(
-                '25  ·  26',
-                style: TextStyle(
-                  fontSize: 7.5 * scale,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.white.withValues(alpha: 0.50),
-                  letterSpacing: 3.5,
-                ),
-              ),
-            ),
-          ),
-
-          // ── Esquinas doradas ──────────────────────────────────
-          Positioned(top: flapH + 8 * scale, left:  8 * scale,
-              child: _GoldCorner(scale: scale)),
-          Positioned(top: flapH + 8 * scale, right: 8 * scale,
-              child: _GoldCorner(scale: scale, flipH: true)),
-          Positioned(bottom: 8 * scale, left:  8 * scale,
-              child: _GoldCorner(scale: scale, flipV: true)),
-          Positioned(bottom: 8 * scale, right: 8 * scale,
-              child: _GoldCorner(scale: scale, flipH: true, flipV: true)),
+          Container(width: sqSize, height: sqSize, color: _accent),
         ],
       ),
     );
@@ -1227,51 +1271,142 @@ class _EnvelopeFrontContent extends StatelessWidget {
 }
 
 // ════════════════════════════════════════════════════════════
-//  CARTA OCULTA — escudo GA + stripes + brackets
+//  CARTA OCULTA — estilo sobre: gradiente oscuro + escudo GA
 // ════════════════════════════════════════════════════════════
-class _HiddenRevealCard extends StatelessWidget {
+class _HiddenRevealCard extends StatefulWidget {
   final int index;
   const _HiddenRevealCard({required this.index});
 
   @override
+  State<_HiddenRevealCard> createState() => _HiddenRevealCardState();
+}
+
+class _HiddenRevealCardState extends State<_HiddenRevealCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseCtrl;
+  late final Animation<double> _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat(reverse: true);
+    _pulse = CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _pulseCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF12101E),
-        border: Border.all(color: _accent.withValues(alpha: 0.55), width: 1.5),
-        boxShadow: const [BoxShadow(color: _shadow, offset: Offset(3, 3))],
-      ),
-      child: Stack(
-        children: [
-          // Stripes diagonales
-          Positioned.fill(child: CustomPaint(painter: _StripePainter())),
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (_, __) => ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF1C1830),
+                Color(0xFF0E0C1A),
+                Color(0xFF1A1428),
+              ],
+              stops: [0.0, 0.55, 1.0],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: _accent.withValues(alpha: 0.18 + 0.14 * _pulse.value),
+                blurRadius: 10 + 6 * _pulse.value,
+                spreadRadius: 0,
+              ),
+              const BoxShadow(color: _shadow, offset: Offset(3, 3)),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Stripes diagonales sutiles
+              Positioned.fill(child: CustomPaint(painter: _PackBgStripePainter())),
 
-          // Brackets esquinas
-          Positioned(top: 8, left: 8, child: _Bracket()),
-          Positioned(top: 8, right: 8, child: _Bracket(flipH: true)),
-          Positioned(bottom: 8, left: 8, child: _Bracket(flipV: true)),
-          Positioned(bottom: 8, right: 8, child: _Bracket(flipH: true, flipV: true)),
-
-          // Escudo GA centrado
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _GaShield(scale: 0.88, accentColor: _accent),
-                const SizedBox(height: 10),
-                Text(
-                  'GS-25/26',
-                  style: TextStyle(
-                    fontSize: 8,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white.withValues(alpha: 0.28),
-                    letterSpacing: 1.8,
+              // Borde interior pulsante
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: _accent.withValues(alpha: 0.25 + 0.30 * _pulse.value),
+                      width: 1.5,
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+
+              // Reflejo superior
+              Positioned(
+                top: 0, left: 0, right: 0,
+                child: Container(
+                  height: 60,
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.white.withValues(alpha: 0.06),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Brackets esquinas
+              Positioned(top: 10, left: 10, child: _Bracket()),
+              Positioned(top: 10, right: 10, child: _Bracket(flipH: true)),
+              Positioned(bottom: 10, left: 10, child: _Bracket(flipV: true)),
+              Positioned(bottom: 10, right: 10, child: _Bracket(flipH: true, flipV: true)),
+
+              // Escudo GA centrado con halo pulsante
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Halo exterior
+                    Container(
+                      width: 68,
+                      height: 68,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _accent.withValues(
+                            alpha: 0.04 + 0.06 * _pulse.value),
+                      ),
+                      child: Center(
+                        child: _GaShield(scale: 0.85, accentColor: _accent),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'GA · 25/26',
+                      style: TextStyle(
+                        fontSize: 7.5,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white.withValues(alpha: 0.22),
+                        letterSpacing: 2.0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1366,12 +1501,7 @@ class _CardBack extends StatelessWidget {
 }
 
 // ════════════════════════════════════════════════════════════
-//  CARTA CONTENIDO — diseño de referencia fiel
-//  • Número + badge tipo (top-left / top-right)
-//  • Avatar circular grande con borde punteado del color
-//  • Estrellas con color del tipo
-//  • Badge tipo en parte inferior izquierda
-//  • Nombre en caja gris en la parte de abajo
+//  CARTA CONTENIDO — diseño referencia fiel
 // ════════════════════════════════════════════════════════════
 class _CardContent extends StatelessWidget {
   final AlbumCard card;
@@ -1404,13 +1534,12 @@ class _CardContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Zona superior: número + número de tipo (top row)
+          // Número + tipo arriba
           Padding(
             padding: const EdgeInsets.fromLTRB(7, 6, 7, 0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Número de carta
                 Text(
                   numStr,
                   style: TextStyle(
@@ -1421,11 +1550,7 @@ class _CardContent extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                // Badge tipo — texto del color sin fondo, solo borde si es jugador
-                if (card.cardType == 'player')
-                  // Para jugador no hay badge arriba según referencia (se ve en la imagen que no hay)
-                  const SizedBox.shrink()
-                else
+                if (card.cardType != 'player')
                   Text(
                     label,
                     style: TextStyle(
@@ -1439,7 +1564,7 @@ class _CardContent extends StatelessWidget {
             ),
           ),
 
-          // ── Avatar circular con dashed border — zona expandida
+          // Avatar circular con dashed border
           Expanded(
             flex: 6,
             child: Center(
@@ -1453,7 +1578,7 @@ class _CardContent extends StatelessWidget {
             ),
           ),
 
-          // ── Estrellas
+          // Estrellas
           Padding(
             padding: const EdgeInsets.only(bottom: 3),
             child: Row(
@@ -1473,17 +1598,16 @@ class _CardContent extends StatelessWidget {
             ),
           ),
 
-          // ── Separador
+          // Separador
           Container(height: 1, color: const Color(0xFFE8E4DC)),
 
-          // ── Fila badge tipo + nombre
+          // Badge tipo + nombre
           Container(
             color: const Color(0xFFF2EFE8),
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Badge tipo — con borde del color, fondo blanco
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
@@ -1501,7 +1625,6 @@ class _CardContent extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                // Nombre
                 Text(
                   card.name.toUpperCase(),
                   maxLines: 2,
@@ -1564,7 +1687,7 @@ class _CircularAvatar extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Borde punteado exterior del color del tipo
+          // Borde punteado del color del tipo
           CustomPaint(
             size: const Size(size + 14, size + 14),
             painter: _DashedCirclePainter(
@@ -1662,7 +1785,6 @@ class _ShieldPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-
     final path = Path()
       ..moveTo(w * 0.5, 0)
       ..lineTo(w, h * 0.25)
@@ -1671,7 +1793,6 @@ class _ShieldPainter extends CustomPainter {
       ..lineTo(0, h * 0.65)
       ..lineTo(0, h * 0.25)
       ..close();
-
     canvas.drawPath(path,
       Paint()..color = accentColor.withValues(alpha: 0.22)..style = PaintingStyle.fill);
     canvas.drawPath(path,
@@ -1689,17 +1810,15 @@ class _ShieldPainter extends CustomPainter {
 //  PAINTERS Y HELPERS
 // ════════════════════════════════════════════════════════════
 
-// Dots grid fondo para idle/opening
+// Dots grid fondo
 class _DotGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = const Color(0xFF2D2A40).withValues(alpha: 0.1)
       ..style = PaintingStyle.fill;
-
     const spacing = 22.0;
-    const radius = 1.3;
-
+    const radius  = 1.3;
     for (double x = spacing; x < size.width; x += spacing) {
       for (double y = spacing; y < size.height; y += spacing) {
         canvas.drawCircle(Offset(x, y), radius, paint);
@@ -1719,7 +1838,6 @@ class _StripePainter extends CustomPainter {
       ..color = Colors.white.withValues(alpha: 0.04)
       ..strokeWidth = 13
       ..style = PaintingStyle.stroke;
-
     for (double x = -size.height; x < size.width + size.height; x += 28) {
       canvas.drawLine(
         Offset(x, 0),
@@ -1796,7 +1914,7 @@ class _DashedCirclePainter extends CustomPainter {
       old.color != color || old.dashCount != dashCount;
 }
 
-// Bracket esquina del sobre y cartas
+// Bracket esquina
 class _Bracket extends StatelessWidget {
   final bool flipH;
   final bool flipV;
@@ -1837,44 +1955,11 @@ class _BracketPainter extends CustomPainter {
   bool shouldRepaint(_BracketPainter old) => false;
 }
 
-// Esquina dorada del sobre
-class _GoldCorner extends StatelessWidget {
-  final double scale;
-  final bool flipH, flipV;
-  const _GoldCorner({required this.scale, this.flipH = false, this.flipV = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Transform.scale(
-      scaleX: flipH ? -1 : 1,
-      scaleY: flipV ? -1 : 1,
-      child: CustomPaint(
-        size: Size(10 * scale, 10 * scale),
-        painter: _GoldCornerPainter(),
-      ),
-    );
-  }
-}
-
-class _GoldCornerPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = _gold
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-    canvas.drawLine(Offset(0, size.height), const Offset(0, 0), paint);
-    canvas.drawLine(const Offset(0, 0), Offset(size.width, 0), paint);
-  }
-
-  @override
-  bool shouldRepaint(_GoldCornerPainter old) => false;
-}
-
 // Shimmer avatar
 class _AvatarShimmer extends StatefulWidget {
   final Color color;
   const _AvatarShimmer({required this.color});
+
   @override
   State<_AvatarShimmer> createState() => _AvatarShimmerState();
 }
