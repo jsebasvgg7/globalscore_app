@@ -2,8 +2,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_theme.dart';
-import 'login_page.dart'; // AuthDivider, AuthField, AuthMessage, AuthCtaButton, AuthSubHeader, AuthMessageType
-
+import 'login_page.dart';
 // ═══════════════════════════════════════════════════════════
 //  REGISTER PAGE
 // ═══════════════════════════════════════════════════════════
@@ -141,26 +140,27 @@ class _RegisterPageState extends State<RegisterPage>
     return Scaffold(
       backgroundColor: AuthTheme.cream,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Sub-header
-            AuthSubHeader(
-              title: 'CREAR CUENTA',
-              onBack: () => context.go('/login'),
-            ),
-
-            // Content
-            Expanded(
-              child: FadeTransition(
-                opacity: _fadeAnim,
-                child: SlideTransition(
-                  position: _slideAnim,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        child: FadeTransition(
+          opacity: _fadeAnim,
+          child: SlideTransition(
+            position: _slideAnim,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: constraints.maxHeight > 600
+                        ? constraints.maxHeight * 0.05
+                        : 14,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight * 0.88),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Title row with dot grid
+
+                        // ── Title + dot grid ──────────────────────
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -193,14 +193,13 @@ class _RegisterPageState extends State<RegisterPage>
                         ),
                         const SizedBox(height: 16),
 
-                        // ── Form card ──────────────────────────────
+                        // ── Form card ─────────────────────────────
                         Container(
                           decoration: _neoBox(),
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Section label
                               Row(
                                 children: [
                                   Container(width: 3, height: 14, color: AuthTheme.accent),
@@ -217,7 +216,6 @@ class _RegisterPageState extends State<RegisterPage>
                               ),
                               const SizedBox(height: 14),
 
-                              // NOMBRE
                               AuthField(
                                 label: 'NOMBRE',
                                 hint: 'Tu nombre',
@@ -227,7 +225,6 @@ class _RegisterPageState extends State<RegisterPage>
                               ),
                               const SizedBox(height: 10),
 
-                              // CORREO
                               AuthField(
                                 label: 'CORREO',
                                 hint: 'usuario@email.com',
@@ -238,7 +235,6 @@ class _RegisterPageState extends State<RegisterPage>
                               ),
                               const SizedBox(height: 10),
 
-                              // CONTRASEÑA
                               AuthField(
                                 label: 'CONTRASEÑA',
                                 hint: 'Mín. 6 caracteres',
@@ -257,7 +253,6 @@ class _RegisterPageState extends State<RegisterPage>
                                 ),
                               ),
 
-                              // Strength indicator
                               ValueListenableBuilder(
                                 valueListenable: _passwordController,
                                 builder: (_, value, __) {
@@ -272,7 +267,6 @@ class _RegisterPageState extends State<RegisterPage>
                               ),
                               const SizedBox(height: 14),
 
-                              // Info box
                               _InfoBox(),
                             ],
                           ),
@@ -289,44 +283,66 @@ class _RegisterPageState extends State<RegisterPage>
                           const SizedBox(height: 10),
                         ],
 
-                        // CTA full width
+                        // CTA
                         _RegisterButton(
                           isLoading: _isLoading,
                           onTap: _isLoading ? null : _register,
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 14),
 
-                        // Alt link
-                        Row(
-                          children: [
-                            const Text(
-                              '¿Ya tienes cuenta? ',
-                              style: TextStyle(
-                                fontFamily: AuthTheme.fontMono,
-                                fontSize: 10, color: AuthTheme.muted,
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () => context.go('/login'),
-                              child: const Text(
-                                'Inicia sesión',
-                                style: TextStyle(
-                                  fontFamily: AuthTheme.fontMono, fontSize: 10,
-                                  fontWeight: FontWeight.w800, color: AuthTheme.accent,
-                                  decoration: TextDecoration.underline,
-                                  decorationColor: AuthTheme.accent,
+                        // ── Login link card (igual que en login) ──
+                        GestureDetector(
+                          onTap: () => context.go('/login'),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AuthTheme.cream,
+                              border: Border.all(color: AuthTheme.dark, width: 1.5),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AuthTheme.dark.withOpacity(0.30),
+                                  offset: const Offset(3, 3),
+                                  blurRadius: 0,
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  '¿YA TIENES CUENTA?',
+                                  style: TextStyle(
+                                    fontFamily: AuthTheme.fontMono, fontSize: 10,
+                                    fontWeight: FontWeight.w600, color: AuthTheme.dark,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: AuthTheme.accent,
+                                    border: Border.all(color: AuthTheme.dark, width: 1.5),
+                                  ),
+                                  child: const Text(
+                                    'INICIA SESIÓN',
+                                    style: TextStyle(
+                                      fontFamily: AuthTheme.fontMono, fontSize: 10,
+                                      fontWeight: FontWeight.w800, color: Colors.white,
+                                      letterSpacing: 1.0,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
-          ],
+          ),
         ),
       ),
     );

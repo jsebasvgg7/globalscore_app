@@ -103,11 +103,21 @@ class _LoginPageState extends State<LoginPage>
           opacity: _fadeAnim,
           child: SlideTransition(
             position: _slideAnim,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: constraints.maxHeight > 600
+                        ? constraints.maxHeight * 0.06
+                        : 16,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight * 0.88),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                   // ── Brand ──────────────────────────────────────────
                   _NeoBrandHeader(),
                   const SizedBox(height: 22),
@@ -260,8 +270,11 @@ class _LoginPageState extends State<LoginPage>
                     alignment: Alignment.centerRight,
                     child: _DotGrid(cols: 5, rows: 3),
                   ),
-                ],
-              ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
