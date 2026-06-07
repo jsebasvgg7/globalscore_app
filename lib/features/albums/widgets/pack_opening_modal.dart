@@ -381,6 +381,23 @@ class _IdleViewState extends State<_IdleView>
         // Fondo de dots grid sutil
         Positioned.fill(child: CustomPaint(painter: _DotGridPainter())),
 
+        // ── Marcos viewfinder en las 4 esquinas del área de contenido ──
+        Positioned(top: 22, left: 22,
+          child: CustomPaint(size: const Size(28, 28),
+            painter: _BracketPainter(color: _accent.withValues(alpha: 0.38), strokeWidth: 2.0))),
+        Positioned(top: 22, right: 22,
+          child: Transform.scale(scaleX: -1,
+            child: CustomPaint(size: const Size(28, 28),
+              painter: _BracketPainter(color: _accent.withValues(alpha: 0.38), strokeWidth: 2.0)))),
+        Positioned(bottom: 110, left: 22,
+          child: Transform.scale(scaleY: -1,
+            child: CustomPaint(size: const Size(28, 28),
+              painter: _BracketPainter(color: _accent.withValues(alpha: 0.38), strokeWidth: 2.0)))),
+        Positioned(bottom: 110, right: 22,
+          child: Transform.scale(scaleX: -1, scaleY: -1,
+            child: CustomPaint(size: const Size(28, 28),
+              painter: _BracketPainter(color: _accent.withValues(alpha: 0.38), strokeWidth: 2.0)))),
+
         Column(
           children: [
             // Zona sobre — expandida
@@ -996,9 +1013,9 @@ class _Pack3D extends StatelessWidget {
                   CustomPaint(
                     size: Size(w, h),
                     painter: _EnvelopePainter(
-                      bodyColor:   const Color(0xFF2D1F7A),
-                      borderColor: _accent,
-                      flapColor:   const Color(0xFF231660),
+                      bodyColor:   const Color(0xFF1C1480),
+                      borderColor: const Color(0xFF7868F0),
+                      flapColor:   const Color(0xFF050214),
                       isFront: true,
                     ),
                   ),
@@ -1031,13 +1048,21 @@ class _EnvelopePainter extends CustomPainter {
     final h = size.height;
     final flapH = h * 0.26;
 
-    // Cuerpo
+    // ── Cuerpo ────────────────────────────────────────────────
     canvas.drawRect(
       Rect.fromLTWH(0, 0, w, h),
       Paint()..color = bodyColor..style = PaintingStyle.fill,
     );
 
-    // Flap triangular
+    // ── Rayas diagonales en el cuerpo (bajo el pliegue) ───────
+    if (isFront) {
+      canvas.save();
+      canvas.clipRect(Rect.fromLTWH(0, flapH, w, h - flapH));
+      _drawStripes(canvas, size, alpha: 0.13);
+      canvas.restore();
+    }
+
+    // ── Flap triangular ────────────────────────────────────────
     final flapPath = Path()
       ..moveTo(0, 0)
       ..lineTo(w / 2, flapH)
@@ -1045,33 +1070,55 @@ class _EnvelopePainter extends CustomPainter {
       ..close();
     canvas.drawPath(flapPath, Paint()..color = flapColor..style = PaintingStyle.fill);
 
-    // Borde exterior
+    // Rayas sutiles en el flap
+    if (isFront) {
+      canvas.save();
+      canvas.clipPath(flapPath);
+      _drawStripes(canvas, size, alpha: 0.06);
+      canvas.restore();
+    }
+
+    // ── Borde exterior ─────────────────────────────────────────
     canvas.drawRect(
       Rect.fromLTWH(0, 0, w, h),
       Paint()
-        ..color = borderColor.withValues(alpha: isFront ? 0.9 : 0.3)
-        ..strokeWidth = isFront ? 1.8 : 1.0
+        ..color = borderColor.withValues(alpha: isFront ? 1.0 : 0.35)
+        ..strokeWidth = isFront ? 2.0 : 1.0
         ..style = PaintingStyle.stroke,
     );
 
-    // Borde del flap
+    // ── Borde del flap ─────────────────────────────────────────
     canvas.drawPath(
       flapPath,
       Paint()
         ..color = borderColor.withValues(alpha: isFront ? 0.55 : 0.2)
-        ..strokeWidth = isFront ? 1.0 : 0.7
+        ..strokeWidth = isFront ? 1.1 : 0.7
         ..style = PaintingStyle.stroke,
     );
 
-    // Línea de pliegue
+    // ── Línea de pliegue — marcada y visible ───────────────────
     if (isFront) {
       canvas.drawLine(
         Offset(0, flapH),
         Offset(w, flapH),
         Paint()
-          ..color = borderColor.withValues(alpha: 0.3)
-          ..strokeWidth = 0.8
+          ..color = borderColor.withValues(alpha: 0.82)
+          ..strokeWidth = 1.6
           ..style = PaintingStyle.stroke,
+      );
+    }
+  }
+
+  void _drawStripes(Canvas canvas, Size size, {double alpha = 0.13}) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: alpha)
+      ..strokeWidth = 14
+      ..style = PaintingStyle.stroke;
+    for (double x = -size.height; x < size.width + size.height; x += 28) {
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x + size.height, size.height),
+        paint,
       );
     }
   }
@@ -1089,93 +1136,92 @@ class _EnvelopeFrontContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final flapH = h * 0.26;
 
-    return Stack(
-      children: [
-        // Stripes diagonales en zona del cuerpo
-        Positioned(top: flapH, left: 0, right: 0, bottom: 0,
-          child: ClipRect(child: CustomPaint(painter: _StripePainter())),
-        ),
-
-        // Barcode en el flap
-        Positioned(
-          top: flapH * 0.28,
-          left: 0, right: 0,
-          child: Center(
-            child: CustomPaint(
-              size: Size(60 * scale, 10 * scale),
-              painter: _BarcodePainter(color: Colors.white.withValues(alpha: 0.35)),
-            ),
-          ),
-        ),
-
-        // GS-25/26
-        Positioned(
-          top: flapH * 0.64,
-          left: 0, right: 0,
-          child: Center(
-            child: Text(
-              'GS-25/26',
-              style: TextStyle(
-                fontSize: 6.5 * scale,
-                fontWeight: FontWeight.w700,
-                color: Colors.white.withValues(alpha: 0.4),
-                letterSpacing: 1.5,
+    return SizedBox(
+      width: w,
+      height: h,
+      child: Stack(
+        children: [
+          // ── Barcode en el flap ────────────────────────────────
+          Positioned(
+            top: flapH * 0.28,
+            left: 0, right: 0,
+            child: Center(
+              child: CustomPaint(
+                size: Size(60 * scale, 10 * scale),
+                painter: _BarcodePainter(color: Colors.white.withValues(alpha: 0.45)),
               ),
             ),
           ),
-        ),
 
-        // Escudo GA pentagonal — zona central
-        Positioned(
-          top: flapH + 22 * scale,
-          left: 0, right: 0,
-          child: Center(child: _GaShield(scale: scale * 0.95, accentColor: _accent)),
-        ),
-
-        // GLOBAL ALBUMS
-        Positioned(
-          bottom: 42 * scale,
-          left: 0, right: 0,
-          child: Center(
-            child: Text(
-              'GLOBAL ALBUMS',
-              style: TextStyle(
-                fontSize: 9 * scale,
-                fontWeight: FontWeight.w900,
-                color: Colors.white.withValues(alpha: 0.88),
-                letterSpacing: 2.5,
+          // ── GS-25/26 ─────────────────────────────────────────
+          Positioned(
+            top: flapH * 0.65,
+            left: 0, right: 0,
+            child: Center(
+              child: Text(
+                'GS-25/26',
+                style: TextStyle(
+                  fontSize: 6.5 * scale,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white.withValues(alpha: 0.55),
+                  letterSpacing: 1.5,
+                ),
               ),
             ),
           ),
-        ),
 
-        // Temporada
-        Positioned(
-          bottom: 24 * scale,
-          left: 0, right: 0,
-          child: Center(
-            child: Text(
-              '25 · 26',
-              style: TextStyle(
-                fontSize: 7.5 * scale,
-                fontWeight: FontWeight.w400,
-                color: Colors.white.withValues(alpha: 0.45),
-                letterSpacing: 3.5,
+          // ── Escudo GA pentagonal ───────────────────────────────
+          Positioned(
+            top: flapH + 22 * scale,
+            left: 0, right: 0,
+            child: Center(child: _GaShield(scale: scale * 0.95, accentColor: _accent)),
+          ),
+
+          // ── GLOBAL ALBUMS ─────────────────────────────────────
+          Positioned(
+            bottom: 42 * scale,
+            left: 0, right: 0,
+            child: Center(
+              child: Text(
+                'GLOBAL ALBUMS',
+                style: TextStyle(
+                  fontSize: 9 * scale,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white.withValues(alpha: 0.92),
+                  letterSpacing: 2.5,
+                ),
               ),
             ),
           ),
-        ),
 
-        // Esquinas doradas
-        Positioned(top: flapH + 8 * scale, left: 8 * scale,
-            child: _GoldCorner(scale: scale)),
-        Positioned(top: flapH + 8 * scale, right: 8 * scale,
-            child: _GoldCorner(scale: scale, flipH: true)),
-        Positioned(bottom: 8 * scale, left: 8 * scale,
-            child: _GoldCorner(scale: scale, flipV: true)),
-        Positioned(bottom: 8 * scale, right: 8 * scale,
-            child: _GoldCorner(scale: scale, flipH: true, flipV: true)),
-      ],
+          // ── Temporada ─────────────────────────────────────────
+          Positioned(
+            bottom: 24 * scale,
+            left: 0, right: 0,
+            child: Center(
+              child: Text(
+                '25  ·  26',
+                style: TextStyle(
+                  fontSize: 7.5 * scale,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.white.withValues(alpha: 0.50),
+                  letterSpacing: 3.5,
+                ),
+              ),
+            ),
+          ),
+
+          // ── Esquinas doradas ──────────────────────────────────
+          Positioned(top: flapH + 8 * scale, left:  8 * scale,
+              child: _GoldCorner(scale: scale)),
+          Positioned(top: flapH + 8 * scale, right: 8 * scale,
+              child: _GoldCorner(scale: scale, flipH: true)),
+          Positioned(bottom: 8 * scale, left:  8 * scale,
+              child: _GoldCorner(scale: scale, flipV: true)),
+          Positioned(bottom: 8 * scale, right: 8 * scale,
+              child: _GoldCorner(scale: scale, flipH: true, flipV: true)),
+        ],
+      ),
     );
   }
 }
