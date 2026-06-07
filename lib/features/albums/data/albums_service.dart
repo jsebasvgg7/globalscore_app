@@ -240,53 +240,12 @@ class AlbumsService {
   AlbumCard _pickRandom(List<AlbumCard> cards) =>
       cards[_rng.nextInt(cards.length)];
 
-  // ─── Upsert colección — atómico con copies+1 en SQL ──────
-  // Se usa un UPDATE con `copies = copies + 1` para que el incremento
-  // sea atómico en PostgreSQL. Si no existe la fila, el UPDATE no afecta
-  // filas y hacemos INSERT. Esto elimina la race condition del par
-  // select → insert/update anterior.
   Future<void> _upsertCollectionCard(String userId, AlbumCard card) async {
-    final now = DateTime.now().toIso8601String();
-
-    // 1. Intentar incrementar si ya existe (UPDATE atómico)
-    final updated = await _db
-        .from('album_collection')
-        .update({'last_obtained_at': now})
-        .eq('user_id', userId)
-        .eq('card_id', card.id)
-        .select('id, copies');
-
-    if ((updated as List).isNotEmpty) {
-      // Fila existente: incrementar copies con RPC o segundo update
-      // Supabase JS SDK expone `increment`; en Dart hacemos un update
-      // leyendo el valor devuelto y recalculando.
-      final row      = updated.first as Map<String, dynamic>;
-      final newCopies = (row['copies'] as int) + 1;
-      await _db
-          .from('album_collection')
-          .update({
-            'copies':      newCopies,
-            'frame_level': _getFrameLevel(newCopies),
-          })
-          .eq('id', row['id'] as String);
-    } else {
-      // Fila nueva: insertar
-      await _db.from('album_collection').insert({
-        'user_id':           userId,
-        'card_id':           card.id,
-        'copies':            1,
-        'frame_level':       'normal',
-        'first_obtained_at': now,
-        'last_obtained_at':  now,
-      });
-    }
+    await _db.rpc('upsert_collection_card', params: {
+      'p_user_id': userId,
+      'p_card_id': card.id,
+      'p_now':     DateTime.now().toIso8601String(),
+    });
   }
-
-  // ─── frame_level — idéntico a getFrameLevel() de React ────
-  String _getFrameLevel(int copies) {
-    if (copies >= 10) return 'legendary';
-    if (copies >= 5)  return 'gold';
-    if (copies >= 3)  return 'silver';
-    return 'normal';
-  }
+  
 }

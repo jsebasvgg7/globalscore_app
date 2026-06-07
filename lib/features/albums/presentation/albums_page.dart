@@ -180,15 +180,19 @@ class _ResumenTab extends ConsumerWidget {
     required this.onVerColeccion,
   });
  
-  @override
+    @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // ← Lee SIEMPRE el dato más fresco del stream
+    final freshModel = ref.watch(albumsProvider).value;
+    final packs = freshModel?.packs ?? model.packs;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 14),
- 
+
           if (activeAlbum != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -202,28 +206,28 @@ class _ResumenTab extends ConsumerWidget {
                 isCompleted: prog?.isCompleted ?? false,
               ),
             ),
- 
+
           const SizedBox(height: 14),
- 
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: BoostProgressBar(
-              boostActive:         model.packs?.boostActive ?? false,
-              boostPacksRemaining: model.packs?.boostPacksRemaining ?? 0,
-              totalPacksOpened:    model.packs?.totalPacksOpened ?? 0,
+              boostActive:         packs?.boostActive ?? false,        // ← fresco
+              boostPacksRemaining: packs?.boostPacksRemaining ?? 0,    // ← fresco
+              totalPacksOpened:    packs?.totalPacksOpened ?? 0,       // ← fresco
             ),
           ),
- 
+
           const SizedBox(height: 14),
- 
+
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: PackCard(
-              packsAvailable: model.packs?.packsAvailable ?? 0,
-             onOpen: () => showPackOpeningModal(
-              context, ref,
-              onViewCollection: onVerColeccion,
-            ),
+              packsAvailable: packs?.packsAvailable ?? 0,              // ← fresco
+              onOpen: () => showPackOpeningModal(
+                context, ref,
+                onViewCollection: onVerColeccion,
+              ),
             ),
           ),
  

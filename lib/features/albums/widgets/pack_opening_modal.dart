@@ -101,56 +101,48 @@ class _PackOpeningFlow extends ConsumerStatefulWidget {
   @override
   ConsumerState<_PackOpeningFlow> createState() => _PackOpeningFlowState();
 }
-
 class _PackOpeningFlowState extends ConsumerState<_PackOpeningFlow> {
   _Phase _phase = _Phase.idle;
   PackOpenResult? _result;
   String? _errorMsg;
   bool _isOpening = false;
   final Set<int> _revealed = {};
+  int? _localPacksAvailable;
 
   int get _packsAvailable {
-    // Reactivo: se reconstruye cuando el StreamProvider emite un nuevo valor
-    // (el Realtime de album_packs dispara el reload automáticamente)
+    if (_localPacksAvailable != null) return _localPacksAvailable!;
     return ref.watch(albumsProvider).value?.packs?.packsAvailable ?? 0;
   }
 
   Future<void> _startOpening() async {
     if (_isOpening) return;
-    if (_packsAvailable <= 0) return;
+    final current = _packsAvailable;
+    if (current <= 0) return;
+
     setState(() {
+      _localPacksAvailable = current - 1;
       _isOpening = true;
-      _phase    = _Phase.opening;
-      _result   = null;
-      _errorMsg = null;
+      _phase     = _Phase.opening;
+      _result    = null;
+      _errorMsg  = null;
       _revealed.clear();
     });
 
     try {
       final userId = await ref.read(albumsUserIdProvider.future);
       final result = await AlbumsService().openPack(userId);
-
-      debugPrint('╔══ IMAGE PATHS ════════════════════════');
-      for (final card in result.allCards) {
-        debugPrint('║ [${card.cardType}] ${card.name} → "${card.imagePath}"');
-      }
-      debugPrint('╚═══════════════════════════════════════');
-
-      // NO invalidar aquí: el StreamProvider ya detecta el cambio
-      // en album_packs vía Realtime y recarga solo.
-      // Invalidar mientras el modal está abierto destruiría el canal
-      // y crearía una ventana sin escucha de eventos.
-
       if (mounted) {
         setState(() {
-          _result    = result;
-          _phase     = _Phase.revealing;
-          _isOpening = false;
+          _result              = result;
+          _phase               = _Phase.revealing;
+          _isOpening           = false;
+          _localPacksAvailable = null;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
+          _localPacksAvailable = current;
           _errorMsg  = e.toString();
           _phase     = _Phase.idle;
           _isOpening = false;
@@ -882,7 +874,6 @@ class _DoneViewState extends State<_DoneView>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
                 ],
               ),
             ),
