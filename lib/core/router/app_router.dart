@@ -11,6 +11,7 @@ import '../../features/ranking/presentation/ranking_page.dart';
 import '../../features/stats/presentation/stats_page.dart';
 import '../../features/albums/presentation/albums_page.dart';
 import '../../features/albums/presentation/album_detail_page.dart';
+import '../../features/albums/presentation/pack_opening_page.dart';
 import '../../features/profile/presentation/profile_page.dart';
 import '../../features/profile/presentation/public_profile_page.dart';
 import '../../features/profile/presentation/pages/achievements_page.dart';
@@ -113,6 +114,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ]),
         ],
+      ),
+
+      // ── Pack Opening — fuera del shell, sin nav bar ─────────
+      // Se accede con context.push('/pack-opening') desde AlbumsPage.
+      // Al hacer pop() vuelve a /albums y PackOpeningPage llama
+      // refresh() una sola vez sobre albumsProvider.
+      GoRoute(
+        path: '/pack-opening',
+        builder: (_, _) => const PackOpeningPage(),
       ),
 
       GoRoute(

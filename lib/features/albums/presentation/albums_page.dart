@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../domain/albums_provider.dart';
 import '../domain/albums_model.dart';
 import '../widgets/active_album_hero.dart';
 import '../widgets/boost_progress_bar.dart';
-import '../widgets/pack_card.dart';
+import '../widgets/ticket_counter.dart';
 import '../widgets/albums_collection_view.dart';
-import '../widgets/pack_opening_modal.dart';
 
 // ════════════════════════════════════════════════════════════
 //  DESIGN TOKENS — neobrutalista crema + morado + sombras
@@ -44,10 +44,6 @@ class _AlbumsPageState extends ConsumerState<AlbumsPage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // El StreamProvider ya emite el estado inicial y escucha Realtime.
-    // NO invalidamos aquí para no destruir el canal recién creado.
-    // Si la pantalla se abre por primera vez, el StreamProvider ya
-    // habrá hecho fetchAll() al construirse.
   }
 
   @override
@@ -56,12 +52,9 @@ class _AlbumsPageState extends ConsumerState<AlbumsPage>
     super.dispose();
   }
 
-  // Refrescar solo cuando la app vuelve del fondo (el canal Realtime
-  // puede haberse desconectado mientras la app estaba suspendida)
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed && mounted) {
-      // Invalidar para reconectar el StreamProvider y su canal Realtime
       ref.invalidate(albumsProvider);
     }
   }
@@ -111,7 +104,6 @@ class _AlbumsBodyState extends ConsumerState<_AlbumsBody>
 
   @override
   Widget build(BuildContext context) {
-    // Siempre usa el dato más fresco disponible del provider
     final model = ref.watch(albumsProvider).value ?? widget.model;
 
     final activeAlbum = model.legendaryAlbums
@@ -137,7 +129,6 @@ class _AlbumsBodyState extends ConsumerState<_AlbumsBody>
               controller: _tabController,
               physics: const NeverScrollableScrollPhysics(),
               children: [
-                // Tab 0: RESUMEN
                 _ResumenTab(
                   model:        model,
                   activeAlbum:  activeAlbum,
@@ -147,7 +138,6 @@ class _AlbumsBodyState extends ConsumerState<_AlbumsBody>
                   required:     required,
                   onVerColeccion: () => _tabController.animateTo(_kColeccion),
                 ),
-                // Tab 1: COLECCIÓN
                 _ColeccionTab(model: model),
               ],
             ),
@@ -169,7 +159,7 @@ class _ResumenTab extends ConsumerWidget {
   final int              unique;
   final int              required;
   final VoidCallback     onVerColeccion;
- 
+
   const _ResumenTab({
     required this.model,
     required this.activeAlbum,
@@ -179,12 +169,12 @@ class _ResumenTab extends ConsumerWidget {
     required this.required,
     required this.onVerColeccion,
   });
- 
-    @override
+
+  @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // ← Lee SIEMPRE el dato más fresco del stream
     final freshModel = ref.watch(albumsProvider).value;
     final packs = freshModel?.packs ?? model.packs;
+    final tickets = packs?.packsAvailable ?? 0;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.only(bottom: 32),
@@ -193,6 +183,7 @@ class _ResumenTab extends ConsumerWidget {
         children: [
           const SizedBox(height: 14),
 
+          // ── Álbum activo ────────────────────────────────
           if (activeAlbum != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -209,30 +200,32 @@ class _ResumenTab extends ConsumerWidget {
 
           const SizedBox(height: 14),
 
+          // ── Boost bar ───────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: BoostProgressBar(
-              boostActive:         packs?.boostActive ?? false,        // ← fresco
-              boostPacksRemaining: packs?.boostPacksRemaining ?? 0,    // ← fresco
-              totalPacksOpened:    packs?.totalPacksOpened ?? 0,       // ← fresco
+              boostActive:         packs?.boostActive ?? false,
+              boostPacksRemaining: packs?.boostPacksRemaining ?? 0,
+              totalPacksOpened:    packs?.totalPacksOpened ?? 0,
             ),
           ),
 
           const SizedBox(height: 14),
 
+          // ── TICKET COUNTER ──────────────────────────────
+          // onOpen navega a PackOpeningPage (página completa).
+          // PackOpeningPage llama refresh() al volver — un solo fetch.
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: PackCard(
-              packsAvailable: packs?.packsAvailable ?? 0,              // ← fresco
-              onOpen: () => showPackOpeningModal(
-                context, ref,
-                onViewCollection: onVerColeccion,
-              ),
+            child: TicketCounter(
+              tickets: tickets,
+              onOpen: () => context.push('/pack-opening'),
             ),
           ),
- 
+
           const SizedBox(height: 14),
- 
+
+          // ── Ver colecciones ─────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             child: GestureDetector(
@@ -246,11 +239,11 @@ class _ResumenTab extends ConsumerWidget {
                     BoxShadow(color: Color(0xFFB0AAA0), offset: Offset(3, 3)),
                   ],
                 ),
-                child: Row(
+                child: const Row(
                   children: [
-                    const Icon(Icons.menu_book_outlined, size: 16, color: Ds.accent),
-                    const SizedBox(width: 10),
-                    const Expanded(
+                    Icon(Icons.menu_book_outlined, size: 16, color: Ds.accent),
+                    SizedBox(width: 10),
+                    Expanded(
                       child: Text(
                         'VER TUS COLECCIONES',
                         style: TextStyle(
@@ -262,7 +255,7 @@ class _ResumenTab extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    const Icon(Icons.chevron_right, size: 18, color: Ds.muted),
+                    Icon(Icons.chevron_right, size: 18, color: Ds.muted),
                   ],
                 ),
               ),
@@ -289,55 +282,7 @@ class _ColeccionTab extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 14),
-          // AlbumsCollectionView incluye header "TU COLECCIÓN" + stats
-          // + sección "TUS COLECCIONES" con las 3 categorías
           AlbumsCollectionView(model: model),
-        ],
-      ),
-    );
-  }
-}
-
-// ════════════════════════════════════════════════════════════
-//  COMING SOON
-// ════════════════════════════════════════════════════════════
-class _ComingSoon extends StatelessWidget {
-  final String label;
-  const _ComingSoon({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Ds.bgCard,
-              border: Border.all(color: Ds.borderSub, width: 1),
-            ),
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontFamily: Ds.font,
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2,
-                color: Ds.muted,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'PRÓXIMAMENTE',
-            style: TextStyle(
-              fontFamily: Ds.font,
-              fontSize: 8,
-              color: Ds.muted,
-              letterSpacing: 1,
-            ),
-          ),
         ],
       ),
     );
@@ -369,21 +314,11 @@ class _TabsBar extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: _Tab(
-                index:      0,
-                controller: controller,
-                icon:       Icons.grid_view_rounded,
-                label:      'INICIO',
-              ),
+              child: _Tab(index: 0, controller: controller, icon: Icons.grid_view_rounded, label: 'INICIO'),
             ),
             Container(width: 1.5, color: Ds.border),
             Expanded(
-              child: _Tab(
-                index:      1,
-                controller: controller,
-                icon:       Icons.menu_book_outlined,
-                label:      'COLECCIÓN',
-              ),
+              child: _Tab(index: 1, controller: controller, icon: Icons.menu_book_outlined, label: 'COLECCIÓN'),
             ),
           ],
         ),
@@ -426,8 +361,7 @@ class _Tab extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(icon, size: 10,
-                        color: active ? Colors.white : Ds.muted),
+                    Icon(icon, size: 10, color: active ? Colors.white : Ds.muted),
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
@@ -448,9 +382,7 @@ class _Tab extends StatelessWidget {
                   const SizedBox(height: 3),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Ds.borderSub, width: 0.8),
-                    ),
+                    decoration: BoxDecoration(border: Border.all(color: Ds.borderSub, width: 0.8)),
                     child: const Text(
                       'PRONTO',
                       style: TextStyle(
