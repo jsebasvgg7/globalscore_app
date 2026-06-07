@@ -283,7 +283,7 @@ class HistoryService {
       _sb
           .from('historical_team_lineup')
           .select(
-            'id, shirt_number, player_name, position_role, '
+            'id, shirt_number, player_name, position_role, pos_x, pos_y, '
             'historical_players(id, image_path)',
           )
           .eq('team_id', teamId)

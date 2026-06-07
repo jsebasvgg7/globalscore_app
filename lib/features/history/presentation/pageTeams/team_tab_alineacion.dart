@@ -239,38 +239,21 @@ class _TacticalPitch extends StatelessWidget {
     required this.onPlayerTap,
   });
 
-  /// Devuelve el offset normalizado [0,1] para colocar el token del jugador.
-  ///
-  /// Prioridad:
-  ///  1. pos_x / pos_y de la BD  (coordenadas reales, idéntico al React)
-  ///  2. Fallback por formación + número de camiseta
-  ///  3. Fallback genérico por índice
-  Offset _offsetFor(TeamLineup p, int index) {
-    // ── 1. Coordenadas reales de la BD ──────────────────────────────────────
-    if (p.posX != null && p.posY != null) {
-      return _posToOffset(p.posX!, p.posY!);
-    }
-
-    // ── 2. Buscar en FORMATION_DEFAULTS por número de camiseta ──────────────
-    final form = formation ?? '4-3-3';
-    final defaults = _kFormationDefaults[form];
-    if (defaults != null) {
-      // Primero buscar por número exacto
-      final byNum = defaults.where((d) => d.shirtNumber == (p.shirtNumber ?? -1));
-      if (byNum.isNotEmpty) {
-        return _posToOffset(byNum.first.posX, byNum.first.posY);
-      }
-      // Si no, usar posición por índice en la lista defaults
-      if (index < defaults.length) {
-        return _posToOffset(defaults[index].posX, defaults[index].posY);
-      }
-    }
-
-    // ── 3. Fallback genérico ─────────────────────────────────────────────────
-    final col = index % 3;
-    final row = index ~/ 3;
-    return _posToOffset(20.0 + col * 30.0, 20.0 + row * 20.0);
+Offset _offsetFor(TeamLineup p, int index) {
+  if (p.posX != null && p.posY != null) {
+    return _posToOffset(p.posX!, p.posY!);
   }
+
+  final defaults = _kFormationDefaults[formation ?? '4-3-3'];
+  if (defaults != null && index < defaults.length) {
+    return _posToOffset(defaults[index].posX, defaults[index].posY);
+  }
+
+  // ── 3. Fallback genérico ─────────────────────────────────────────────────
+  final col = index % 3;
+  final row = index ~/ 3;
+  return _posToOffset(20.0 + col * 30.0, 20.0 + row * 20.0);
+}
 
   @override
   Widget build(BuildContext context) {
