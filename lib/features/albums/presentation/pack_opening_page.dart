@@ -254,7 +254,7 @@ class _NbHeader extends StatelessWidget {
 }
 
 // ════════════════════════════════════════════════════════════
-//  OPENING VIEW
+//  OPENING VIEW — rediseño Panini pack style
 // ════════════════════════════════════════════════════════════
 class _OpeningView extends StatefulWidget {
   final VoidCallback onAnimationDone;
@@ -274,9 +274,9 @@ class _OpeningViewState extends State<_OpeningView>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2200),
+      duration: const Duration(milliseconds: 2400),
     )..repeat(reverse: true);
-    _float = Tween<double>(begin: 0, end: -12).animate(
+    _float = Tween<double>(begin: 0, end: -10).animate(
       CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
     );
   }
@@ -286,71 +286,240 @@ class _OpeningViewState extends State<_OpeningView>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final screenH = MediaQuery.of(context).size.height;
+    return Stack(
       children: [
-        // ── Sobre — ocupa ~58% de la pantalla
-        Expanded(
-          flex: 58,
-          child: Center(
-            child: Padding(
-              // Empujamos un poco hacia abajo respecto al centro puro
-              padding: const EdgeInsets.only(top: 24),
-              child: AnimatedBuilder(
-                animation: _float,
-                builder: (_, __) => Transform.translate(
-                  offset: Offset(0, _float.value),
-                  child: const _EnvelopeStack(),
-                ),
-              ),
-            ),
-          ),
+        // Grid de fondo muy suave
+        Positioned.fill(
+          child: CustomPaint(painter: _GridPainter()),
         ),
 
-        // ── Estado ────────────────────────────────────────
-        Expanded(
-          flex: 42,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Barra de carga neobrut
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 48),
-                child: Column(
-                  children: [
-                    const Text('ABRIENDO SOBRE...',
-                      style: TextStyle(
-                        fontFamily: _kFont, fontSize: 9,
-                        fontWeight: FontWeight.w900, color: _kMuted,
-                        letterSpacing: 2.5,
-                      ),
+        Column(
+          children: [
+            // Coordenadas superiores
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('X:170 Y:340',
+                    style: TextStyle(
+                      fontFamily: _kFont, fontSize: 7,
+                      color: _kMuted.withValues(alpha: 0.65), letterSpacing: 1,
                     ),
-                    const SizedBox(height: 10),
-                    AnimatedBuilder(
-                      animation: _ctrl,
-                      builder: (_, __) => Container(
-                        height: 3,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: _kBorder, width: 1),
-                        ),
-                        child: LinearProgressIndicator(
-                          value: null,
-                          backgroundColor: Colors.transparent,
-                          valueColor: const AlwaysStoppedAnimation(_kAccent),
-                          minHeight: 3,
-                        ),
-                      ),
+                  ),
+                  Text('GS-25/26',
+                    style: TextStyle(
+                      fontFamily: _kFont, fontSize: 7,
+                      color: _kMuted.withValues(alpha: 0.65), letterSpacing: 1,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+            ),
 
-              const SizedBox(height: 28),
+            // ── Sobre — zona principal (~60% pantalla)
+            Expanded(
+              flex: 62,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Líneas de registro horizontales
+                  Positioned(
+                    left: 0, right: 0,
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _ScanLine(width: 36),
+                          const SizedBox(width: 8),
+                          AnimatedBuilder(
+                            animation: _float,
+                            builder: (_, __) => Transform.translate(
+                              offset: Offset(0, _float.value),
+                              child: const _PaniniPack(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _ScanLine(width: 36),
+                        ],
+                      ),
+                    ),
+                  ),
 
-              // Chips de tipo
-              const _TypeChipsRow(),
+                  // Esquinas scanner (outer frame)
+                  Positioned(
+                    top: (screenH * 0.04).clamp(8.0, 28.0), left: 20,
+                    child: const _ScanCorner(),
+                  ),
+                  Positioned(
+                    top: (screenH * 0.04).clamp(8.0, 28.0), right: 20,
+                    child: const _ScanCorner(flipH: true),
+                  ),
+                  Positioned(
+                    bottom: (screenH * 0.02).clamp(8.0, 18.0), left: 20,
+                    child: const _ScanCorner(flipV: true),
+                  ),
+                  Positioned(
+                    bottom: (screenH * 0.02).clamp(8.0, 18.0), right: 20,
+                    child: const _ScanCorner(flipH: true, flipV: true),
+                  ),
 
-              const SizedBox(height: 24),
-            ],
+                  // Punto central de registro
+                  Center(
+                    child: CustomPaint(
+                      size: const Size(8, 8),
+                      painter: _CrosshairPainter(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Estado + info
+            Expanded(
+              flex: 38,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  // Barra de carga
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 48),
+                    child: Column(
+                      children: [
+                        const Text('ABRIENDO SOBRE...',
+                          style: TextStyle(
+                            fontFamily: _kFont, fontSize: 8.5,
+                            fontWeight: FontWeight.w900, color: _kMuted,
+                            letterSpacing: 2.5,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          height: 3,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: _kBorder, width: 1),
+                          ),
+                          child: const LinearProgressIndicator(
+                            value: null,
+                            backgroundColor: Colors.transparent,
+                            valueColor: AlwaysStoppedAnimation(_kAccent),
+                            minHeight: 3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+                  const _TypeChipsRow(),
+                  const SizedBox(height: 20),
+
+                  // Card de contenido del sobre
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: _kBg,
+                        border: Border.all(color: _kBorder, width: 1.5),
+                        boxShadow: const [BoxShadow(color: _kShadow, offset: Offset(3, 3))],
+                      ),
+                      child: IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Franja lateral morada
+                            Container(
+                              width: 40,
+                              color: _kAccent,
+                              child: const Center(
+                                child: RotatedBox(
+                                  quarterTurns: 3,
+                                  child: Text('4 CARTAS',
+                                    style: TextStyle(
+                                      fontFamily: _kFont, fontSize: 7.5,
+                                      fontWeight: FontWeight.w900, color: Colors.white,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Contenido
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('CONTENIDO DEL SOBRE',
+                                      style: TextStyle(
+                                        fontFamily: _kFont, fontSize: 8,
+                                        fontWeight: FontWeight.w900, color: _kInk,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Container(height: 0.5, color: _kBorder),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Expanded(child: _ContentTypeRow('JUGADOR', const Color(0xFF5B4FD8))),
+                                        Expanded(child: _ContentTypeRow('EQUIPO', const Color(0xFF1DAA75))),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Expanded(child: _ContentTypeRow('COPA', const Color(0xFFF59E0B))),
+                                        Expanded(child: _ContentTypeRow('EVENTO', const Color(0xFFE0435A))),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text('4 cartas aleatorias por sobre',
+                                      style: TextStyle(
+                                        fontFamily: _kFont, fontSize: 7,
+                                        color: _kMuted.withValues(alpha: 0.7),
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// ── Fila de tipo de carta para la card info
+class _ContentTypeRow extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _ContentTypeRow(this.label, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(width: 6, height: 6, color: color),
+        const SizedBox(width: 6),
+        Text(label,
+          style: TextStyle(
+            fontFamily: _kFont, fontSize: 7.5,
+            fontWeight: FontWeight.w700, color: color,
+            letterSpacing: 0.5,
           ),
         ),
       ],
@@ -359,84 +528,38 @@ class _OpeningViewState extends State<_OpeningView>
 }
 
 // ════════════════════════════════════════════════════════════
-//  ENVELOPE STACK — sobre con flap triangular (diseño original)
-//  Recuperado de la versión anterior con _EnvelopePainter
+//  PANINI PACK — sobre/paquete estilo figuritas, vectorial plano
 // ════════════════════════════════════════════════════════════
-class _EnvelopeStack extends StatelessWidget {
-  const _EnvelopeStack();
+class _PaniniPack extends StatelessWidget {
+  const _PaniniPack();
 
   @override
   Widget build(BuildContext context) {
     final screenW = MediaQuery.of(context).size.width;
-    final w = (screenW * 0.50).clamp(150.0, 210.0);
-    final h = w * 1.38;
-    const off = 8.0;
+    final screenH = MediaQuery.of(context).size.height;
+    // Tamaño proporcional: ~42% ancho, ~38% alto de pantalla
+    final w = (screenW * 0.42).clamp(140.0, 200.0);
+    final h = (screenH * 0.38).clamp(240.0, 320.0);
+    final scale = w / 148.0;
 
     return SizedBox(
-      width: w + off * 2 + 4,
-      height: h + off + 6,
+      width: w + 8,
+      height: h + 8,
       child: Stack(
         children: [
-          // Sombra difusa
+          // Sombra dura offset (neobrut)
           Positioned(
-            top: off + 6, left: off + 4,
-            child: Container(
-              width: w, height: h,
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.22),
-                    blurRadius: 20, spreadRadius: 2,
-                  ),
-                ],
-              ),
-            ),
+            top: 6, left: 6,
+            child: Container(width: w, height: h, color: const Color(0xFF1C1A2E)),
           ),
-          // Capa trasera
-          Positioned(
-            top: off, left: off * 1.5,
-            child: CustomPaint(
-              size: Size(w, h),
-              painter: _EnvelopePainter(
-                bodyColor:   const Color(0xFF18144A),
-                borderColor: const Color(0xFF2E2870),
-                flapColor:   const Color(0xFF100D32),
-                isFront: false,
-              ),
-            ),
-          ),
-          // Capa media
-          Positioned(
-            top: off * 0.5, left: off * 0.75,
-            child: CustomPaint(
-              size: Size(w, h),
-              painter: _EnvelopePainter(
-                bodyColor:   const Color(0xFF1E1860),
-                borderColor: const Color(0xFF3A318A),
-                flapColor:   const Color(0xFF150F44),
-                isFront: false,
-              ),
-            ),
-          ),
-          // Frente principal
+          // Pack principal
           Positioned(
             top: 0, left: 0,
             child: SizedBox(
               width: w, height: h,
-              child: Stack(
-                children: [
-                  CustomPaint(
-                    size: Size(w, h),
-                    painter: _EnvelopePainter(
-                      bodyColor:   const Color(0xFF1C1480),
-                      borderColor: const Color(0xFF7868F0),
-                      flapColor:   const Color(0xFF050214),
-                      isFront: true,
-                    ),
-                  ),
-                  _EnvelopeFrontContent(w: w, h: h),
-                ],
+              child: CustomPaint(
+                painter: _PaniniPackPainter(),
+                child: _PaniniPackContent(w: w, h: h, scale: scale),
               ),
             ),
           ),
@@ -446,145 +569,152 @@ class _EnvelopeStack extends StatelessWidget {
   }
 }
 
-// Painter: body rect + flap triangular superior
-class _EnvelopePainter extends CustomPainter {
-  final Color bodyColor, borderColor, flapColor;
-  final bool isFront;
-
-  const _EnvelopePainter({
-    required this.bodyColor, required this.borderColor,
-    required this.flapColor, required this.isFront,
-  });
-
+class _PaniniPackPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-    final flapH = h * 0.26;
+    final headerH = h * 0.19;
 
-    // Cuerpo
-    canvas.drawRect(Rect.fromLTWH(0, 0, w, h),
-      Paint()..color = bodyColor..style = PaintingStyle.fill);
+    // Cuerpo principal
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, w, h),
+      Paint()..color = const Color(0xFF1C1480)..style = PaintingStyle.fill,
+    );
 
-    // Rayas en el cuerpo
-    if (isFront) {
-      canvas.save();
-      canvas.clipRect(Rect.fromLTWH(0, flapH, w, h - flapH));
-      _stripes(canvas, size, 0.12);
-      canvas.restore();
-    }
+    // Rayas diagonales en cuerpo
+    canvas.save();
+    canvas.clipRect(Rect.fromLTWH(0, headerH, w, h - headerH));
+    _drawStripes(canvas, size, 0.045);
+    canvas.restore();
 
-    // Flap triangular
-    final flapPath = Path()
-      ..moveTo(0, 0)
-      ..lineTo(w / 2, flapH)
-      ..lineTo(w, 0)
-      ..close();
-    canvas.drawPath(flapPath, Paint()..color = flapColor..style = PaintingStyle.fill);
+    // Header oscuro superior
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, w, headerH),
+      Paint()..color = const Color(0xFF08062A)..style = PaintingStyle.fill,
+    );
 
-    if (isFront) {
-      canvas.save();
-      canvas.clipPath(flapPath);
-      _stripes(canvas, size, 0.06);
-      canvas.restore();
-    }
+    // Rayas diagonales en header (más sutiles)
+    canvas.save();
+    canvas.clipRect(Rect.fromLTWH(0, 0, w, headerH));
+    _drawStripes(canvas, size, 0.025);
+    canvas.restore();
+
+    // Línea separadora header/body — dashed
+    _drawDashedLine(canvas, Offset(0, headerH), Offset(w, headerH),
+        const Color(0xFF7868F0), 1.5, 4, 3);
 
     // Borde exterior
-    canvas.drawRect(Rect.fromLTWH(0, 0, w, h),
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, w, h),
       Paint()
-        ..color = borderColor.withValues(alpha: isFront ? 1.0 : 0.35)
-        ..strokeWidth = isFront ? 2.0 : 1.0
-        ..style = PaintingStyle.stroke);
+        ..color = const Color(0xFF7868F0)
+        ..strokeWidth = 2.0
+        ..style = PaintingStyle.stroke,
+    );
 
-    // Borde flap
-    canvas.drawPath(flapPath,
-      Paint()
-        ..color = borderColor.withValues(alpha: isFront ? 0.55 : 0.2)
-        ..strokeWidth = isFront ? 1.1 : 0.7
-        ..style = PaintingStyle.stroke);
+    // Perforación inferior (zigzag)
+    final perfY = h - h * 0.10;
+    _drawZigzag(canvas, w, perfY, const Color(0xFF7868F0));
+  }
 
-    // Línea de pliegue
-    if (isFront) {
-      canvas.drawLine(Offset(0, flapH), Offset(w, flapH),
-        Paint()
-          ..color = borderColor.withValues(alpha: 0.82)
-          ..strokeWidth = 1.6
-          ..style = PaintingStyle.stroke);
+  void _drawStripes(Canvas canvas, Size size, double alpha) {
+    final p = Paint()
+      ..color = Colors.white.withValues(alpha: alpha)
+      ..strokeWidth = 18
+      ..style = PaintingStyle.stroke;
+    for (double x = -size.height; x < size.width + size.height; x += 32) {
+      canvas.drawLine(Offset(x, 0), Offset(x + size.height, size.height), p);
     }
   }
 
-  void _stripes(Canvas canvas, Size size, double alpha) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: alpha)
-      ..strokeWidth = 14
-      ..style = PaintingStyle.stroke;
-    for (double x = -size.height; x < size.width + size.height; x += 28) {
-      canvas.drawLine(Offset(x, 0), Offset(x + size.height, size.height), paint);
+  void _drawDashedLine(Canvas canvas, Offset start, Offset end,
+      Color color, double strokeW, double dashLen, double gapLen) {
+    final p = Paint()..color = color..strokeWidth = strokeW..style = PaintingStyle.stroke;
+    final dx = end.dx - start.dx;
+    double x = start.dx;
+    bool drawing = true;
+    while (x < end.dx) {
+      final nextX = (x + (drawing ? dashLen : gapLen)).clamp(start.dx, end.dx);
+      if (drawing) canvas.drawLine(Offset(x, start.dy), Offset(nextX, start.dy), p);
+      x = nextX;
+      drawing = !drawing;
     }
+  }
+
+  void _drawZigzag(Canvas canvas, double w, double y, Color color) {
+    const step = 5.0;
+    const amp = 4.0;
+    final path = Path();
+    path.moveTo(0, y);
+    double x = 0;
+    bool up = true;
+    while (x < w) {
+      x = (x + step).clamp(0.0, w);
+      path.lineTo(x, up ? y - amp : y + amp);
+      up = !up;
+    }
+    canvas.drawPath(path,
+      Paint()..color = color..strokeWidth = 1.2..style = PaintingStyle.stroke);
   }
 
   @override
-  bool shouldRepaint(_EnvelopePainter o) => false;
+  bool shouldRepaint(_PaniniPackPainter o) => false;
 }
 
-// Contenido superpuesto: barcode, escudo, textos, esquinas doradas
-class _EnvelopeFrontContent extends StatelessWidget {
-  final double w, h;
-  const _EnvelopeFrontContent({required this.w, required this.h});
+class _PaniniPackContent extends StatelessWidget {
+  final double w, h, scale;
+  const _PaniniPackContent({required this.w, required this.h, required this.scale});
 
   @override
   Widget build(BuildContext context) {
-    final flapH = h * 0.26;
-    final scale = w / 155.0;
+    final headerH = h * 0.19;
 
     return SizedBox(
       width: w, height: h,
       child: Stack(
         children: [
-          // Barcode en el flap
+          // Barcode en header
           Positioned(
-            top: flapH * 0.25, left: 0, right: 0,
+            top: headerH * 0.20, left: 0, right: 0,
             child: Center(
               child: CustomPaint(
-                size: Size(60 * scale, 10 * scale),
-                painter: _BarcodePainter(
-                  color: Colors.white.withValues(alpha: 0.42)),
+                size: Size(72 * scale, 11 * scale),
+                painter: _BarcodePainter(color: Colors.white.withValues(alpha: 0.45)),
               ),
             ),
           ),
-
-          // GS-25/26 bajo el barcode
+          // GS-25/26 bajo barcode
           Positioned(
-            top: flapH * 0.62, left: 0, right: 0,
+            top: headerH * 0.64, left: 0, right: 0,
             child: Center(
               child: Text('GS-25/26',
                 style: TextStyle(
-                  fontFamily: _kFont,
-                  fontSize: 6.5 * scale,
+                  fontFamily: _kFont, fontSize: 6.5 * scale,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white.withValues(alpha: 0.52),
+                  color: Colors.white.withValues(alpha: 0.55),
                   letterSpacing: 1.5,
                 ),
               ),
             ),
           ),
 
-          // Escudo GA pentagonal — centrado en la zona del cuerpo
+          // Escudo GA pentagonal — centrado en zona cuerpo
           Positioned(
-            top: flapH + 18 * scale,
+            top: headerH + (h - headerH) * 0.08,
             left: 0, right: 0,
-            child: Center(child: _GaShield(scale: scale * 0.95, accentColor: _kAccent)),
+            child: Center(child: _GaShield(scale: scale * 1.0, accentColor: _kAccent)),
           ),
 
           // GLOBAL ALBUMS
           Positioned(
-            bottom: 40 * scale, left: 0, right: 0,
+            bottom: h * 0.19, left: 0, right: 0,
             child: Center(
               child: Text('GLOBAL ALBUMS',
                 style: TextStyle(
-                  fontFamily: _kFont, fontSize: 9 * scale,
+                  fontFamily: _kFont, fontSize: 9.5 * scale,
                   fontWeight: FontWeight.w900,
-                  color: Colors.white.withValues(alpha: 0.92),
+                  color: Colors.white.withValues(alpha: 0.94),
                   letterSpacing: 2.5,
                 ),
               ),
@@ -593,7 +723,7 @@ class _EnvelopeFrontContent extends StatelessWidget {
 
           // Temporada
           Positioned(
-            bottom: 22 * scale, left: 0, right: 0,
+            bottom: h * 0.12, left: 0, right: 0,
             child: Center(
               child: Text('25  ·  26',
                 style: TextStyle(
@@ -605,15 +735,97 @@ class _EnvelopeFrontContent extends StatelessWidget {
             ),
           ),
 
-          // Esquinas doradas (solo zona del cuerpo, no del flap)
-          Positioned(top: flapH + 8 * scale, left:  8 * scale, child: _GoldCorner(scale: scale)),
-          Positioned(top: flapH + 8 * scale, right: 8 * scale, child: _GoldCorner(scale: scale, flipH: true)),
-          Positioned(bottom: 8 * scale,      left:  8 * scale, child: _GoldCorner(scale: scale, flipV: true)),
-          Positioned(bottom: 8 * scale,      right: 8 * scale, child: _GoldCorner(scale: scale, flipH: true, flipV: true)),
+          // Esquinas doradas (zona cuerpo)
+          Positioned(top: headerH + 8 * scale, left:  8 * scale,
+            child: _GoldCorner(scale: scale)),
+          Positioned(top: headerH + 8 * scale, right: 8 * scale,
+            child: _GoldCorner(scale: scale, flipH: true)),
+          Positioned(bottom: h * 0.12 + 4, left:  8 * scale,
+            child: _GoldCorner(scale: scale, flipV: true)),
+          Positioned(bottom: h * 0.12 + 4, right: 8 * scale,
+            child: _GoldCorner(scale: scale, flipH: true, flipV: true)),
         ],
       ),
     );
   }
+}
+
+// ── Línea de registro lateral
+class _ScanLine extends StatelessWidget {
+  final double width;
+  const _ScanLine({required this.width});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width, height: 1,
+      color: _kAccent.withValues(alpha: 0.3),
+    );
+  }
+}
+
+// ── Esquina scanner
+class _ScanCorner extends StatelessWidget {
+  final bool flipH, flipV;
+  const _ScanCorner({this.flipH = false, this.flipV = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.scale(
+      scaleX: flipH ? -1 : 1, scaleY: flipV ? -1 : 1,
+      child: SizedBox(
+        width: 20, height: 20,
+        child: CustomPaint(painter: _ScanCornerPainter()),
+      ),
+    );
+  }
+}
+
+class _ScanCornerPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = _kAccent
+      ..strokeWidth = 1.8
+      ..style = PaintingStyle.stroke;
+    canvas.drawLine(Offset(0, size.height), const Offset(0, 0), p);
+    canvas.drawLine(const Offset(0, 0), Offset(size.width, 0), p);
+  }
+  @override bool shouldRepaint(_ScanCornerPainter o) => false;
+}
+
+// ── Crosshair central de registro
+class _CrosshairPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = _kAccent.withValues(alpha: 0.35)
+      ..strokeWidth = 0.8
+      ..style = PaintingStyle.stroke;
+    canvas.drawCircle(Offset(size.width / 2, size.height / 2), 3.5, p);
+    canvas.drawCircle(Offset(size.width / 2, size.height / 2), 1,
+      Paint()..color = _kAccent.withValues(alpha: 0.25)..style = PaintingStyle.fill);
+  }
+  @override bool shouldRepaint(_CrosshairPainter o) => false;
+}
+
+// ── Grid de fondo suave
+class _GridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = const Color(0xFF2D2A40).withValues(alpha: 0.12)
+      ..strokeWidth = 0.5
+      ..style = PaintingStyle.stroke;
+    const step = 20.0;
+    for (double x = 0; x < size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), p);
+    }
+    for (double y = 0; y < size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), p);
+    }
+  }
+  @override bool shouldRepaint(_GridPainter o) => false;
 }
 
 // ── Chips de tipo ──────────────────────────────────────────────
@@ -863,7 +1075,7 @@ class _CardFront extends StatelessWidget {
     final color  = _typeColor(card.cardType);
     final label  = _typeLabel(card.cardType);
     final isGoat = card.isGoat;
-    final stars  = card.significanceLevel ?? 1;
+    final stars  = card.significanceLevel ?? 5;
     final numStr = switch (card.cardType) {
       'player'      => '001',
       'team'        => '002',

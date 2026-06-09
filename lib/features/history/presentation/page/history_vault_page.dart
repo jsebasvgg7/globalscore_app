@@ -342,7 +342,7 @@ class _FeaturedCarouselState extends ConsumerState<_FeaturedCarousel> {
       ),
       error: (_, __) => const SizedBox.shrink(),
       data: (events) {
-        final featured = events.take(4).toList();
+        final featured = events.take(10).toList();
         if (featured.isEmpty) return const SizedBox.shrink();
         return Column(
           children: [

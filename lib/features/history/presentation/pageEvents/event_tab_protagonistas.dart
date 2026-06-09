@@ -60,7 +60,7 @@ class _ProtagonistCard extends ConsumerWidget {
   Color get _accentColor {
     if (protagonist.player != null) return kEvPurple;
     if (protagonist.team != null) return kEvBlue;
-    return kEvMuted;
+    return kEvGold;
   }
 
   // Un protagonista "sin entidad" es aquel sin imagePath Y sin link a ficha interna
@@ -83,9 +83,9 @@ class _ProtagonistCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: kEvBg,
         border: Border.all(color: kEvBorder, width: 2),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0xFF1A1A2E),
+            color: Color(0xFF1A1A2E).withValues(alpha: 0.35),
             offset: Offset(4, 4),
             blurRadius: 0,
           ),
@@ -217,8 +217,7 @@ class _EntityLayout extends ConsumerWidget {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  LAYOUT SIN ENTIDAD — sin imagen ni ficha registrada
-//  Nombre grande + banda lateral + emoji prominente
+//  LAYOUT SIN ENTIDAD 
 // ══════════════════════════════════════════════════════════════
 
 class _NoEntityLayout extends StatelessWidget {
