@@ -244,13 +244,6 @@ class _RoundBlock extends StatelessWidget {
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
           decoration: BoxDecoration(
             border: Border.all(color: kEvBorder, width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: kEvDark.withOpacity(0.35),
-                offset: const Offset(3, 3),
-                blurRadius: 0,
-              ),
-            ],
           ),
           child: Column(
             children: matches.asMap().entries.map((e) {
