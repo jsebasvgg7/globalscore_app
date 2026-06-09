@@ -7,6 +7,8 @@ import 'event_tab_info.dart';
 import 'event_tab_alineaciones.dart';
 import 'event_tab_plantel.dart';
 import 'event_tab_tabla.dart';
+import 'event_tab_momentos.dart';
+import 'event_tab_protagonistas.dart';
 
 class HistoryEventDetail extends ConsumerStatefulWidget {
   final HistoricalEvent event;
@@ -38,41 +40,48 @@ class _HistoryEventDetailState extends ConsumerState<HistoryEventDetail>
   }
 
   List<(IconData, String)> _buildTabs(String? category) {
-    switch (category) {
-      case 'player':
-        return [
-          (Icons.info_outline, 'INFO'),
-          (Icons.groups_outlined, 'DUELO'),
-          (Icons.people_outline, 'PLANTEL'),
-        ];
-      case 'team':
-        return [
-          (Icons.info_outline, 'INFO'),
-          (Icons.people_outline, 'PLANTEL'),
-          (Icons.route_outlined, 'CAMPAÑA'),
-        ];
-      default:
-        return [(Icons.info_outline, 'INFO')];
+    // Base siempre presente
+    final base = <(IconData, String)>[
+      (Icons.info_outline, 'INFO'),
+    ];
+    // Tabs específicas por categoría
+    if (category == 'player') {
+      base.addAll([
+        (Icons.groups_outlined, 'DUELO'),
+        (Icons.people_outline, 'PLANTEL'),
+      ]);
+    } else if (category == 'team') {
+      base.addAll([
+        (Icons.people_outline, 'PLANTEL'),
+        (Icons.route_outlined, 'CAMPAÑA'),
+      ]);
     }
+    base.addAll([
+      (Icons.timeline, 'MOMENTOS'),
+      (Icons.stars_rounded, 'PROTAS'),
+    ]);
+    return base;
   }
 
   List<Widget> _buildTabViews(EventDetail detail) {
-    switch (widget.event.eventCategory) {
-      case 'player':
-        return [
-          EventTabInfo(detail: detail),
-          EventTabAlineaciones(detail: detail),
-          EventTabPlantel(detail: detail),
-        ];
-      case 'team':
-        return [
-          EventTabInfo(detail: detail),
-          EventTabPlantel(detail: detail),
-          EventTabTabla(detail: detail),
-        ];
-      default:
-        return [EventTabInfo(detail: detail)];
+    final views = <Widget>[EventTabInfo(detail: detail)];
+    if (widget.event.eventCategory == 'player') {
+      views.addAll([
+        EventTabAlineaciones(detail: detail),
+        EventTabPlantel(detail: detail),
+      ]);
+    } else if (widget.event.eventCategory == 'team') {
+      views.addAll([
+        EventTabPlantel(detail: detail),
+        EventTabTabla(detail: detail),
+      ]);
     }
+    // Siempre al final
+    views.addAll([
+      EventTabMomentos(detail: detail),
+      EventTabProtagonistas(detail: detail),
+    ]);
+    return views;
   }
 
   @override
@@ -282,7 +291,6 @@ class _EventTabBar extends StatelessWidget {
         color: kEvBg,
         border: Border(
           top: BorderSide(color: kEvBorder, width: 1.5),
-          // línea de color del tipo de evento en la parte superior del nav
           bottom: BorderSide(color: accentColor, width: 3),
         ),
       ),
@@ -294,8 +302,10 @@ class _EventTabBar extends StatelessWidget {
             indicatorColor: accentColor,
             indicatorWeight: 2.5,
             indicatorSize: TabBarIndicatorSize.tab,
-            // El indicador va arriba (hacia el contenido)
             labelPadding: EdgeInsets.zero,
+            // Con 5 tabs puede quedar apretado — usar isScrollable si hay más de 4
+            isScrollable: false,
+            tabAlignment: TabAlignment.fill,
             tabs: tabs.asMap().entries.map((e) {
               final isActive = controller.index == e.key;
               final (icon, label) = e.value;
@@ -320,7 +330,6 @@ class _EventTabBar extends StatelessWidget {
               );
             }).toList(),
           ),
-          // Safe area para el home indicator de iOS/Android
           SizedBox(height: bottomPad),
         ],
       ),

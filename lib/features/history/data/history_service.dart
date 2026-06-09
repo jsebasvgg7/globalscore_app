@@ -190,11 +190,11 @@ class HistoryService {
         )
         .eq('id', eventId)
         .single();
-
+ 
     final category = eventRes['event_category'] as String?;
-
+ 
     final results = await Future.wait([
-      // lineups (eventos 'player')
+      // [0] lineups (eventos 'player')
       _sb
           .from('historical_event_lineups')
           .select(
@@ -203,8 +203,8 @@ class HistoryService {
           )
           .eq('event_id', eventId)
           .order('sort_order'),
-
-      // knockout (ambas categorías)
+ 
+      // [1] knockout (ambas categorías)
       _sb
           .from('historical_event_knockout')
           .select(
@@ -213,8 +213,8 @@ class HistoryService {
           )
           .eq('event_id', eventId)
           .order('sort_order'),
-
-      // squad (solo 'team')
+ 
+      // [2] squad (solo 'team')
       if (category == 'team')
         _sb
             .from('historical_event_squad')
@@ -223,8 +223,8 @@ class HistoryService {
             .order('sort_order')
       else
         Future.value(<dynamic>[]),
-
-      // standings (solo 'team')
+ 
+      // [3] standings (solo 'team')
       if (category == 'team')
         _sb
             .from('historical_event_standings')
@@ -233,20 +233,42 @@ class HistoryService {
             .order('position', ascending: true)
       else
         Future.value(<dynamic>[]),
+ 
+      // [4] NUEVO — moments (ambas categorías)
+      _sb
+          .from('historical_event_moments')
+          .select('id, minute, moment_date, title, description, icon, sort_order')
+          .eq('event_id', eventId)
+          .order('sort_order', ascending: true),
+ 
+      // [5] NUEVO — protagonists (ambas categorías, con joins)
+      _sb
+          .from('historical_event_protagonists')
+          .select(
+            'id, player_id, team_id, name_override, role_label, icon, sort_order, '
+            'historical_players(id, name, image_path, country, position), '
+            'historical_teams(id, name, image_path, primary_color)',
+          )
+          .eq('event_id', eventId)
+          .order('sort_order', ascending: true),
     ]);
-
+ 
     final allLineups = (results[0] as List).map((m) => EventLineup.fromMap(m)).toList();
     final knockout   = (results[1] as List).map((m) => KnockoutMatch.fromMap(m)).toList();
     final squad      = (results[2] as List).map((m) => EventSquad.fromMap(m)).toList();
     final standings  = (results[3] as List).map((m) => EventStanding.fromMap(m)).toList();
-
+    final moments    = (results[4] as List).map((m) => EventMoment.fromMap(m)).toList();
+    final protagonists = (results[5] as List).map((m) => EventProtagonist.fromMap(m)).toList();
+ 
     return EventDetail(
-      event: HistoricalEvent.fromMap(eventRes),
-      lineupA:   allLineups.where((l) => l.teamSide == 'team_a').toList(),
-      lineupB:   allLineups.where((l) => l.teamSide == 'team_b').toList(),
-      squad:     squad,
-      standings: standings,
-      knockout:  knockout,
+      event:        HistoricalEvent.fromMap(eventRes),
+      lineupA:      allLineups.where((l) => l.teamSide == 'team_a').toList(),
+      lineupB:      allLineups.where((l) => l.teamSide == 'team_b').toList(),
+      squad:        squad,
+      standings:    standings,
+      knockout:     knockout,
+      moments:      moments,
+      protagonists: protagonists,
     );
   }
 

@@ -520,7 +520,10 @@ class EventDetail {
   final List<EventStanding> standings;
   // Ambos tipos pueden tener knockout
   final List<KnockoutMatch> knockout;
-
+  // NUEVOS — disponibles en ambas categorías
+  final List<EventMoment> moments;
+  final List<EventProtagonist> protagonists;
+ 
   const EventDetail({
     required this.event,
     required this.lineupA,
@@ -528,9 +531,107 @@ class EventDetail {
     this.squad = const [],
     this.standings = const [],
     required this.knockout,
+    this.moments = const [],
+    this.protagonists = const [],
   });
 }
-
+// ── Momento del evento (historical_event_moments) ────────────
+class EventMoment {
+  final String id;
+  final int? minute;
+  final String? momentDate;
+  final String title;
+  final String? description;
+  final String? icon;
+  final int sortOrder;
+ 
+  const EventMoment({
+    required this.id,
+    this.minute,
+    this.momentDate,
+    required this.title,
+    this.description,
+    this.icon,
+    this.sortOrder = 0,
+  });
+ 
+  factory EventMoment.fromMap(Map<String, dynamic> m) => EventMoment(
+        id: m['id'] as String,
+        minute: m['minute'] as int?,
+        momentDate: m['moment_date'] as String?,
+        title: m['title'] as String? ?? '—',
+        description: m['description'] as String?,
+        icon: m['icon'] as String?,
+        sortOrder: m['sort_order'] as int? ?? 0,
+      );
+ 
+  /// Etiqueta de tiempo: "23'" para partidos o texto de fecha para eventos históricos
+  String get timeLabel {
+    if (minute != null) return "$minute'";
+    return momentDate ?? '—';
+  }
+}
+ 
+// ── Protagonista del evento (historical_event_protagonists) ──
+class EventProtagonist {
+  final String id;
+  final String? playerId;
+  final String? teamId;
+  final String? nameOverride;
+  final String? roleLabel;
+  final String? icon;
+  final int sortOrder;
+ 
+  // Datos hidratados desde las relaciones (joins de Supabase)
+  final HistoricalPlayer? player;
+  final HistoricalTeam? team;
+ 
+  const EventProtagonist({
+    required this.id,
+    this.playerId,
+    this.teamId,
+    this.nameOverride,
+    this.roleLabel,
+    this.icon,
+    this.sortOrder = 0,
+    this.player,
+    this.team,
+  });
+ 
+  /// Nombre a mostrar: prioridad → player.name → team.name → nameOverride
+  String get displayName =>
+      player?.name ?? team?.name ?? nameOverride ?? '—';
+ 
+  /// Ruta de imagen a mostrar
+  String? get imagePath => player?.imagePath ?? team?.imagePath;
+ 
+  /// true si tiene ficha interna navegable
+  bool get hasLink => player != null || team != null;
+ 
+  factory EventProtagonist.fromMap(Map<String, dynamic> m) {
+    HistoricalPlayer? player;
+    HistoricalTeam? team;
+    if (m['historical_players'] is Map<String, dynamic>) {
+      player = HistoricalPlayer.fromMap(
+          m['historical_players'] as Map<String, dynamic>);
+    }
+    if (m['historical_teams'] is Map<String, dynamic>) {
+      team = HistoricalTeam.fromMap(
+          m['historical_teams'] as Map<String, dynamic>);
+    }
+    return EventProtagonist(
+      id: m['id'] as String,
+      playerId: m['player_id'] as String?,
+      teamId: m['team_id'] as String?,
+      nameOverride: m['name_override'] as String?,
+      roleLabel: m['role_label'] as String?,
+      icon: m['icon'] as String?,
+      sortOrder: m['sort_order'] as int? ?? 0,
+      player: player,
+      team: team,
+    );
+  }
+}
 // ============================================================
 // PLAYER DETAIL — carrera, nacional, títulos
 // ============================================================
