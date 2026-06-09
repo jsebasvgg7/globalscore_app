@@ -2,11 +2,11 @@
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_theme.dart';
+import '../widgets/remember_me_service.dart';
 
 // ═══════════════════════════════════════════════════════════
 //  LOGIN PAGE
 // ═══════════════════════════════════════════════════════════
-
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -20,6 +20,7 @@ class _LoginPageState extends State<LoginPage>
   final _passwordController = TextEditingController();
   bool  _isLoading          = false;
   bool  _obscurePassword    = true;
+  bool  _rememberMe         = false;       // ← nuevo
   String? _errorMessage;
 
   late AnimationController _animController;
@@ -37,6 +38,18 @@ class _LoginPageState extends State<LoginPage>
     _slideAnim = Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero)
         .animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
     _animController.forward();
+    _loadSavedEmail();                     // ← nuevo
+  }
+
+  /// Carga el email guardado si el usuario había marcado "Recordarme".
+  Future<void> _loadSavedEmail() async {
+    final saved = await RememberMeService.load();
+    if (saved != null && mounted) {
+      setState(() {
+        _emailController.text = saved;
+        _rememberMe = true;
+      });
+    }
   }
 
   @override
@@ -58,6 +71,13 @@ class _LoginPageState extends State<LoginPage>
     }
 
     setState(() { _isLoading = true; _errorMessage = null; });
+
+    // Guarda o borra el email según el estado del checkbox
+    if (_rememberMe) {
+      await RememberMeService.save(email);
+    } else {
+      await RememberMeService.clear();
+    }
 
     try {
       final response = await Supabase.instance.client.auth.signInWithPassword(
@@ -181,7 +201,11 @@ class _LoginPageState extends State<LoginPage>
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _NeoCheckbox(),
+                            // ← ahora pasa valor y callback
+                            _NeoCheckbox(
+                              value: _rememberMe,
+                              onChanged: (v) => setState(() => _rememberMe = v),
+                            ),
                             GestureDetector(
                               onTap: () => context.push('/forgot-password'),
                               child: const Text(
@@ -428,27 +452,26 @@ class _NeoButton extends StatelessWidget {
   }
 }
 
-class _NeoCheckbox extends StatefulWidget {
-  @override
-  State<_NeoCheckbox> createState() => _NeoCheckboxState();
-}
+// ← _NeoCheckbox ahora es StatelessWidget controlado por el padre
+class _NeoCheckbox extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
 
-class _NeoCheckboxState extends State<_NeoCheckbox> {
-  bool _checked = false;
+  const _NeoCheckbox({required this.value, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => setState(() => _checked = !_checked),
+      onTap: () => onChanged(!value),
       child: Row(
         children: [
           Container(
             width: 16, height: 16,
             decoration: BoxDecoration(
-              color: _checked ? AuthTheme.accent : Colors.transparent,
+              color: value ? AuthTheme.accent : Colors.transparent,
               border: Border.all(color: AuthTheme.dark, width: 1.5),
             ),
-            child: _checked
+            child: value
                 ? const Icon(Icons.check, size: 11, color: Colors.white)
                 : null,
           ),
