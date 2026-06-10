@@ -16,7 +16,6 @@ const _accent  = Color(0xFF5B4FD8);
 const _text    = Color(0xFF1A1A2E);
 const _muted   = Color(0xFF6B6580);
 const _gold    = Color(0xFFC9A227);
-
 const _shadowColor = Color(0x661A1A2E);
 const _shadow   = BoxShadow(color: _shadowColor, offset: Offset(1, 1), blurRadius: 0);
 const _shadowLg = BoxShadow(color: _shadowColor, offset: Offset(1, 1), blurRadius: 0);

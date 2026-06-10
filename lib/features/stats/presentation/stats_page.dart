@@ -225,9 +225,6 @@ class _StatsBody extends StatelessWidget {
           _SectionHeader(label: 'RENDIMIENTO POR DÍA', color: _accentL),
           _DayBars(days: stats.dayStats),
           _SectionDivider(),
-          _SectionHeader(label: 'DISTRIBUCIÓN DE PUNTOS', color: _accent),
-          _PointsDistribution(stats: stats),
-          _SectionDivider(),
           _SectionHeader(label: 'PRONÓSTICOS ESPECIALES', color: _gold),
           _ForecastGrid(stats: stats),
           _StreakCard(stats: stats),
@@ -882,8 +879,6 @@ class _ForecastGrid extends StatelessWidget {
         children: [
           _ForecastItem(value: _fmt(stats.leaguePredictions), label: 'LIGAS PRED.'),
           _ForecastItem(value: _fmt(stats.awardPredictions),  label: 'PREMIOS PRED.'),
-          _ForecastItem(value: _fmt(stats.pointsFromLeagues), label: 'PTS LIGAS',   valueColor: _exact),
-          _ForecastItem(value: _fmt(stats.pointsFromAwards),  label: 'PTS PREMIOS', valueColor: _exact),
         ],
       ),
     );

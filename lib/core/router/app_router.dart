@@ -88,7 +88,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               builder: (_, _) => const hist.HistoryPage(),
             ),
           ]),
-          // 5 — Perfil propio
+          // 5 — Perfil
           StatefulShellBranch(routes: [
             GoRoute(
               path: '/profile',
@@ -115,43 +115,33 @@ final routerProvider = Provider<GoRouter>((ref) {
           ]),
         ],
       ),
-
-      // ── Pack Opening — fuera del shell, sin nav bar ─────────
-      // Se accede con context.push('/pack-opening') desde AlbumsPage.
-      // Al hacer pop() vuelve a /albums y PackOpeningPage llama
-      // refresh() una sola vez sobre albumsProvider.
+      // 6 - Pack opening
       GoRoute(
         path: '/pack-opening',
         builder: (_, _) => const PackOpeningPage(),
       ),
-
+      // 7 - Public profile
       GoRoute(
         path: '/profile/:userId',
         builder: (_, state) => PublicProfilePage(
           userId: state.pathParameters['userId']!,
         ),
       ),
-
+      // 8 - Notas
       GoRoute(
         path: '/notes',
         builder: (_, _) => const NotesPage(),
       ),
-
+      // 9 - Notifications
       GoRoute(
         path: '/notifications',
         builder: (_, _) => const NotificationsPage(),
       ),
-
+      // 10 - World Cup
       GoRoute(
         path: '/worldcup',
         builder: (_, _) => const WorldCupPage(),
       ),
-
-      // Admin — fuera del shell, sin nav bar
-      // GoRoute(
-      //   path: '/admin',
-      //   builder: (_, _) => const AdminPage(),
-      // ),
     ],
   );
 });

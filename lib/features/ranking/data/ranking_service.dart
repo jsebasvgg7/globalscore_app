@@ -60,8 +60,8 @@ class HofChampion {
   final String name;
   final String? avatarUrl;
   final int monthlyChampionships;
-  final int bestPoints;         // max pts de monthly_championship_history
-  final String? lastMonthYear;  // último mes ganado
+  final int bestPoints;
+  final String? lastMonthYear;
 
   const HofChampion({
     required this.id,

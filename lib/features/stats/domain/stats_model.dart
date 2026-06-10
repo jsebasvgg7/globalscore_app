@@ -44,7 +44,6 @@ class StatsModel {
   final int wrong;
   final int accuracy;
   final int exactAccuracy;
-  // Puntos solo de partidos (sin ligas ni premios)
   final int totalPoints;
   final int pointsFromMatches;
   final int pointsFromLeagues;

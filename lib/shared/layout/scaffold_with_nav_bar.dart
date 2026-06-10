@@ -28,7 +28,6 @@ class HideBottomNavNotifier extends Notifier<bool> {
 // ═══════════════════════════════════════════════════════════
 //  SCAFFOLD
 // ═══════════════════════════════════════════════════════════
-
 class ScaffoldWithNavBar extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
   const ScaffoldWithNavBar({super.key, required this.navigationShell});
@@ -135,7 +134,6 @@ class _ScaffoldWithNavBarState extends ConsumerState<ScaffoldWithNavBar> {
 // ═══════════════════════════════════════════════════════════
 //  TOP BAR — neo-brutalista
 // ═══════════════════════════════════════════════════════════
-
 class _GsTopBar extends StatefulWidget {
   final String   firstName;
   final String   initials;
@@ -192,7 +190,6 @@ class _GsTopBarState extends State<_GsTopBar> {
         border: Border(
           bottom: BorderSide(color: _GsColors.dark, width: 1),
         ),
-        // Sombra offset neo-brutalista
         boxShadow: [
           BoxShadow(
             color: Color(0x661A1A2E),
@@ -204,10 +201,8 @@ class _GsTopBarState extends State<_GsTopBar> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // ── Logo / nombre con acento ──────────────────────
           Row(
             children: [
-              // Bloque de acento morado a la izquierda
               Container(
                 width: 4,
                 height: 26,
@@ -228,18 +223,6 @@ class _GsTopBarState extends State<_GsTopBar> {
                       letterSpacing: -0.5,
                     ),
                   ),
-                  // Reloj mono pequeño
-                  if (_clock.isNotEmpty)
-                    Text(
-                      _clock,
-                      style: const TextStyle(
-                        fontFamily: _GsColors.fontMono,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w600,
-                        color: _GsColors.muted,
-                        letterSpacing: 1,
-                      ),
-                    ),
                 ],
               ),
             ],
@@ -266,8 +249,6 @@ class _GsTopBarState extends State<_GsTopBar> {
     );
   }
 }
-
-// ── Top button con sombra offset ─────────────────────────────
 class _TopBtn extends StatefulWidget {
   final IconData icon;
   final bool     hasDot;
@@ -506,153 +487,153 @@ class _GsBottomNav extends StatelessWidget {
   }
 }
 
-class _BottomNavButton extends StatefulWidget {
-  final _NavItem item;
-  final bool     isActive;
-  final VoidCallback onTap;
+  class _BottomNavButton extends StatefulWidget {
+    final _NavItem item;
+    final bool     isActive;
+    final VoidCallback onTap;
 
-  const _BottomNavButton({
-    required this.item,
-    required this.isActive,
-    required this.onTap,
-  });
+    const _BottomNavButton({
+      required this.item,
+      required this.isActive,
+      required this.onTap,
+    });
 
-  @override
-  State<_BottomNavButton> createState() => _BottomNavButtonState();
-}
+    @override
+    State<_BottomNavButton> createState() => _BottomNavButtonState();
+  }
 
-class _BottomNavButtonState extends State<_BottomNavButton> {
-  bool _pressed = false;
+  class _BottomNavButtonState extends State<_BottomNavButton> {
+    bool _pressed = false;
 
-  @override
-  Widget build(BuildContext context) {
-    final active = widget.isActive;
+    @override
+    Widget build(BuildContext context) {
+      final active = widget.isActive;
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown:   (_) => setState(() => _pressed = true),
-      onTapUp:     (_) { setState(() => _pressed = false); widget.onTap(); },
-      onTapCancel: ()  => setState(() => _pressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 80),
-        decoration: const BoxDecoration(
-          color: Colors.transparent,
-        ),
-        child: Opacity(
-          opacity: _pressed ? 0.6 : 1.0,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                active ? widget.item.activeIcon : widget.item.icon,
-                size: 18,
-                color: active ? _GsColors.accent : _GsColors.muted,
-              ),
-              const SizedBox(height: 3),
-              Text(
-                widget.item.label,
-                style: TextStyle(
-                  fontFamily: _GsColors.fontMono,
-                  fontSize: 7,
-                  fontWeight:
-                      active ? FontWeight.w800 : FontWeight.w500,
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown:   (_) => setState(() => _pressed = true),
+        onTapUp:     (_) { setState(() => _pressed = false); widget.onTap(); },
+        onTapCancel: ()  => setState(() => _pressed = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 80),
+          decoration: const BoxDecoration(
+            color: Colors.transparent,
+          ),
+          child: Opacity(
+            opacity: _pressed ? 0.6 : 1.0,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  active ? widget.item.activeIcon : widget.item.icon,
+                  size: 18,
                   color: active ? _GsColors.accent : _GsColors.muted,
-                  letterSpacing: 0.5,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  widget.item.label,
+                  style: TextStyle(
+                    fontFamily: _GsColors.fontMono,
+                    fontSize: 7,
+                    fontWeight:
+                        active ? FontWeight.w800 : FontWeight.w500,
+                    color: active ? _GsColors.accent : _GsColors.muted,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
+  class _TrophyButton extends StatefulWidget {
+    final bool isActive;
+    final VoidCallback onTap;
+    const _TrophyButton({required this.isActive, required this.onTap});
+
+    @override
+    State<_TrophyButton> createState() => _TrophyButtonState();
+  }
+
+  class _TrophyButtonState extends State<_TrophyButton> {
+    bool _pressed = false;
+
+    @override
+    Widget build(BuildContext context) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown:   (_) => setState(() => _pressed = true),
+        onTapUp:     (_) { setState(() => _pressed = false); widget.onTap(); },
+        onTapCancel: ()  => setState(() => _pressed = false),
+        child: SizedBox(
+          height: 58,
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                top: -14,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 100),
+                  transform: _pressed
+                      ? (Matrix4.identity()..translate(3.0, 3.0))
+                      : Matrix4.identity(),
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: _GsColors.accent,
+                    border: Border.all(
+                        color: _GsColors.dark, width: 1.5),
+                    boxShadow: _pressed
+                        ? []
+                        : const [
+                            BoxShadow(
+                              color: Color(0x661A1A2E),
+                              offset: Offset(1, 1),
+                              blurRadius: 0,
+                            ),
+                          ],
+                  ),
+                  child: Icon(
+                    Icons.emoji_events,
+                    size: 24,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
+      );
+    }
   }
-}
-
-class _TrophyButton extends StatefulWidget {
-  final bool isActive;
-  final VoidCallback onTap;
-  const _TrophyButton({required this.isActive, required this.onTap});
-
-  @override
-  State<_TrophyButton> createState() => _TrophyButtonState();
-}
-
-class _TrophyButtonState extends State<_TrophyButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown:   (_) => setState(() => _pressed = true),
-      onTapUp:     (_) { setState(() => _pressed = false); widget.onTap(); },
-      onTapCancel: ()  => setState(() => _pressed = false),
-      child: SizedBox(
-        height: 58,
-        child: Stack(
-          alignment: Alignment.center,
-          clipBehavior: Clip.none,
-          children: [
-            Positioned(
-              top: -14,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 100),
-                transform: _pressed
-                    ? (Matrix4.identity()..translate(3.0, 3.0))
-                    : Matrix4.identity(),
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: _GsColors.accent,
-                  border: Border.all(
-                      color: _GsColors.dark, width: 1.5),
-                  boxShadow: _pressed
-                      ? []
-                      : const [
-                          BoxShadow(
-                            color: Color(0x661A1A2E),
-                            offset: Offset(1, 1),
-                            blurRadius: 0,
-                          ),
-                        ],
-                ),
-                child: Icon(
-                  Icons.emoji_events,
-                  size: 24,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ═══════════════════════════════════════════════════════════
 //  HELPERS
 // ═══════════════════════════════════════════════════════════
 
-class _NavItem {
-  final IconData icon;
-  final IconData activeIcon;
-  final String   label;
-  final int      branchIndex;
+  class _NavItem {
+    final IconData icon;
+    final IconData activeIcon;
+    final String   label;
+    final int      branchIndex;
 
-  const _NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-    required this.branchIndex,
-  });
-}
+    const _NavItem({
+      required this.icon,
+      required this.activeIcon,
+      required this.label,
+      required this.branchIndex,
+    });
+  }
 
-abstract class _GsColors {
-  static const Color cream   = Color(0xFFF0EDE8);
-  static const Color dark    = Color(0xFF1A1A2E);
-  static const Color accent  = Color(0xFF5B4FD8);
-  static const Color muted   = Color(0xFF88887D);
+  abstract class _GsColors {
+    static const Color cream   = Color(0xFFF0EDE8);
+    static const Color dark    = Color(0xFF1A1A2E);
+    static const Color accent  = Color(0xFF5B4FD8);
+    static const Color muted   = Color(0xFF88887D);
 
-  static const String fontMono = 'DM Mono';
+    static const String fontMono = 'DM Mono';
 }
