@@ -1,5 +1,6 @@
 {
     "java.compile.nullAnalysis.mode": "automatic",
     "editor.wordWrap": "off",
-    "chat.editor.wordWrap": "off"
+    "chat.editor.wordWrap": "off",
+    "java.configuration.updateBuildConfiguration": "interactive"
 }
